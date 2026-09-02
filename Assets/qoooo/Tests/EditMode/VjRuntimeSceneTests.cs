@@ -23,6 +23,7 @@ namespace Qoooo.VJ.Tests
             Assert.That(runtime.GetComponents<MonoBehaviour>(), Is.Empty);
 
             AssertComponent<FinalCompositeRenderer>(runtime, "Composition");
+            AssertComponent<CompositionController>(runtime, "Composition");
             AssertComponent<VjRenderLoop>(runtime, "Composition");
             AssertComponent<TextureOutputController>(runtime, "Output");
             AssertComponent<VjPreviewPresenter>(runtime, "UI");
