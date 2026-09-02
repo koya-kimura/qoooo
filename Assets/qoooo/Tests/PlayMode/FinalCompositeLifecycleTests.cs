@@ -25,9 +25,17 @@ namespace Qoooo.VJ.Tests
                 "Packages/ga.fuquna.rosettaui/UIToolkit/Runtime/Settings/RosettaUI_DefaultPanelSettings.asset");
             controlPanel.PanelSettings = rosettaPanelSettings;
 #endif
-            gameObject.AddComponent<VjPreferencesController>();
-            gameObject.AddComponent<VjRenderLoop>();
-            var renderer = gameObject.GetComponent<FinalCompositeRenderer>();
+            var renderer = gameObject.AddComponent<FinalCompositeRenderer>();
+            var output = gameObject.AddComponent<Qoooo.VJ.Output.TextureOutputController>();
+            var outputSettings = gameObject.AddComponent<VjOutputSettingsController>();
+            var preferences = gameObject.AddComponent<VjPreferencesController>();
+            var renderLoop = gameObject.AddComponent<VjRenderLoop>();
+            outputSettings.Compositor = renderer;
+            outputSettings.Output = output;
+            preferences.OutputSettings = outputSettings;
+            renderLoop.Compositor = renderer;
+            renderLoop.Output = output;
+            controlPanel.Initialize(outputSettings, preferences);
             var preview = gameObject.AddComponent<VjPreviewPresenter>();
             preview.Source = renderer;
 #if UNITY_EDITOR

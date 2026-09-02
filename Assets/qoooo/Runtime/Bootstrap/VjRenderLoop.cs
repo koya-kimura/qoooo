@@ -6,21 +6,26 @@ namespace Qoooo.VJ.Application
 {
     [DefaultExecutionOrder(100)]
     [DisallowMultipleComponent]
-    [RequireComponent(typeof(FinalCompositeRenderer))]
-    [RequireComponent(typeof(TextureOutputController))]
     public sealed class VjRenderLoop : MonoBehaviour
     {
         [SerializeField] private FinalCompositeRenderer compositor;
         [SerializeField] private TextureOutputController output;
 
-        private void Awake()
+        public FinalCompositeRenderer Compositor
         {
-            if (compositor == null) compositor = GetComponent<FinalCompositeRenderer>();
-            if (output == null) output = GetComponent<TextureOutputController>();
+            get => compositor;
+            set => compositor = value;
+        }
+
+        public TextureOutputController Output
+        {
+            get => output;
+            set => output = value;
         }
 
         private void LateUpdate()
         {
+            if (compositor == null || output == null) return;
             compositor.RenderNow();
             output.Publish(compositor.FinalTexture);
         }

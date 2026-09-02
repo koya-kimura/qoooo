@@ -18,8 +18,11 @@ namespace Qoooo.VJ.UI
         private static readonly string[] OutputModeNames = Enum.GetNames(typeof(VjOutputMode));
 
         [SerializeField] private PanelSettings panelSettings;
+        [SerializeField] private MonoBehaviour settingsControllerSource;
+        [SerializeField] private MonoBehaviour preferencesSaverSource;
 
-        private IVjPreferencesController _controller;
+        private IVjOutputSettingsController _settingsController;
+        private IVjPreferencesSaver _preferencesSaver;
         private RosettaUIRootUIToolkit _root;
         private UIDocument _document;
         private GameObject _uiRootObject;
@@ -35,14 +38,25 @@ namespace Qoooo.VJ.UI
             set => panelSettings = value;
         }
 
-        public void Initialize(IVjPreferencesController controller)
+        public void Initialize(
+            IVjOutputSettingsController settingsController,
+            IVjPreferencesSaver preferencesSaver)
         {
-            _controller = controller;
-            _draft = controller.CurrentPreferences.Copy();
+            if (settingsController == null) return;
+            _settingsController = settingsController;
+            _preferencesSaver = preferencesSaver;
+            _draft = settingsController.CurrentPreferences.Copy();
         }
 
         private void Start()
         {
+            if (_settingsController == null)
+            {
+                Initialize(
+                    settingsControllerSource as IVjOutputSettingsController,
+                    preferencesSaverSource as IVjPreferencesSaver);
+            }
+
             EnsureRosettaRoot();
             if (_built) return;
 
@@ -83,63 +97,44 @@ namespace Qoooo.VJ.UI
                         OutputModeNames))
                 .Open();
 
-            var preferenceActions = RUI.Fold(
-                    "Preferences",
-                    RUI.Row(
-                        RUI.Button("Apply", ApplyDraft),
-                        RUI.Button("Save Prefs", SaveDraft),
-                        RUI.Button("Load Prefs", LoadDraft)),
-                    RUI.Label(() => _status))
-                .Open();
-
             _outputWindow = RUI.Window(
                     "Output Settings",
-                    RUI.Page(textureSettings, senderSettings, preferenceActions))
+                    RUI.Page(
+                        textureSettings,
+                        senderSettings,
+                        RUI.Button("Apply", ApplyDraft)))
                 .SetPosition(new Vector2(24f, 64f));
 
             return RUI.Row(
-                    RUI.WindowLauncher("Output", _outputWindow))
-                .SetWidth(180f);
+                RUI.WindowLauncher("Output", _outputWindow),
+                RUI.Button("Save Prefs", SaveDraft),
+                RUI.Label(() => _status));
         }
 
         private void ApplyDraft()
         {
-            if (_controller == null)
+            if (_settingsController == null)
             {
                 _status = "Application is not connected";
                 return;
             }
 
-            _controller.ApplyPreferences(_draft);
-            _draft = _controller.CurrentPreferences.Copy();
+            _settingsController.ApplyPreferences(_draft);
+            _draft = _settingsController.CurrentPreferences.Copy();
             _status = "Applied";
         }
 
         private void SaveDraft()
         {
-            if (_controller == null)
+            if (_preferencesSaver == null)
             {
                 _status = "Application is not connected";
                 return;
             }
 
-            _controller.SavePreferences(_draft);
-            _draft = _controller.CurrentPreferences.Copy();
+            _preferencesSaver.SavePreferences(_draft);
+            _draft = _settingsController.CurrentPreferences.Copy();
             _status = "Saved to PlayerPrefs";
-        }
-
-        private void LoadDraft()
-        {
-            if (_controller != null && _controller.TryLoadPreferences(out var preferences))
-            {
-                _controller.ApplyPreferences(preferences);
-                _draft = _controller.CurrentPreferences.Copy();
-                _status = "Loaded from PlayerPrefs";
-            }
-            else
-            {
-                _status = "No saved preferences";
-            }
         }
 
         private void EnsureRosettaRoot()

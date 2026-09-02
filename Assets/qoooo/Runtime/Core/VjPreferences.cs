@@ -31,17 +31,22 @@ namespace Qoooo.VJ
         }
     }
 
-    public interface IVjPreferencesController
+    public interface IVjOutputSettingsController
     {
         VjPreferences CurrentPreferences { get; }
         void ApplyPreferences(VjPreferences preferences);
+    }
+
+    public interface IVjPreferencesSaver
+    {
         void SavePreferences(VjPreferences preferences);
-        bool TryLoadPreferences(out VjPreferences preferences);
     }
 
     public interface IVjControlPanel
     {
-        void Initialize(IVjPreferencesController controller);
+        void Initialize(
+            IVjOutputSettingsController settingsController,
+            IVjPreferencesSaver preferencesSaver);
     }
 
     public static class VjPreferencesStore
