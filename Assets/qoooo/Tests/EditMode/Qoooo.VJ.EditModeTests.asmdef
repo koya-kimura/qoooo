@@ -3,6 +3,7 @@
   "rootNamespace": "Qoooo.VJ.Tests",
   "references": [
     "Qoooo.VJ.Core",
+    "Qoooo.VJ.Model",
     "Qoooo.VJ.Composition",
     "Qoooo.VJ.Application",
     "Qoooo.VJ.Output",

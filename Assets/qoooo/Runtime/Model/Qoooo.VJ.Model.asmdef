@@ -1,9 +1,8 @@
 {
-  "name": "Qoooo.VJ.Composition",
-  "rootNamespace": "Qoooo.VJ.Composition",
+  "name": "Qoooo.VJ.Model",
+  "rootNamespace": "Qoooo.VJ.Model",
   "references": [
-    "Qoooo.VJ.Core",
-    "Qoooo.VJ.Model"
+    "Qoooo.VJ.Core"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],
