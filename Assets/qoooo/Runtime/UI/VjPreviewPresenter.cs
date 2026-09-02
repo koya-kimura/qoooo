@@ -1,13 +1,21 @@
 using Qoooo.VJ.Composition;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Qoooo.VJ.UI
 {
     [DisallowMultipleComponent]
     public sealed class VjPreviewPresenter : MonoBehaviour
     {
+        private const float PreviewSortingOrder = 0f;
+
         [SerializeField] private FinalCompositeRenderer source;
         [SerializeField, Range(0f, 0.25f)] private float margin = 0.03f;
+
+        private UIDocument _document;
+        private PanelSettings _ownedPanelSettings;
+        private Image _previewImage;
+        private RenderTexture _displayedTexture;
 
         public FinalCompositeRenderer Source
         {
@@ -15,37 +23,43 @@ namespace Qoooo.VJ.UI
             set => source = value;
         }
 
-        private void OnGUI()
+        private void Start()
         {
-            var texture = source != null ? source.FinalTexture : null;
-            if (texture == null || Event.current.type != EventType.Repaint) return;
+            _document = VjRuntimePanelFactory.CreateDocument(
+                transform,
+                "VJ Preview",
+                PreviewSortingOrder,
+                out _ownedPanelSettings);
 
-            var available = new Rect(
-                Screen.width * margin,
-                Screen.height * margin,
-                Screen.width * (1f - margin * 2f),
-                Screen.height * (1f - margin * 2f));
-            var target = Fit(available, texture.width / (float)texture.height);
-
-            GUI.DrawTexture(available, Texture2D.blackTexture, ScaleMode.StretchToFill);
-            GUI.DrawTexture(target, texture, ScaleMode.StretchToFill, false);
+            var root = _document.rootVisualElement;
+            root.pickingMode = PickingMode.Ignore;
+            _previewImage = new Image
+            {
+                name = "vj-preview-image",
+                scaleMode = ScaleMode.ScaleToFit,
+                pickingMode = PickingMode.Ignore
+            };
+            _previewImage.style.position = Position.Absolute;
+            _previewImage.style.left = Length.Percent(margin * 100f);
+            _previewImage.style.right = Length.Percent(margin * 100f);
+            _previewImage.style.top = Length.Percent(margin * 100f);
+            _previewImage.style.bottom = Length.Percent(margin * 100f);
+            root.Add(_previewImage);
         }
 
-        private static Rect Fit(Rect available, float aspect)
+        private void LateUpdate()
         {
-            var width = available.width;
-            var height = width / aspect;
-            if (height > available.height)
-            {
-                height = available.height;
-                width = height * aspect;
-            }
+            var texture = source != null ? source.FinalTexture : null;
+            if (texture == _displayedTexture || _previewImage == null) return;
+            _displayedTexture = texture;
+            _previewImage.image = texture;
+        }
 
-            return new Rect(
-                available.x + (available.width - width) * 0.5f,
-                available.y + (available.height - height) * 0.5f,
-                width,
-                height);
+        private void OnDestroy()
+        {
+            VjRuntimePanelFactory.DestroyOwned(
+                _document != null ? _document.gameObject : null,
+                _ownedPanelSettings);
         }
     }
 }

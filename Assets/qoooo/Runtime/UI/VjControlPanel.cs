@@ -14,6 +14,7 @@ namespace Qoooo.VJ.UI
     [DisallowMultipleComponent]
     public sealed class VjControlPanel : MonoBehaviour, IVjControlPanel
     {
+        private const float ControlsSortingOrder = 100f;
         private static readonly string[] OutputModeNames = Enum.GetNames(typeof(VjOutputMode));
 
         private IVjPreferencesController _controller;
@@ -24,6 +25,9 @@ namespace Qoooo.VJ.UI
         private VjPreferences _draft = new();
         private string _status = "Ready";
         private bool _built;
+        private WindowElement _outputWindow;
+
+        public bool IsOutputWindowOpen => _outputWindow?.IsOpen == true;
 
         public void Initialize(IVjPreferencesController controller)
         {
@@ -36,32 +40,20 @@ namespace Qoooo.VJ.UI
             EnsureRosettaRoot();
             if (_built) return;
 
-            _root.Build(CreateUI());
+            _root.Build(CreateLauncher());
+            _outputWindow.Open(recursive: true);
             _built = true;
         }
 
         private void OnDestroy()
         {
-            if (_uiRootObject != null)
-            {
-                if (Application.isPlaying)
-                    Destroy(_uiRootObject);
-                else
-                    DestroyImmediate(_uiRootObject);
-            }
-
-            if (_ownedPanelSettings == null) return;
-
-            if (Application.isPlaying)
-                Destroy(_ownedPanelSettings);
-            else
-                DestroyImmediate(_ownedPanelSettings);
+            VjRuntimePanelFactory.DestroyOwned(_uiRootObject, _ownedPanelSettings);
         }
 
-        private Element CreateUI()
+        private Element CreateLauncher()
         {
-            return RUI.Box(
-                    RUI.Label("VJ Output"),
+            var textureSettings = RUI.Fold(
+                    "Final Texture",
                     RUI.Field("Width", () => _draft.outputWidth, value =>
                         _draft.outputWidth = Mathf.Clamp(
                             value,
@@ -71,20 +63,37 @@ namespace Qoooo.VJ.UI
                         _draft.outputHeight = Mathf.Clamp(
                             value,
                             VjRuntimeSettings.MinDimension,
-                            VjRuntimeSettings.MaxDimension)),
+                            VjRuntimeSettings.MaxDimension)))
+                .Open();
+
+            var senderSettings = RUI.Fold(
+                    "Sender",
                     RUI.Field("Output Name", () => _draft.outputName, value =>
                         _draft.outputName = value),
                     RUI.Dropdown(
                         "Output Mode",
                         () => (int)_draft.outputMode,
                         value => _draft.outputMode = (VjOutputMode)value,
-                        OutputModeNames),
+                        OutputModeNames))
+                .Open();
+
+            var preferenceActions = RUI.Fold(
+                    "Preferences",
                     RUI.Row(
                         RUI.Button("Apply", ApplyDraft),
                         RUI.Button("Save Prefs", SaveDraft),
                         RUI.Button("Load Prefs", LoadDraft)),
                     RUI.Label(() => _status))
-                .SetWidth(360f);
+                .Open();
+
+            _outputWindow = RUI.Window(
+                    "Output Settings",
+                    RUI.Page(textureSettings, senderSettings, preferenceActions))
+                .SetPosition(new Vector2(24f, 64f));
+
+            return RUI.Row(
+                    RUI.WindowLauncher("Output", _outputWindow))
+                .SetWidth(180f);
         }
 
         private void ApplyDraft()
@@ -129,21 +138,13 @@ namespace Qoooo.VJ.UI
 
         private void EnsureRosettaRoot()
         {
-            _uiRootObject = new GameObject("VJ RosettaUI");
-            _uiRootObject.SetActive(false);
-            _uiRootObject.transform.SetParent(transform, false);
-            _document = _uiRootObject.AddComponent<UIDocument>();
-
-            if (_document.panelSettings == null)
-            {
-                _ownedPanelSettings = ScriptableObject.CreateInstance<PanelSettings>();
-                _ownedPanelSettings.name = "VJ Runtime Panel Settings";
-                _ownedPanelSettings.scaleMode = PanelScaleMode.ScaleWithScreenSize;
-                _ownedPanelSettings.referenceResolution = new Vector2Int(1920, 1080);
-                _ownedPanelSettings.sortingOrder = 100;
-                _ownedPanelSettings.themeStyleSheet = Resources.Load<ThemeStyleSheet>("VjRuntimeTheme");
-                _document.panelSettings = _ownedPanelSettings;
-            }
+            _document = VjRuntimePanelFactory.CreateDocument(
+                transform,
+                "VJ RosettaUI",
+                ControlsSortingOrder,
+                out _ownedPanelSettings,
+                activate: false);
+            _uiRootObject = _document.gameObject;
 
             _root = _uiRootObject.AddComponent<RosettaUIRootUIToolkit>();
 #if ENABLE_INPUT_SYSTEM
