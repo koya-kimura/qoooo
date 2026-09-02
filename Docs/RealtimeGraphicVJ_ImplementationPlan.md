@@ -30,6 +30,41 @@
 
 RosettaUIだけでアプリ全体を構築しない。高頻度で再構築されるLayer StackやPointer操作は専用Viewにし、選択中オブジェクトのプロパティ編集にRosettaUIを限定する。
 
+Runtime UIの階層は、画面上部のlauncher barを入口にする。設定群を直接rootへ並べず、`WindowLauncher -> Window -> Fold -> Field`の順で整理する。
+
+```text
+Launcher Bar
+  ├─ Output Settings Window
+  │    ├─ Final Texture
+  │    ├─ Sender
+  │    └─ Preferences
+  ├─ Layers Window (Slice 1)
+  ├─ Cameras Window (Slice 2)
+  └─ Effects Window (Slice 3)
+```
+
+Previewと操作UIは別のUI Toolkit Panelにし、描画順を数値で固定する。
+
+- Preview Panel: sorting order 0、pointer inputを受け取らない
+- RosettaUI Controls Panel: sorting order 100
+
+これによりWindowをPreviewより常に前面へ表示し、Preview方式と操作UI方式をUI Toolkitへ統一する。
+
+### Runtime責務の分離
+
+Scene上の1つのApplication componentへ処理を集中させず、次のMonoBehaviourへ分ける。
+
+| Component | 責務 |
+|---|---|
+| `VjRenderLoop` | 毎フレームのComposition実行と、その結果のOutputへの受け渡し |
+| `VjPreferencesController` | 出力設定の適用、PlayerPrefs Save / Load、UIとの接続 |
+| `FinalCompositeRenderer` | Final RenderTextureの生成と描画 |
+| `TextureOutputController` | Syphon / Spout adapterの生成とTexture送信 |
+| `VjPreviewPresenter` | 低優先度Panel上のPreview表示 |
+| `VjControlPanel` | RosettaUI window hierarchyとユーザー操作 |
+
+各MonoBehaviourはUnityのゲームループを利用するが、他Componentの内部実装を持たない。UIは`IVjPreferencesController`、OutputはTextureという小さな境界を介して連携する。
+
 ### ProcessingとComposition
 
 `Camera -> Capture RT` と `Layer -> Effect Stack -> Composite` を分離する。同じCapture RTを複数Layerが共有し、各Layerは独立したEffect設定を持つ。
