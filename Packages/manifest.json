@@ -2,6 +2,7 @@
   "dependencies": {
     "com.unity.test-framework": "1.6.0",
     "com.unity.multiplayer.center": "1.0.1",
+    "com.unity.render-pipelines.universal": "17.3.0",
     "ga.fuquna.prefsgui.rosettaui": "1.4.0",
     "jp.keijiro.klak.spout": "2.0.6",
     "jp.keijiro.klak.syphon": "1.0.4",
