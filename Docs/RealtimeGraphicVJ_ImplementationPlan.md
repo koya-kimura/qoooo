@@ -34,10 +34,10 @@ Runtime UIの階層は、画面上部のlauncher barを入口にする。設定�
 
 ```text
 Launcher Bar
+  ├─ Save Prefs
   ├─ Output Settings Window
   │    ├─ Final Texture
   │    ├─ Sender
-  │    └─ Preferences
   ├─ Layers Window (Slice 1)
   ├─ Cameras Window (Slice 2)
   └─ Effects Window (Slice 3)
@@ -59,13 +59,24 @@ Scene上の1つのApplication componentへ処理を集中させず、次のMonoB
 | Component | 責務 |
 |---|---|
 | `VjRenderLoop` | 毎フレームのComposition実行と、その結果のOutputへの受け渡し |
-| `VjPreferencesController` | 出力設定の適用、PlayerPrefs Save / Load、UIとの接続 |
+| `VjOutputSettingsController` | Final TextureとSender設定の参照・適用 |
+| `VjPreferencesController` | PlayerPrefsへの保存と起動時の自動復元 |
 | `FinalCompositeRenderer` | Final RenderTextureの生成と描画 |
 | `TextureOutputController` | Syphon / Spout adapterの生成とTexture送信 |
 | `VjPreviewPresenter` | 低優先度Panel上のPreview表示 |
 | `VjControlPanel` | RosettaUI window hierarchyとユーザー操作 |
 
-各MonoBehaviourはUnityのゲームループを利用するが、他Componentの内部実装を持たない。UIは`IVjPreferencesController`、OutputはTextureという小さな境界を介して連携する。
+各MonoBehaviourはUnityのゲームループを利用するが、他Componentの内部実装を持たない。UIは`IVjOutputSettingsController`と`IVjPreferencesSaver`、OutputはTextureという小さな境界を介して連携する。手動Load操作は設けず、保存済み設定は起動時に自動復元する。
+
+Sceneも単一の`VJ Application`へComponentを集中させず、次の階層で所有範囲を見えるようにする。
+
+```text
+VJ Runtime
+  ├─ Composition
+  ├─ Output
+  ├─ UI
+  └─ Preferences
+```
 
 ### ProcessingとComposition
 
