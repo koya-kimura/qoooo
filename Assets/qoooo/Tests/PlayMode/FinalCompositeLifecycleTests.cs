@@ -2,7 +2,9 @@ using System.Collections;
 using NUnit.Framework;
 using Qoooo.VJ.Application;
 using Qoooo.VJ.Composition;
+using Qoooo.VJ.UI;
 using UnityEngine;
+using UnityEngine.UIElements;
 using UnityEngine.TestTools;
 
 namespace Qoooo.VJ.Tests
@@ -14,6 +16,7 @@ namespace Qoooo.VJ.Tests
         {
             var gameObject = new GameObject("Composite Lifecycle Test");
             gameObject.SetActive(false);
+            gameObject.AddComponent<VjControlPanel>();
             gameObject.AddComponent<VjApplication>();
             var renderer = gameObject.GetComponent<FinalCompositeRenderer>();
             renderer.Settings.outputWidth = 64;
@@ -27,6 +30,14 @@ namespace Qoooo.VJ.Tests
             Assert.That(first.IsCreated(), Is.True);
             Assert.That(first.width, Is.EqualTo(64));
             Assert.That(first.height, Is.EqualTo(32));
+
+            var uiRoot = gameObject.transform.Find("VJ RosettaUI");
+            Assert.That(uiRoot, Is.Not.Null);
+            Assert.That(uiRoot.gameObject.activeSelf, Is.True);
+            var document = uiRoot.GetComponent<UIDocument>();
+            Assert.That(document, Is.Not.Null);
+            Assert.That(document.panelSettings, Is.Not.Null);
+            Assert.That(document.panelSettings.themeStyleSheet, Is.Not.Null);
 
             renderer.Settings.outputWidth = 128;
             yield return null;

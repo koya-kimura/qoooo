@@ -4,7 +4,8 @@
   "references": [
     "Qoooo.VJ.Core",
     "Qoooo.VJ.Composition",
-    "Qoooo.VJ.Application"
+    "Qoooo.VJ.Application",
+    "Qoooo.VJ.UI"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],
