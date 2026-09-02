@@ -32,8 +32,6 @@ namespace Qoooo.VJ.Composition
             RenderNow();
         }
 
-        private void LateUpdate() => RenderNow();
-
         private void OnDisable()
         {
             _commandBuffer?.Release();

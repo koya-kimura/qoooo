@@ -9,19 +9,11 @@ using UnityEditor;
 
 namespace Qoooo.VJ.Output
 {
-    public enum TextureOutputMode
-    {
-        Auto,
-        Disabled,
-        Spout,
-        Syphon
-    }
-
     [DisallowMultipleComponent]
     public sealed class TextureOutputController : MonoBehaviour
     {
         [SerializeField] private FinalCompositeRenderer source;
-        [SerializeField] private TextureOutputMode mode = TextureOutputMode.Auto;
+        [SerializeField] private VjOutputMode mode = VjOutputMode.Auto;
         [SerializeField] private string outputName = "qoooo VJ";
         [SerializeField] private SpoutResources spoutResources;
         [SerializeField] private SyphonResources syphonResources;
@@ -34,7 +26,7 @@ namespace Qoooo.VJ.Output
             set => source = value;
         }
 
-        public TextureOutputMode Mode
+        public VjOutputMode Mode
         {
             get => mode;
             set
@@ -47,15 +39,27 @@ namespace Qoooo.VJ.Output
 
         public bool IsAvailable => _output?.IsAvailable == true;
 
+        public string OutputName
+        {
+            get => outputName;
+            set
+            {
+                var validated = string.IsNullOrWhiteSpace(value) ? "qoooo VJ" : value.Trim();
+                if (outputName == validated) return;
+                outputName = validated;
+                RecreateOutput();
+            }
+        }
+
         private void OnEnable()
         {
             LoadEditorResources();
             RecreateOutput();
         }
 
-        private void LateUpdate()
+        public void Publish(Texture texture)
         {
-            _output?.SetTexture(source != null ? source.FinalTexture : null);
+            _output?.SetTexture(texture);
         }
 
         private void OnDisable()
@@ -71,16 +75,16 @@ namespace Qoooo.VJ.Output
             _output = CreateOutput(ResolveMode());
         }
 
-        private ITextureOutput CreateOutput(TextureOutputMode resolvedMode)
+        private ITextureOutput CreateOutput(VjOutputMode resolvedMode)
         {
             switch (resolvedMode)
             {
-                case TextureOutputMode.Spout:
+                case VjOutputMode.Spout:
                     if (spoutResources != null)
                         return new SpoutTextureOutput(gameObject, outputName, spoutResources);
                     Debug.LogWarning("Spout output is disabled: SpoutResources is not assigned.", this);
                     break;
-                case TextureOutputMode.Syphon:
+                case VjOutputMode.Syphon:
                     if (syphonResources != null)
                         return new SyphonTextureOutput(gameObject, outputName, syphonResources);
                     Debug.LogWarning("Syphon output is disabled: SyphonResources is not assigned.", this);
@@ -90,16 +94,16 @@ namespace Qoooo.VJ.Output
             return new NullTextureOutput();
         }
 
-        private TextureOutputMode ResolveMode()
+        private VjOutputMode ResolveMode()
         {
-            if (mode != TextureOutputMode.Auto) return mode;
+            if (mode != VjOutputMode.Auto) return mode;
 
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
-            return TextureOutputMode.Spout;
+            return VjOutputMode.Spout;
 #elif UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
-            return TextureOutputMode.Syphon;
+            return VjOutputMode.Syphon;
 #else
-            return TextureOutputMode.Disabled;
+            return VjOutputMode.Disabled;
 #endif
         }
 

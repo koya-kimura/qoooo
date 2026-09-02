@@ -1,5 +1,6 @@
 using System.Collections;
 using NUnit.Framework;
+using Qoooo.VJ.Application;
 using Qoooo.VJ.Composition;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -13,7 +14,8 @@ namespace Qoooo.VJ.Tests
         {
             var gameObject = new GameObject("Composite Lifecycle Test");
             gameObject.SetActive(false);
-            var renderer = gameObject.AddComponent<FinalCompositeRenderer>();
+            gameObject.AddComponent<VjApplication>();
+            var renderer = gameObject.GetComponent<FinalCompositeRenderer>();
             renderer.Settings.outputWidth = 64;
             renderer.Settings.outputHeight = 32;
             gameObject.SetActive(true);
