@@ -10,10 +10,10 @@ namespace Qoooo.VJ.UI
         private const float PreviewSortingOrder = 0f;
 
         [SerializeField] private FinalCompositeRenderer source;
+        [SerializeField] private PanelSettings panelSettings;
         [SerializeField, Range(0f, 0.25f)] private float margin = 0.03f;
 
         private UIDocument _document;
-        private PanelSettings _ownedPanelSettings;
         private Image _previewImage;
         private RenderTexture _displayedTexture;
 
@@ -23,13 +23,19 @@ namespace Qoooo.VJ.UI
             set => source = value;
         }
 
+        public PanelSettings PanelSettings
+        {
+            get => panelSettings;
+            set => panelSettings = value;
+        }
+
         private void Start()
         {
             _document = VjRuntimePanelFactory.CreateDocument(
                 transform,
                 "VJ Preview",
-                PreviewSortingOrder,
-                out _ownedPanelSettings);
+                panelSettings,
+                PreviewSortingOrder);
 
             var root = _document.rootVisualElement;
             root.pickingMode = PickingMode.Ignore;
@@ -58,8 +64,7 @@ namespace Qoooo.VJ.UI
         private void OnDestroy()
         {
             VjRuntimePanelFactory.DestroyOwned(
-                _document != null ? _document.gameObject : null,
-                _ownedPanelSettings);
+                _document != null ? _document.gameObject : null);
         }
     }
 }

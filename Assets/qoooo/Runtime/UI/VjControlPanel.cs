@@ -17,10 +17,11 @@ namespace Qoooo.VJ.UI
         private const float ControlsSortingOrder = 100f;
         private static readonly string[] OutputModeNames = Enum.GetNames(typeof(VjOutputMode));
 
+        [SerializeField] private PanelSettings panelSettings;
+
         private IVjPreferencesController _controller;
         private RosettaUIRootUIToolkit _root;
         private UIDocument _document;
-        private PanelSettings _ownedPanelSettings;
         private GameObject _uiRootObject;
         private VjPreferences _draft = new();
         private string _status = "Ready";
@@ -28,6 +29,11 @@ namespace Qoooo.VJ.UI
         private WindowElement _outputWindow;
 
         public bool IsOutputWindowOpen => _outputWindow?.IsOpen == true;
+        public PanelSettings PanelSettings
+        {
+            get => panelSettings;
+            set => panelSettings = value;
+        }
 
         public void Initialize(IVjPreferencesController controller)
         {
@@ -47,7 +53,7 @@ namespace Qoooo.VJ.UI
 
         private void OnDestroy()
         {
-            VjRuntimePanelFactory.DestroyOwned(_uiRootObject, _ownedPanelSettings);
+            VjRuntimePanelFactory.DestroyOwned(_uiRootObject);
         }
 
         private Element CreateLauncher()
@@ -141,8 +147,8 @@ namespace Qoooo.VJ.UI
             _document = VjRuntimePanelFactory.CreateDocument(
                 transform,
                 "VJ RosettaUI",
+                panelSettings,
                 ControlsSortingOrder,
-                out _ownedPanelSettings,
                 activate: false);
             _uiRootObject = _document.gameObject;
 

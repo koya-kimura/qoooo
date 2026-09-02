@@ -8,39 +8,30 @@ namespace Qoooo.VJ.UI
         public static UIDocument CreateDocument(
             Transform parent,
             string objectName,
+            PanelSettings panelSettings,
             float sortingOrder,
-            out PanelSettings ownedPanelSettings,
             bool activate = true)
         {
             var panelObject = new GameObject(objectName);
             panelObject.SetActive(false);
             panelObject.transform.SetParent(parent, false);
 
-            ownedPanelSettings = ScriptableObject.CreateInstance<PanelSettings>();
-            ownedPanelSettings.name = $"{objectName} Panel Settings";
-            ownedPanelSettings.scaleMode = PanelScaleMode.ScaleWithScreenSize;
-            ownedPanelSettings.referenceResolution = new Vector2Int(1920, 1080);
-            ownedPanelSettings.sortingOrder = sortingOrder;
-            ownedPanelSettings.themeStyleSheet =
-                Resources.Load<ThemeStyleSheet>("VjRuntimeTheme");
-
             var document = panelObject.AddComponent<UIDocument>();
-            document.panelSettings = ownedPanelSettings;
+            document.panelSettings = panelSettings;
+            document.sortingOrder = sortingOrder;
             panelObject.SetActive(activate);
             return document;
         }
 
-        public static void DestroyOwned(Object panelObject, Object panelSettings)
+        public static void DestroyOwned(Object panelObject)
         {
             if (Application.isPlaying)
             {
                 if (panelObject != null) Object.Destroy(panelObject);
-                if (panelSettings != null) Object.Destroy(panelSettings);
             }
             else
             {
                 if (panelObject != null) Object.DestroyImmediate(panelObject);
-                if (panelSettings != null) Object.DestroyImmediate(panelSettings);
             }
         }
     }

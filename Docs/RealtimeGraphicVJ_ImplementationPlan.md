@@ -47,6 +47,8 @@ Previewと操作UIは別のUI Toolkit Panelにし、描画順を数値で固定�
 
 - Preview Panel: sorting order 0、pointer inputを受け取らない
 - RosettaUI Controls Panel: sorting order 100
+- 両方の`UIDocument`はRosettaUIパッケージ同梱の`RosettaUI_DefaultPanelSettings.asset`を参照する
+- 描画順は共有PanelSettingsを書き換えず、各`UIDocument.sortingOrder`で指定する
 
 これによりWindowをPreviewより常に前面へ表示し、Preview方式と操作UI方式をUI Toolkitへ統一する。
 

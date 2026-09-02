@@ -6,6 +6,9 @@ using Qoooo.VJ.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.TestTools;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace Qoooo.VJ.Tests
 {
@@ -17,10 +20,19 @@ namespace Qoooo.VJ.Tests
             var gameObject = new GameObject("Composite Lifecycle Test");
             gameObject.SetActive(false);
             var controlPanel = gameObject.AddComponent<VjControlPanel>();
+#if UNITY_EDITOR
+            var rosettaPanelSettings = AssetDatabase.LoadAssetAtPath<PanelSettings>(
+                "Packages/ga.fuquna.rosettaui/UIToolkit/Runtime/Settings/RosettaUI_DefaultPanelSettings.asset");
+            controlPanel.PanelSettings = rosettaPanelSettings;
+#endif
             gameObject.AddComponent<VjPreferencesController>();
             gameObject.AddComponent<VjRenderLoop>();
             var renderer = gameObject.GetComponent<FinalCompositeRenderer>();
-            gameObject.AddComponent<VjPreviewPresenter>().Source = renderer;
+            var preview = gameObject.AddComponent<VjPreviewPresenter>();
+            preview.Source = renderer;
+#if UNITY_EDITOR
+            preview.PanelSettings = rosettaPanelSettings;
+#endif
             renderer.Settings.outputWidth = 64;
             renderer.Settings.outputHeight = 32;
             gameObject.SetActive(true);
@@ -39,6 +51,7 @@ namespace Qoooo.VJ.Tests
             var document = uiRoot.GetComponent<UIDocument>();
             Assert.That(document, Is.Not.Null);
             Assert.That(document.panelSettings, Is.Not.Null);
+            Assert.That(document.panelSettings.name, Is.EqualTo("RosettaUI_DefaultPanelSettings"));
             Assert.That(document.panelSettings.themeStyleSheet, Is.Not.Null);
             Assert.That(controlPanel.IsOutputWindowOpen, Is.True);
 
@@ -46,8 +59,8 @@ namespace Qoooo.VJ.Tests
             Assert.That(previewRoot, Is.Not.Null);
             var previewDocument = previewRoot.GetComponent<UIDocument>();
             Assert.That(
-                document.panelSettings.sortingOrder,
-                Is.GreaterThan(previewDocument.panelSettings.sortingOrder));
+                document.sortingOrder,
+                Is.GreaterThan(previewDocument.sortingOrder));
 
             renderer.Settings.outputWidth = 128;
             yield return null;

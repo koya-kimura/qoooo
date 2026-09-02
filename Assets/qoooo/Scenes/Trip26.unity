@@ -451,6 +451,7 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   source: {fileID: 1800000002}
+  panelSettings: {fileID: 11400000, guid: 31bb79ed14350b047bcd78d547e6a59b, type: 2}
   margin: 0.03
 --- !u!114 &1800000004
 MonoBehaviour:
@@ -480,6 +481,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f25a0e631f0c4a069a87e15e1fa00020, type: 3}
   m_Name:
   m_EditorClassIdentifier:
+  panelSettings: {fileID: 11400000, guid: 31bb79ed14350b047bcd78d547e6a59b, type: 2}
 --- !u!114 &1800000006
 MonoBehaviour:
   m_ObjectHideFlags: 0
