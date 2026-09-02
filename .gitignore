@@ -83,8 +83,15 @@ playground.xcworkspace
 /[Bb]uild/
 /[Bb]uilds/
 /[Ll]ogs/
+/TestResults/
+/TestArtifacts/
 /[Uu]ser[Ss]ettings/
 /[Mm]emory[Cc]aptures/
+
+# Unity Package Manager manifests are source files, not NuGet artifacts.
+!/[Pp]ackages/
+!/[Pp]ackages/manifest.json
+!/[Pp]ackages/packages-lock.json
 
 # Asset meta data should only be ignored when the corresponding asset is also ignored
 !/[Aa]ssets/**/*.meta
@@ -192,3 +199,9 @@ x86/
 
 # Built Visual Studio Code Extensions
 *.vsix
+
+# Keep root Unity Package Manager state under version control. This must stay
+# after the generic NuGet Packages rules above.
+!/[Pp]ackages/
+!/[Pp]ackages/manifest.json
+!/[Pp]ackages/packages-lock.json
