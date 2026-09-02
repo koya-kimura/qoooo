@@ -3,7 +3,6 @@
   "rootNamespace": "Qoooo.VJ.Output",
   "references": [
     "Qoooo.VJ.Core",
-    "Qoooo.VJ.Composition",
     "Klak.Spout.Runtime",
     "Klak.Syphon.Runtime"
   ],

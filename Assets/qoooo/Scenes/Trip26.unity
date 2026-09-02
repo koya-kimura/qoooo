@@ -397,6 +397,7 @@ GameObject:
   - component: {fileID: 1800000004}
   - component: {fileID: 1800000005}
   - component: {fileID: 1800000006}
+  - component: {fileID: 1800000007}
   m_Layer: 0
   m_Name: VJ Application
   m_TagString: Untagged
@@ -463,7 +464,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8eb21994a66e45c8a38823c789dd781b, type: 3}
   m_Name:
   m_EditorClassIdentifier:
-  source: {fileID: 1800000002}
   mode: 0
   outputName: qoooo VJ
   spoutResources: {fileID: 0}
@@ -492,6 +492,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 795e0d38df8048abb0ed8f7711673bb8, type: 3}
   m_Name:
   m_EditorClassIdentifier:
+  compositor: {fileID: 1800000002}
+  output: {fileID: 1800000004}
+--- !u!114 &1800000007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1800000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36ed6f037ee6472586cf8991c93722d2, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  compositor: {fileID: 1800000002}
+  output: {fileID: 1800000004}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

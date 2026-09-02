@@ -1,6 +1,5 @@
 using Klak.Spout;
 using Klak.Syphon;
-using Qoooo.VJ.Composition;
 using UnityEngine;
 
 #if UNITY_EDITOR
@@ -12,19 +11,12 @@ namespace Qoooo.VJ.Output
     [DisallowMultipleComponent]
     public sealed class TextureOutputController : MonoBehaviour
     {
-        [SerializeField] private FinalCompositeRenderer source;
         [SerializeField] private VjOutputMode mode = VjOutputMode.Auto;
         [SerializeField] private string outputName = "qoooo VJ";
         [SerializeField] private SpoutResources spoutResources;
         [SerializeField] private SyphonResources syphonResources;
 
         private ITextureOutput _output;
-
-        public FinalCompositeRenderer Source
-        {
-            get => source;
-            set => source = value;
-        }
 
         public VjOutputMode Mode
         {

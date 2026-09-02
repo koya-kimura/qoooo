@@ -1,6 +1,5 @@
 using Qoooo.VJ.Composition;
 using Qoooo.VJ.Output;
-using Qoooo.VJ.UI;
 using UnityEngine;
 
 namespace Qoooo.VJ.Application
@@ -8,30 +7,24 @@ namespace Qoooo.VJ.Application
     [DefaultExecutionOrder(-100)]
     [DisallowMultipleComponent]
     [RequireComponent(typeof(FinalCompositeRenderer))]
-    [RequireComponent(typeof(VjPreviewPresenter))]
     [RequireComponent(typeof(TextureOutputController))]
-    public sealed class VjApplication : MonoBehaviour, IVjPreferencesController
+    public sealed class VjPreferencesController : MonoBehaviour, IVjPreferencesController
     {
-        private FinalCompositeRenderer _compositor;
-        private VjPreviewPresenter _preview;
-        private TextureOutputController _output;
+        [SerializeField] private FinalCompositeRenderer compositor;
+        [SerializeField] private TextureOutputController output;
 
         public VjPreferences CurrentPreferences => new()
         {
-            outputWidth = _compositor.Settings.outputWidth,
-            outputHeight = _compositor.Settings.outputHeight,
-            outputName = _output.OutputName,
-            outputMode = _output.Mode
+            outputWidth = compositor.Settings.outputWidth,
+            outputHeight = compositor.Settings.outputHeight,
+            outputName = output.OutputName,
+            outputMode = output.Mode
         };
 
         private void Awake()
         {
-            _compositor = GetComponent<FinalCompositeRenderer>();
-            _preview = GetComponent<VjPreviewPresenter>();
-            _output = GetComponent<TextureOutputController>();
-
-            _preview.Source = _compositor;
-            _output.Source = _compositor;
+            if (compositor == null) compositor = GetComponent<FinalCompositeRenderer>();
+            if (output == null) output = GetComponent<TextureOutputController>();
 
             if (TryLoadPreferences(out var preferences))
                 ApplyPreferences(preferences);
@@ -43,29 +36,23 @@ namespace Qoooo.VJ.Application
             }
         }
 
-        private void LateUpdate()
-        {
-            _compositor.RenderNow();
-            _output.Publish(_compositor.FinalTexture);
-        }
-
         public void ApplyPreferences(VjPreferences preferences)
         {
             if (preferences == null) return;
 
-            _compositor.Settings.outputWidth = Mathf.Clamp(
+            compositor.Settings.outputWidth = Mathf.Clamp(
                 preferences.outputWidth,
                 VjRuntimeSettings.MinDimension,
                 VjRuntimeSettings.MaxDimension);
-            _compositor.Settings.outputHeight = Mathf.Clamp(
+            compositor.Settings.outputHeight = Mathf.Clamp(
                 preferences.outputHeight,
                 VjRuntimeSettings.MinDimension,
                 VjRuntimeSettings.MaxDimension);
-            _output.OutputName = preferences.outputName;
-            _output.Mode = preferences.outputMode;
+            output.OutputName = preferences.outputName;
+            output.Mode = preferences.outputMode;
 
-            _compositor.RenderNow();
-            _output.Publish(_compositor.FinalTexture);
+            compositor.RenderNow();
+            output.Publish(compositor.FinalTexture);
         }
 
         public void SavePreferences(VjPreferences preferences)
