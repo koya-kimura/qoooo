@@ -1,0 +1,20 @@
+{
+  "name": "Qoooo.VJ.UI",
+  "rootNamespace": "Qoooo.VJ.UI",
+  "references": [
+    "Qoooo.VJ.Core",
+    "Qoooo.VJ.Composition",
+    "RosettaUI",
+    "RosettaUI.UIToolkit",
+    "Unity.InputSystem"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

@@ -1,0 +1,18 @@
+{
+  "name": "Qoooo.VJ.Output",
+  "rootNamespace": "Qoooo.VJ.Output",
+  "references": [
+    "Qoooo.VJ.Core",
+    "Klak.Spout.Runtime",
+    "Klak.Syphon.Runtime"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
