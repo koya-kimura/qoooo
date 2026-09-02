@@ -1,0 +1,24 @@
+{
+  "name": "Qoooo.VJ.EditModeTests",
+  "rootNamespace": "Qoooo.VJ.Tests",
+  "references": [
+    "Qoooo.VJ.Core",
+    "Qoooo.VJ.Composition"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

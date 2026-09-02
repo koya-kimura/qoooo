@@ -1,0 +1,16 @@
+{
+  "name": "Qoooo.VJ.Composition",
+  "rootNamespace": "Qoooo.VJ.Composition",
+  "references": [
+    "Qoooo.VJ.Core"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
