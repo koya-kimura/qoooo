@@ -242,6 +242,15 @@ UIがCameraやMaterialを直接操作しない。`AddLayer`, `DeleteLayer`, `Dup
 
 ### Slice 1 — Model / Layer Stack
 
+進捗（PR #2）:
+
+- 完了: `CompositionData` / `LayerData` / `TransformData`
+- 完了: Controller経由のAdd / Delete / Duplicate / Move / Select / Visible / Solo / Lock
+- 完了: 複数Solid Layerの描画順・visibility・solo反映
+- 完了: RosettaUIのLayer Stack Windowと選択Layer Inspector
+- 暫定: 並べ替えはUp / Down。専用UI Toolkit Viewへ移す段階でドラッグ操作を追加する
+- 次: Camera Sourceのruntime resolverとMissing Source表示
+
 実装:
 
 - Camera / SolidのLayerDataとruntime resolver

@@ -55,7 +55,14 @@
     },
     "com.unity.nuget.mono-cecil": {
       "version": "1.11.6",
-      "depth": 3,
+      "depth": 1,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.nuget.newtonsoft-json": {
+      "version": "3.2.2",
+      "depth": 1,
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"
@@ -130,12 +137,19 @@
     },
     "com.unity.ugui": {
       "version": "2.0.0",
-      "depth": 2,
+      "depth": 1,
       "source": "builtin",
       "dependencies": {
         "com.unity.modules.ui": "1.0.0",
         "com.unity.modules.imgui": "1.0.0"
       }
+    },
+    "com.witalosk.unity-simple-container": {
+      "version": "https://github.com/witalosk/UnitySimpleContainer.git?path=Packages/UnitySimpleContainer",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "296b9904a295cbfa4d85c4ac5e509e59bf2cf768"
     },
     "ga.fuquna.prefsgui": {
       "version": "3.6.1",
@@ -160,6 +174,17 @@
       "source": "registry",
       "dependencies": {},
       "url": "https://registry.npmjs.com"
+    },
+    "io.github.hatayama.uloopmcp": {
+      "version": "https://github.com/hatayama/unity-cli-loop.git?path=/Packages/src",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.ugui": "1.0.0",
+        "com.unity.nuget.newtonsoft-json": "3.2.1",
+        "com.unity.nuget.mono-cecil": "1.11.6"
+      },
+      "hash": "46ed39899b09a95f0df2c119f82ae1f624d2fd20"
     },
     "jp.keijiro.klak.spout": {
       "version": "2.0.6",
