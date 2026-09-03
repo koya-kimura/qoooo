@@ -25,7 +25,7 @@ namespace Qoooo.VJ.UI
 
         public static void DestroyOwned(Object panelObject)
         {
-            if (Application.isPlaying)
+            if (UnityEngine.Application.isPlaying)
             {
                 if (panelObject != null) Object.Destroy(panelObject);
             }

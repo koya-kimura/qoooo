@@ -55,7 +55,7 @@ namespace Qoooo.VJ.Composition
             _commandBuffer = null;
             if (_solidLayerMaterial != null)
             {
-                if (Application.isPlaying) Destroy(_solidLayerMaterial);
+                if (UnityEngine.Application.isPlaying) Destroy(_solidLayerMaterial);
                 else DestroyImmediate(_solidLayerMaterial);
             }
             _solidLayerMaterial = null;

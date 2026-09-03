@@ -55,7 +55,7 @@ namespace Qoooo.VJ
             if (_texture == null) return;
             if (_texture.IsCreated()) _texture.Release();
 
-            if (Application.isPlaying)
+            if (UnityEngine.Application.isPlaying)
                 UnityEngine.Object.Destroy(_texture);
             else
                 UnityEngine.Object.DestroyImmediate(_texture);
