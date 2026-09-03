@@ -7,7 +7,8 @@
     "Qoooo.VJ.Composition",
     "RosettaUI",
     "RosettaUI.UIToolkit",
-    "Unity.InputSystem"
+    "Unity.InputSystem",
+    "UnitySimpleContainer"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],
