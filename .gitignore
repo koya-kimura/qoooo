@@ -88,6 +88,10 @@ playground.xcworkspace
 /[Uu]ser[Ss]ettings/
 /[Mm]emory[Cc]aptures/
 
+# Local Unity CLI Loop integration and generated outputs
+/.codex/
+/.uloop/
+
 # Unity Package Manager manifests are source files, not NuGet artifacts.
 !/[Pp]ackages/
 !/[Pp]ackages/manifest.json
