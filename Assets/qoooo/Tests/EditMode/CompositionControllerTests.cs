@@ -96,5 +96,18 @@ namespace Qoooo.VJ.Tests
             Assert.That(layer.name, Is.EqualTo("Locked"));
             Assert.That(layer.visible, Is.True);
         }
+
+        [Test]
+        public void FieldCommands_UpdateThroughControllerAndAdvanceRevision()
+        {
+            var solid = _controller.AddLayer(LayerType.Solid);
+            var revision = _controller.Revision;
+
+            Assert.That(_controller.SetSolidColor(solid.id, Color.magenta), Is.True);
+            Assert.That(_controller.RenameLayer(solid.id, "Backdrop"), Is.True);
+            Assert.That(solid.solidColor, Is.EqualTo(Color.magenta));
+            Assert.That(solid.name, Is.EqualTo("Backdrop"));
+            Assert.That(_controller.Revision, Is.EqualTo(revision + 2));
+        }
     }
 }

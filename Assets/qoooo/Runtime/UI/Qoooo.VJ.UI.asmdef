@@ -3,6 +3,7 @@
   "rootNamespace": "Qoooo.VJ.UI",
   "references": [
     "Qoooo.VJ.Core",
+    "Qoooo.VJ.Model",
     "Qoooo.VJ.Composition",
     "RosettaUI",
     "RosettaUI.UIToolkit",

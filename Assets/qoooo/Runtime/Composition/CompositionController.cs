@@ -9,12 +9,14 @@ namespace Qoooo.VJ.Composition
     {
         [SerializeField] private CompositionData data = new();
         [SerializeField] private string selectedLayerId;
+        private int _revision;
 
         public event Action Changed;
 
         public CompositionData Data => data;
         public string SelectedLayerId => selectedLayerId;
         public LayerData SelectedLayer => FindLayer(selectedLayerId);
+        public int Revision => _revision;
 
         public LayerData AddLayer(LayerType type, string name = null)
         {
@@ -26,7 +28,7 @@ namespace Qoooo.VJ.Composition
             };
             data.layers.Add(layer);
             selectedLayerId = layer.id;
-            Changed?.Invoke();
+            NotifyChanged();
             return layer;
         }
 
@@ -41,7 +43,7 @@ namespace Qoooo.VJ.Composition
                 var next = Mathf.Clamp(index, 0, data.layers.Count - 1);
                 selectedLayerId = data.layers.Count == 0 ? null : data.layers[next].id;
             }
-            Changed?.Invoke();
+            NotifyChanged();
             return true;
         }
 
@@ -55,7 +57,7 @@ namespace Qoooo.VJ.Composition
             duplicate.locked = false;
             data.layers.Insert(index + 1, duplicate);
             selectedLayerId = duplicate.id;
-            Changed?.Invoke();
+            NotifyChanged();
             return duplicate;
         }
 
@@ -70,7 +72,7 @@ namespace Qoooo.VJ.Composition
             var layer = data.layers[sourceIndex];
             data.layers.RemoveAt(sourceIndex);
             data.layers.Insert(boundedIndex, layer);
-            Changed?.Invoke();
+            NotifyChanged();
             return true;
         }
 
@@ -78,7 +80,7 @@ namespace Qoooo.VJ.Composition
         {
             if (FindIndex(id) < 0 || selectedLayerId == id) return false;
             selectedLayerId = id;
-            Changed?.Invoke();
+            NotifyChanged();
             return true;
         }
 
@@ -90,7 +92,7 @@ namespace Qoooo.VJ.Composition
             var layer = FindLayer(id);
             if (layer == null || layer.locked == value) return false;
             layer.locked = value;
-            Changed?.Invoke();
+            NotifyChanged();
             return true;
         }
 
@@ -99,6 +101,12 @@ namespace Qoooo.VJ.Composition
             if (string.IsNullOrWhiteSpace(value)) return false;
             return MutateUnlocked(id, layer => layer.name = value.Trim());
         }
+
+        public bool SetSolidColor(string id, Color value)
+            => MutateUnlocked(id, layer => layer.solidColor = value);
+
+        public bool SetSourceId(string id, string value)
+            => MutateUnlocked(id, layer => layer.sourceId = value?.Trim());
 
         public bool IsRendered(string id)
         {
@@ -116,8 +124,14 @@ namespace Qoooo.VJ.Composition
             var layer = FindLayer(id);
             if (layer == null || layer.locked) return false;
             mutation(layer);
-            Changed?.Invoke();
+            NotifyChanged();
             return true;
+        }
+
+        private void NotifyChanged()
+        {
+            _revision++;
+            Changed?.Invoke();
         }
 
         private int FindIndex(string id) => data.layers.FindIndex(layer => layer.id == id);

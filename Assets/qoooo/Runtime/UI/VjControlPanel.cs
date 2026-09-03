@@ -1,4 +1,5 @@
 using System;
+using Qoooo.VJ.Composition;
 using RosettaUI;
 using RosettaUI.UIToolkit;
 using UnityEngine;
@@ -20,6 +21,7 @@ namespace Qoooo.VJ.UI
         [SerializeField] private PanelSettings panelSettings;
         [SerializeField] private MonoBehaviour settingsControllerSource;
         [SerializeField] private MonoBehaviour preferencesSaverSource;
+        [SerializeField] private CompositionController composition;
 
         private IVjOutputSettingsController _settingsController;
         private IVjPreferencesSaver _preferencesSaver;
@@ -30,12 +32,20 @@ namespace Qoooo.VJ.UI
         private string _status = "Ready";
         private bool _built;
         private WindowElement _outputWindow;
+        private VjLayerStackPanelBuilder _layerStack;
 
         public bool IsOutputWindowOpen => _outputWindow?.IsOpen == true;
+        public bool IsLayerStackWindowOpen => _layerStack?.Window.IsOpen == true;
         public PanelSettings PanelSettings
         {
             get => panelSettings;
             set => panelSettings = value;
+        }
+
+        public CompositionController Composition
+        {
+            get => composition;
+            set => composition = value;
         }
 
         public void Initialize(
@@ -62,6 +72,7 @@ namespace Qoooo.VJ.UI
 
             _root.Build(CreateLauncher());
             _outputWindow.Open(recursive: true);
+            if (_layerStack != null) _layerStack.Window.Open(recursive: true);
             _built = true;
         }
 
@@ -105,10 +116,19 @@ namespace Qoooo.VJ.UI
                         RUI.Button("Apply", ApplyDraft)))
                 .SetPosition(new Vector2(24f, 64f));
 
-            return RUI.Row(
-                RUI.WindowLauncher("Output", _outputWindow),
-                RUI.Button("Save Prefs", SaveDraft),
-                RUI.Label(() => _status));
+            _layerStack = composition != null
+                ? new VjLayerStackPanelBuilder(composition)
+                : null;
+
+            var save = RUI.Button("Save Prefs", SaveDraft);
+            var status = RUI.Label(() => _status);
+            return _layerStack != null
+                ? RUI.Row(
+                    RUI.WindowLauncher("Output", _outputWindow),
+                    RUI.WindowLauncher("Layers", _layerStack.Window),
+                    save,
+                    status)
+                : RUI.Row(RUI.WindowLauncher("Output", _outputWindow), save, status);
         }
 
         private void ApplyDraft()

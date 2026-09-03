@@ -484,6 +484,7 @@ MonoBehaviour:
   panelSettings: {fileID: 11400000, guid: 31bb79ed14350b047bcd78d547e6a59b, type: 2}
   settingsControllerSource: {fileID: 1840000002}
   preferencesSaverSource: {fileID: 1800000007}
+  composition: {fileID: 1810000002}
 --- !u!114 &1800000006
 MonoBehaviour:
   m_ObjectHideFlags: 0

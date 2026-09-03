@@ -28,6 +28,7 @@ namespace Qoooo.VJ.Tests
             var renderer = gameObject.AddComponent<FinalCompositeRenderer>();
             var output = gameObject.AddComponent<Qoooo.VJ.Output.TextureOutputController>();
             var outputSettings = gameObject.AddComponent<VjOutputSettingsController>();
+            var composition = gameObject.AddComponent<CompositionController>();
             var preferences = gameObject.AddComponent<VjPreferencesController>();
             var renderLoop = gameObject.AddComponent<VjRenderLoop>();
             outputSettings.Compositor = renderer;
@@ -36,6 +37,7 @@ namespace Qoooo.VJ.Tests
             renderLoop.Compositor = renderer;
             renderLoop.Output = output;
             controlPanel.Initialize(outputSettings, preferences);
+            controlPanel.Composition = composition;
             var preview = gameObject.AddComponent<VjPreviewPresenter>();
             preview.Source = renderer;
 #if UNITY_EDITOR
@@ -62,6 +64,7 @@ namespace Qoooo.VJ.Tests
             Assert.That(document.panelSettings.name, Is.EqualTo("RosettaUI_DefaultPanelSettings"));
             Assert.That(document.panelSettings.themeStyleSheet, Is.Not.Null);
             Assert.That(controlPanel.IsOutputWindowOpen, Is.True);
+            Assert.That(controlPanel.IsLayerStackWindowOpen, Is.True);
 
             var previewRoot = gameObject.transform.Find("VJ Preview");
             Assert.That(previewRoot, Is.Not.Null);
