@@ -144,6 +144,13 @@
         "com.unity.modules.imgui": "1.0.0"
       }
     },
+    "com.witalosk.unity-simple-container": {
+      "version": "https://github.com/witalosk/UnitySimpleContainer.git?path=Packages/UnitySimpleContainer",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "296b9904a295cbfa4d85c4ac5e509e59bf2cf768"
+    },
     "ga.fuquna.prefsgui": {
       "version": "3.6.1",
       "depth": 1,
