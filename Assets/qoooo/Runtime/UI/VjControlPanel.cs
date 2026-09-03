@@ -107,11 +107,8 @@ namespace Qoooo.VJ.UI
         public void ToggleVisible()
         {
             _isVisible = !_isVisible;
-            if (_document != null)
-            {
-                _document.rootVisualElement.style.display =
-                    _isVisible ? DisplayStyle.Flex : DisplayStyle.None;
-            }
+            if (_uiRootObject != null)
+                _uiRootObject.SetActive(_isVisible);
         }
 
         private void OnDestroy()

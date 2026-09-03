@@ -43,9 +43,9 @@ namespace Qoooo.VJ.Tests
 #if UNITY_EDITOR
             preview.PanelSettings = rosettaPanelSettings;
 #endif
+            gameObject.SetActive(true);
             renderer.Settings.outputWidth = 64;
             renderer.Settings.outputHeight = 32;
-            gameObject.SetActive(true);
 
             yield return null;
 
@@ -69,9 +69,10 @@ namespace Qoooo.VJ.Tests
             Assert.That(controlPanel.IsVisible, Is.True);
             controlPanel.ToggleVisible();
             Assert.That(controlPanel.IsVisible, Is.False);
-            Assert.That(document.rootVisualElement.style.display.value, Is.EqualTo(DisplayStyle.None));
+            Assert.That(uiRoot.gameObject.activeSelf, Is.False);
             controlPanel.ToggleVisible();
             Assert.That(controlPanel.IsVisible, Is.True);
+            Assert.That(uiRoot.gameObject.activeSelf, Is.True);
 
             var previewRoot = gameObject.transform.Find("VJ Preview");
             Assert.That(previewRoot, Is.Not.Null);
