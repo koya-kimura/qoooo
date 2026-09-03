@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using Qoooo.VJ.Composition;
+using Qoooo.VJ.Model;
 using UnityEngine;
 
 namespace Qoooo.VJ.Tests
@@ -51,6 +52,47 @@ namespace Qoooo.VJ.Tests
             Assert.That(renderer.FinalTexture, Is.Not.SameAs(first));
             Assert.That(renderer.FinalTexture.width, Is.EqualTo(320));
             Assert.That(renderer.FinalTexture.height, Is.EqualTo(180));
+        }
+
+        [Test]
+        public void RenderNow_UsesLayerOrderVisibilityAndSoloRules()
+        {
+            _gameObject = new GameObject("Layer Composite Test");
+            _gameObject.SetActive(false);
+            var composition = _gameObject.AddComponent<CompositionController>();
+            var renderer = _gameObject.AddComponent<FinalCompositeRenderer>();
+            renderer.Composition = composition;
+            renderer.Settings.outputWidth = 16;
+            renderer.Settings.outputHeight = 16;
+
+            var bottom = composition.AddLayer(LayerType.Solid, "Bottom");
+            bottom.solidColor = Color.red;
+            var top = composition.AddLayer(LayerType.Solid, "Top");
+            top.solidColor = Color.blue;
+            _gameObject.SetActive(true);
+
+            AssertColor(renderer, Color.blue);
+
+            composition.SetVisible(top.id, false);
+            renderer.RenderNow();
+            AssertColor(renderer, Color.red);
+
+            composition.SetVisible(top.id, true);
+            composition.SetSolo(bottom.id, true);
+            renderer.RenderNow();
+            AssertColor(renderer, Color.red);
+        }
+
+        private static void AssertColor(FinalCompositeRenderer renderer, Color expected)
+        {
+            renderer.RenderNow();
+            var actual = ReadCenterPixel(renderer.FinalTexture);
+            var displayExpected = QualitySettings.activeColorSpace == ColorSpace.Linear
+                ? expected.gamma
+                : expected;
+            Assert.That(actual.r, Is.EqualTo(displayExpected.r).Within(0.02f));
+            Assert.That(actual.g, Is.EqualTo(displayExpected.g).Within(0.02f));
+            Assert.That(actual.b, Is.EqualTo(displayExpected.b).Within(0.02f));
         }
 
         private static Color ReadCenterPixel(RenderTexture source)

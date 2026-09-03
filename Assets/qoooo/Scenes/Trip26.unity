@@ -436,6 +436,8 @@ MonoBehaviour:
     outputFormat: 0
     filterMode: 1
   solidColor: {r: 0.06, g: 0.06, b: 0.08, a: 1}
+  composition: {fileID: 1810000002}
+  solidLayerShader: {fileID: 4800000, guid: f41da0de957c4ff0a8c571864fd644ae, type: 3}
 --- !u!114 &1800000003
 MonoBehaviour:
   m_ObjectHideFlags: 0
