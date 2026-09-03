@@ -141,22 +141,26 @@ namespace Qoooo.VJ.UI
                 : null;
 
             var launcherContents = _layerStack != null
-                ? RUI.Row(
+                ? RUI.Column(
                     RUI.WindowLauncher("Output", _outputWindow),
                     RUI.WindowLauncher("Layers", _layerStack.Window),
                     RUI.Button("Save Prefs", SaveDraft),
                     RUI.Label(() => _status),
                     RUI.Label("D: Hide / Show UI"))
-                : RUI.Row(
+                : RUI.Column(
                     RUI.WindowLauncher("Output", _outputWindow),
                     RUI.Button("Save Prefs", SaveDraft),
                     RUI.Label(() => _status),
                     RUI.Label("D: Hide / Show UI"));
 
+            launcherContents.SetWidth(180f);
+
             _launcherWindow = RUI.Window("VJ Controls", launcherContents)
                 .SetPosition(new Vector2(16f, 16f));
 
-            return RUI.WindowLauncher("VJ", _launcherWindow);
+            return RUI.Column(
+                    RUI.WindowLauncher("VJ", _launcherWindow).SetWidth(88f))
+                .SetWidth(96f);
         }
 
         private void ApplyDraft()
