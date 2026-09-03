@@ -33,9 +33,13 @@ namespace Qoooo.VJ.UI
         private bool _built;
         private WindowElement _outputWindow;
         private VjLayerStackPanelBuilder _layerStack;
+        private WindowElement _launcherWindow;
+        private bool _isVisible = true;
 
         public bool IsOutputWindowOpen => _outputWindow?.IsOpen == true;
         public bool IsLayerStackWindowOpen => _layerStack?.Window.IsOpen == true;
+        public bool IsLauncherWindowOpen => _launcherWindow?.IsOpen == true;
+        public bool IsVisible => _isVisible;
         public PanelSettings PanelSettings
         {
             get => panelSettings;
@@ -71,9 +75,25 @@ namespace Qoooo.VJ.UI
             if (_built) return;
 
             _root.Build(CreateLauncher());
-            _outputWindow.Open(recursive: true);
-            if (_layerStack != null) _layerStack.Window.Open(recursive: true);
             _built = true;
+        }
+
+        private void Update()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (Keyboard.current?.dKey.wasPressedThisFrame == true)
+                ToggleVisible();
+#endif
+        }
+
+        public void ToggleVisible()
+        {
+            _isVisible = !_isVisible;
+            if (_document != null)
+            {
+                _document.rootVisualElement.style.display =
+                    _isVisible ? DisplayStyle.Flex : DisplayStyle.None;
+            }
         }
 
         private void OnDestroy()
@@ -114,21 +134,29 @@ namespace Qoooo.VJ.UI
                         textureSettings,
                         senderSettings,
                         RUI.Button("Apply", ApplyDraft)))
-                .SetPosition(new Vector2(24f, 64f));
+                .SetPosition(new Vector2(24f, 112f));
 
             _layerStack = composition != null
                 ? new VjLayerStackPanelBuilder(composition)
                 : null;
 
-            var save = RUI.Button("Save Prefs", SaveDraft);
-            var status = RUI.Label(() => _status);
-            return _layerStack != null
+            var launcherContents = _layerStack != null
                 ? RUI.Row(
                     RUI.WindowLauncher("Output", _outputWindow),
                     RUI.WindowLauncher("Layers", _layerStack.Window),
-                    save,
-                    status)
-                : RUI.Row(RUI.WindowLauncher("Output", _outputWindow), save, status);
+                    RUI.Button("Save Prefs", SaveDraft),
+                    RUI.Label(() => _status),
+                    RUI.Label("D: Hide / Show UI"))
+                : RUI.Row(
+                    RUI.WindowLauncher("Output", _outputWindow),
+                    RUI.Button("Save Prefs", SaveDraft),
+                    RUI.Label(() => _status),
+                    RUI.Label("D: Hide / Show UI"));
+
+            _launcherWindow = RUI.Window("VJ Controls", launcherContents)
+                .SetPosition(new Vector2(16f, 16f));
+
+            return RUI.WindowLauncher("VJ", _launcherWindow);
         }
 
         private void ApplyDraft()

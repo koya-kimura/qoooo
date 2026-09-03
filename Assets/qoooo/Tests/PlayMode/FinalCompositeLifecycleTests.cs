@@ -63,8 +63,15 @@ namespace Qoooo.VJ.Tests
             Assert.That(document.panelSettings, Is.Not.Null);
             Assert.That(document.panelSettings.name, Is.EqualTo("RosettaUI_DefaultPanelSettings"));
             Assert.That(document.panelSettings.themeStyleSheet, Is.Not.Null);
-            Assert.That(controlPanel.IsOutputWindowOpen, Is.True);
-            Assert.That(controlPanel.IsLayerStackWindowOpen, Is.True);
+            Assert.That(controlPanel.IsOutputWindowOpen, Is.False);
+            Assert.That(controlPanel.IsLayerStackWindowOpen, Is.False);
+            Assert.That(controlPanel.IsLauncherWindowOpen, Is.False);
+            Assert.That(controlPanel.IsVisible, Is.True);
+            controlPanel.ToggleVisible();
+            Assert.That(controlPanel.IsVisible, Is.False);
+            Assert.That(document.rootVisualElement.style.display.value, Is.EqualTo(DisplayStyle.None));
+            controlPanel.ToggleVisible();
+            Assert.That(controlPanel.IsVisible, Is.True);
 
             var previewRoot = gameObject.transform.Find("VJ Preview");
             Assert.That(previewRoot, Is.Not.Null);

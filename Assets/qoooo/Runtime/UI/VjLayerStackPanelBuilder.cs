@@ -21,7 +21,7 @@ namespace Qoooo.VJ.UI
                     RUI.DynamicElementOnStatusChanged(
                         () => _controller.Revision,
                         _ => BuildContents()))
-                .SetPosition(new Vector2(420f, 64f));
+                .SetPosition(new Vector2(24f, 112f));
         }
 
         private Element BuildContents()
