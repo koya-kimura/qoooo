@@ -6,7 +6,8 @@
     "Qoooo.VJ.Composition",
     "Qoooo.VJ.Application",
     "Qoooo.VJ.Output",
-    "Qoooo.VJ.UI"
+    "Qoooo.VJ.UI",
+    "RosettaUI"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

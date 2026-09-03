@@ -5,6 +5,7 @@ using Qoooo.VJ.Output;
 using Qoooo.VJ.UI;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnitySimpleContainer;
 
 namespace Qoooo.VJ.Tests
 {
@@ -25,11 +26,15 @@ namespace Qoooo.VJ.Tests
             AssertComponent<FinalCompositeRenderer>(runtime, "Composition");
             AssertComponent<CompositionController>(runtime, "Composition");
             AssertComponent<VjRenderLoop>(runtime, "Composition");
+            AssertComponent<VjLayerStackUiTarget>(runtime, "Composition");
             AssertComponent<TextureOutputController>(runtime, "Output");
+            AssertComponent<VjOutputUiTarget>(runtime, "Output");
             AssertComponent<VjPreviewPresenter>(runtime, "UI");
-            AssertComponent<VjControlPanel>(runtime, "UI");
+            AssertComponent<UIBuilder>(runtime, "UI");
             AssertComponent<VjOutputSettingsController>(runtime, "Preferences");
             AssertComponent<VjPreferencesController>(runtime, "Preferences");
+            Assert.That(Object.FindFirstObjectByType<SceneContainer>(), Is.Not.Null);
+            Assert.That(Object.FindFirstObjectByType<ProjectContainer>(), Is.Not.Null);
         }
 
         private static void AssertComponent<T>(GameObject root, string childName)

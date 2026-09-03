@@ -19,11 +19,11 @@ namespace Qoooo.VJ.Tests
         {
             var gameObject = new GameObject("Composite Lifecycle Test");
             gameObject.SetActive(false);
-            var controlPanel = gameObject.AddComponent<VjControlPanel>();
+            var uiBuilder = gameObject.AddComponent<UIBuilder>();
 #if UNITY_EDITOR
             var rosettaPanelSettings = AssetDatabase.LoadAssetAtPath<PanelSettings>(
                 "Packages/ga.fuquna.rosettaui/UIToolkit/Runtime/Settings/RosettaUI_DefaultPanelSettings.asset");
-            controlPanel.PanelSettings = rosettaPanelSettings;
+            uiBuilder.PanelSettings = rosettaPanelSettings;
 #endif
             var renderer = gameObject.AddComponent<FinalCompositeRenderer>();
             var output = gameObject.AddComponent<Qoooo.VJ.Output.TextureOutputController>();
@@ -36,8 +36,14 @@ namespace Qoooo.VJ.Tests
             preferences.OutputSettings = outputSettings;
             renderLoop.Compositor = renderer;
             renderLoop.Output = output;
-            controlPanel.Initialize(outputSettings, preferences);
-            controlPanel.Composition = composition;
+            var outputUiTarget = gameObject.AddComponent<VjOutputUiTarget>();
+            outputUiTarget.Initialize(outputSettings);
+            var layerUiTarget = gameObject.AddComponent<VjLayerStackUiTarget>();
+            layerUiTarget.Initialize(composition);
+            uiBuilder.Initialize(
+                new IUiTarget[] { outputUiTarget, layerUiTarget },
+                outputSettings,
+                preferences);
             var preview = gameObject.AddComponent<VjPreviewPresenter>();
             preview.Source = renderer;
 #if UNITY_EDITOR
@@ -63,16 +69,22 @@ namespace Qoooo.VJ.Tests
             Assert.That(document.panelSettings, Is.Not.Null);
             Assert.That(document.panelSettings.name, Is.EqualTo("RosettaUI_DefaultPanelSettings"));
             Assert.That(document.panelSettings.themeStyleSheet, Is.Not.Null);
-            Assert.That(controlPanel.IsOutputWindowOpen, Is.False);
-            Assert.That(controlPanel.IsLayerStackWindowOpen, Is.False);
-            Assert.That(controlPanel.IsLauncherWindowOpen, Is.True);
-            Assert.That(controlPanel.IsVisible, Is.True);
-            controlPanel.ToggleVisible();
-            Assert.That(controlPanel.IsVisible, Is.False);
+            Assert.That(outputUiTarget.Window.IsOpen, Is.False);
+            Assert.That(layerUiTarget.Window.IsOpen, Is.False);
+            Assert.That(uiBuilder.IsRootWindowOpen, Is.True);
+            Assert.That(uiBuilder.IsVisible, Is.True);
+            outputUiTarget.Window.IsOpen = true;
+            layerUiTarget.Window.IsOpen = true;
+            uiBuilder.ToggleVisible();
+            Assert.That(uiBuilder.IsVisible, Is.False);
+            Assert.That(outputUiTarget.Window.IsOpen, Is.False);
+            Assert.That(layerUiTarget.Window.IsOpen, Is.False);
             Assert.That(document.rootVisualElement.visible, Is.False);
             Assert.That(uiRoot.gameObject.activeSelf, Is.True);
-            controlPanel.ToggleVisible();
-            Assert.That(controlPanel.IsVisible, Is.True);
+            uiBuilder.ToggleVisible();
+            Assert.That(uiBuilder.IsVisible, Is.True);
+            Assert.That(outputUiTarget.Window.IsOpen, Is.True);
+            Assert.That(layerUiTarget.Window.IsOpen, Is.True);
             Assert.That(document.rootVisualElement.visible, Is.True);
 
             var previewRoot = gameObject.transform.Find("VJ Preview");
