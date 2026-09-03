@@ -29,12 +29,14 @@ namespace Qoooo.VJ.UI
         private UIDocument _document;
         private GameObject _uiRootObject;
         private VjPreferences _draft = new();
-        private string _status = "Ready";
         private bool _built;
         private WindowElement _outputWindow;
         private VjLayerStackPanelBuilder _layerStack;
         private WindowElement _launcherWindow;
         private bool _isVisible = true;
+#if ENABLE_INPUT_SYSTEM
+        private InputAction _toggleUiAction;
+#endif
 
         public bool IsOutputWindowOpen => _outputWindow?.IsOpen == true;
         public bool IsLayerStackWindowOpen => _layerStack?.Window.IsOpen == true;
@@ -78,13 +80,29 @@ namespace Qoooo.VJ.UI
             _built = true;
         }
 
-        private void Update()
+        private void OnEnable()
         {
 #if ENABLE_INPUT_SYSTEM
-            if (Keyboard.current?.dKey.wasPressedThisFrame == true)
-                ToggleVisible();
+            _toggleUiAction = new InputAction("Toggle VJ UI", binding: "<Keyboard>/d");
+            _toggleUiAction.performed += OnToggleUiPerformed;
+            _toggleUiAction.Enable();
 #endif
         }
+
+        private void OnDisable()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (_toggleUiAction == null) return;
+            _toggleUiAction.performed -= OnToggleUiPerformed;
+            _toggleUiAction.Disable();
+            _toggleUiAction.Dispose();
+            _toggleUiAction = null;
+#endif
+        }
+
+#if ENABLE_INPUT_SYSTEM
+        private void OnToggleUiPerformed(InputAction.CallbackContext _) => ToggleVisible();
+#endif
 
         public void ToggleVisible()
         {
@@ -144,14 +162,10 @@ namespace Qoooo.VJ.UI
                 ? RUI.Column(
                     RUI.WindowLauncher("Output", _outputWindow),
                     RUI.WindowLauncher("Layers", _layerStack.Window),
-                    RUI.Button("Save Prefs", SaveDraft),
-                    RUI.Label(() => _status),
-                    RUI.Label("D: Hide / Show UI"))
+                    RUI.Button("Save Prefs", SaveDraft))
                 : RUI.Column(
                     RUI.WindowLauncher("Output", _outputWindow),
-                    RUI.Button("Save Prefs", SaveDraft),
-                    RUI.Label(() => _status),
-                    RUI.Label("D: Hide / Show UI"));
+                    RUI.Button("Save Prefs", SaveDraft));
 
             launcherContents.SetWidth(180f);
 
@@ -167,26 +181,22 @@ namespace Qoooo.VJ.UI
         {
             if (_settingsController == null)
             {
-                _status = "Application is not connected";
                 return;
             }
 
             _settingsController.ApplyPreferences(_draft);
             _draft = _settingsController.CurrentPreferences.Copy();
-            _status = "Applied";
         }
 
         private void SaveDraft()
         {
             if (_preferencesSaver == null)
             {
-                _status = "Application is not connected";
                 return;
             }
 
             _preferencesSaver.SavePreferences(_draft);
             _draft = _settingsController.CurrentPreferences.Copy();
-            _status = "Saved to PlayerPrefs";
         }
 
         private void EnsureRosettaRoot()
