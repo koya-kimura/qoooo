@@ -1,5 +1,7 @@
 # Realtime Graphic VJ — Codebase Implementation Plan
 
+> この文書はPR #2以前の設計検討を含む履歴資料です。現在のコード構成と読み方は`CurrentImplementationGuide.md`、今後の実装順は`NextImplementationPlan.md`を正としてください。特に、この文書内のasmdef・自動テスト・旧`VjControlPanel`に関する記述は現在の実装と一致しません。
+
 ## 1. 現在のプロジェクト
 
 - Unity: `6000.3.12f1`
