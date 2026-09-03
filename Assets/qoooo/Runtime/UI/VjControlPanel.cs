@@ -76,7 +76,7 @@ namespace Qoooo.VJ.UI
             EnsureRosettaRoot();
             if (_built) return;
 
-            _root.Build(CreateLauncher());
+            _root.Build(CreateRootWindow());
             _built = true;
         }
 
@@ -107,8 +107,8 @@ namespace Qoooo.VJ.UI
         public void ToggleVisible()
         {
             _isVisible = !_isVisible;
-            if (_uiRootObject != null)
-                _uiRootObject.SetActive(_isVisible);
+            if (_root != null)
+                _root.enabled = _isVisible;
         }
 
         private void OnDestroy()
@@ -116,7 +116,7 @@ namespace Qoooo.VJ.UI
             VjRuntimePanelFactory.DestroyOwned(_uiRootObject);
         }
 
-        private Element CreateLauncher()
+        private Element CreateRootWindow()
         {
             var textureSettings = RUI.Fold(
                     "Final Texture",
@@ -167,11 +167,10 @@ namespace Qoooo.VJ.UI
             launcherContents.SetWidth(180f);
 
             _launcherWindow = RUI.Window("VJ Controls", launcherContents)
+                .SetClosable(false)
                 .SetPosition(new Vector2(16f, 16f));
 
-            return RUI.Column(
-                    RUI.WindowLauncher("VJ", _launcherWindow).SetWidth(88f))
-                .SetWidth(96f);
+            return _launcherWindow;
         }
 
         private void ApplyDraft()

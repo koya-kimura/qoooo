@@ -65,14 +65,15 @@ namespace Qoooo.VJ.Tests
             Assert.That(document.panelSettings.themeStyleSheet, Is.Not.Null);
             Assert.That(controlPanel.IsOutputWindowOpen, Is.False);
             Assert.That(controlPanel.IsLayerStackWindowOpen, Is.False);
-            Assert.That(controlPanel.IsLauncherWindowOpen, Is.False);
+            Assert.That(controlPanel.IsLauncherWindowOpen, Is.True);
             Assert.That(controlPanel.IsVisible, Is.True);
             controlPanel.ToggleVisible();
             Assert.That(controlPanel.IsVisible, Is.False);
-            Assert.That(uiRoot.gameObject.activeSelf, Is.False);
+            Assert.That(document.rootVisualElement.visible, Is.False);
+            Assert.That(uiRoot.gameObject.activeSelf, Is.True);
             controlPanel.ToggleVisible();
             Assert.That(controlPanel.IsVisible, Is.True);
-            Assert.That(uiRoot.gameObject.activeSelf, Is.True);
+            Assert.That(document.rootVisualElement.visible, Is.True);
 
             var previewRoot = gameObject.transform.Find("VJ Preview");
             Assert.That(previewRoot, Is.Not.Null);
