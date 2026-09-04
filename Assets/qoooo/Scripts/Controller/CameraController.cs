@@ -4,16 +4,18 @@ using UnityEngine;
 namespace qoooo.Controller
 {
     [RequireComponent(typeof(Camera))]
-    public class CameraController : MonoBehaviour, ITextureContainer
+    public class CameraController : MonoBehaviour, IModelTextureContainer
     {
         [SerializeField] private Vector2Int _resolution;
         [SerializeField] private TextureUsage _usage;
+        [SerializeField] private ModelTextureId _modelTextureId;
 
         private Camera _camera;
         private RenderTexture _output;
 
         public Texture Texture => _output;
         public TextureUsage Usage => _usage;
+        public ModelTextureId ModelTextureId => _modelTextureId;
 
         private Vector2Int ValidResolution => new (
             Mathf.Max(1, _resolution.x),

@@ -24,10 +24,28 @@ namespace qoooo.Stores
                 .ToList();
         }
 
+        public List<Texture> Textures(TextureUsage usage)
+        {
+            return _containers
+                .Where(container => container.Usage == usage)
+                .Select(container => container.Texture)
+                .Where(texture => texture != null)
+                .ToList();
+        }
+
+        public Texture ModelTexture(ModelTextureId id)
+        {
+            return _containers
+                .OfType<IModelTextureContainer>()
+                .FirstOrDefault(container => container.ModelTextureId == id)
+                ?.Texture;
+        }
+
         public List<Texture> ModelTextures()
         {
             return _containers
-                .Where(container => container.Usage == TextureUsage.Model)
+                .OfType<IModelTextureContainer>()
+                .OrderBy(container => container.ModelTextureId)
                 .Select(container => container.Texture)
                 .Where(texture => texture != null)
                 .ToList();

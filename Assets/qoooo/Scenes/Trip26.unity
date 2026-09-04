@@ -458,6 +458,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Controller.CameraController
   _resolution: {x: 100, y: 100}
   _usage: 1
+  _modelTextureId: 1
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -785,6 +786,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Controller.CameraController
   _resolution: {x: 100, y: 100}
   _usage: 1
+  _modelTextureId: 2
 --- !u!1 &1107990554
 GameObject:
   m_ObjectHideFlags: 0
@@ -1204,6 +1206,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Controller.CameraController
   _resolution: {x: 100, y: 100}
   _usage: 1
+  _modelTextureId: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
