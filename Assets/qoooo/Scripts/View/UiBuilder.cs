@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using PrefsGUI;
 using RosettaUI;
 using UnityEngine;
 using UnitySimpleContainer;
 
-namespace qoooo.Scripts.View
+namespace qoooo.View
 {
     public class UiBuilder : MonoBehaviour
     {
@@ -24,13 +25,18 @@ namespace qoooo.Scripts.View
 
         Element CreateElement()
         {
-            var launchers = _targets.Select(t =>
+            var launchers = _targets.Select(target =>
             {
-                var window = UI.Window("どうにかしたい箇所", t.CreateElement());
+                var window = UI.Window(target.GetType().Name, target.CreateElement());
                 return UI.WindowLauncher(window);
             });
 
-            return UI.Window("Qoooo", UI.Column(launchers));
+            return UI.Window("Qoooo",
+                UI.Column(
+                    UI.Column(launchers),
+                    UI.Button("Save", Prefs.Save)
+                    )
+               );
         }
     }
 }

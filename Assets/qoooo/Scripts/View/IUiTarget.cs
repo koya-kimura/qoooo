@@ -1,6 +1,6 @@
 ﻿using RosettaUI;
 
-namespace qoooo.Scripts.View
+namespace qoooo.View
 {
     public interface IUiTarget
     {
