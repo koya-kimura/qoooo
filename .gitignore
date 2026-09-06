@@ -109,6 +109,7 @@ playground.xcworkspace
 *.csproj
 *.unityproj
 *.sln
+*.slnx
 *.suo
 
 ### macOS
@@ -119,7 +120,8 @@ playground.xcworkspace
 ._*
 
 # Custom folder icons
-Icon
+Icon
+
 
 # Volume root files
 .DocumentRevisions-V100
@@ -191,12 +193,8 @@ x86/
 *.[Pp]ublish.xml
 
 ### VS Code
-# VSCode settings (keep shared configuration)
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+# VSCode settings (local only)
+.vscode/
 
 # Local History for Visual Studio Code
 .history/
