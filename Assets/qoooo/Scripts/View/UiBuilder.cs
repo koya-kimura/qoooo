@@ -27,7 +27,10 @@ namespace qoooo.View
         {
             var launchers = _targets.Select(target =>
             {
-                var window = UI.Window(target.GetType().Name, target.CreateElement());
+                var title = target is Component component
+                    ? component.gameObject.name
+                    : target.GetType().Name;
+                var window = UI.Window(title, target.CreateElement());
                 return UI.WindowLauncher(window);
             });
 
