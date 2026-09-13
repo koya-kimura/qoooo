@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace qoooo.Manager
@@ -10,7 +9,7 @@ namespace qoooo.Manager
 
         private void Start()
         {
-            Instantiate(_models[0],  transform);
+            _models[0].SetActive(true);
         }
     }
 }
