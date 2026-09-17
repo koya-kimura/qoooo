@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text;
+using qoooo.Parameters;
 using qoooo.Pattern;
 using TMPro;
 using UnityEngine;
@@ -7,16 +9,29 @@ using UnityEngine;
 namespace qoooo.Controller
 {
     [RequireComponent(typeof(TMP_Text))]
-    public class TextController : MonoBehaviour
+    public class TextController : MonoBehaviour, IMidiParameterContainer
     {
         [SerializeField] private TMP_Text _textMesh;
         [SerializeField] private string _sourceText = "HELLO";
         [SerializeField] private List<TextPattern> _patterns = new();
         [SerializeField] private int _patternIndex;
 
-        private readonly List<GlyphSample> _samples = new();
+        [SerializeField]
+        private RadioParameter _layout = new("text.layout", "Text Layout", new[] { "Three Circles" });
+
+        [SerializeField]
+        private FloatParameter _animationSpeed = new("text.animation-speed", "Text Animation Speed", 0f, 3f, 1f);
+
+        [SerializeField] private StateParameter _transformMode = new("text.transform-mode", "Text Transform Mode", 3);
+        [SerializeField] private MomentaryParameter _rebuild = new("text.rebuild", "Rebuild Text");
+
+        [SerializeField]
+        private SequenceParameter _blink = new("text.blink", "Text Beat Blink", new[] { true, true, true, false });
+
         private readonly List<GlyphSample> _entrySamples = new();
         private readonly StringBuilder _renderedText = new();
+
+        private readonly List<GlyphSample> _samples = new();
         private TMP_MeshInfo[] _baseMeshInfo;
         private bool _meshDirty = true;
 
@@ -26,7 +41,31 @@ namespace qoooo.Controller
         private void Awake()
         {
             if (_textMesh == null) _textMesh = GetComponent<TMP_Text>();
+            SynchronizeLayoutOptions();
             _meshDirty = true;
+        }
+
+        private void Update()
+        {
+            if (_layout.Value != _patternIndex)
+            {
+                _patternIndex = Mathf.Clamp(_layout.Value, 0, Mathf.Max(0, _patterns.Count - 1));
+                _meshDirty = true;
+            }
+            if (_rebuild.WasTriggeredThisFrame) _meshDirty = true;
+            switch (_transformMode.Value)
+            {
+                case 1:
+                    transform.localPosition = new Vector3(transform.localPosition.x, Mathf.Sin(Time.time) * 0.25f,
+                        transform.localPosition.z); break;
+                case 2: transform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(Time.time) * 8f); break;
+                default:
+                    transform.localPosition = new Vector3(transform.localPosition.x, 0f, transform.localPosition.z);
+                    transform.localRotation = Quaternion.identity;
+                    break;
+            }
+
+            Render(Time.time * _animationSpeed.Value);
         }
 
         private void OnEnable()
@@ -36,12 +75,20 @@ namespace qoooo.Controller
 
         private void OnValidate()
         {
+            SynchronizeLayoutOptions();
             _meshDirty = true;
         }
 
-        private void Update()
+        public IEnumerable<IMidiBindableParameter> MidiParameters
         {
-            Render(Time.time);
+            get
+            {
+                yield return _animationSpeed;
+                yield return _layout;
+                yield return _transformMode;
+                yield return _rebuild;
+                yield return _blink;
+            }
         }
 
         public void SetText(string value)
@@ -62,16 +109,26 @@ namespace qoooo.Controller
             }
 
             var nextIndex = Mathf.Clamp(index, 0, _patterns.Count - 1);
+            _layout.TrySetValue(nextIndex);
             if (_patternIndex == nextIndex) return;
 
             _patternIndex = nextIndex;
             _meshDirty = true;
         }
 
+        private void SynchronizeLayoutOptions()
+        {
+            _layout ??= new RadioParameter("text.layout", "Text Layout", new[] { "Three Circles" });
+            var names = new List<string>();
+            foreach (var pattern in _patterns ?? new List<TextPattern>())
+                names.Add(string.IsNullOrWhiteSpace(pattern?.Name) ? "Unnamed Layout" : pattern.Name);
+            _layout.ReplaceOptions(names, 0);
+        }
+
         private void Render(float time)
         {
             if (_textMesh == null) return;
-            if (string.IsNullOrEmpty(_sourceText) || _patterns.Count == 0)
+            if (string.IsNullOrEmpty(_sourceText) || _patterns.Count == 0 || !_blink.IsActive)
             {
                 if (_textMesh.text.Length > 0)
                 {
@@ -79,6 +136,7 @@ namespace qoooo.Controller
                     _baseMeshInfo = null;
                     _meshDirty = true;
                 }
+
                 return;
             }
 
@@ -120,7 +178,7 @@ namespace qoooo.Controller
                 var destination = meshInfo[index].vertices;
                 if (source == null || destination == null) continue;
 
-                System.Array.Copy(source, destination, Mathf.Min(source.Length, destination.Length));
+                Array.Copy(source, destination, Mathf.Min(source.Length, destination.Length));
             }
         }
 
@@ -140,13 +198,12 @@ namespace qoooo.Controller
                     var sample = sampled;
 
                     foreach (var motion in entry.Motions)
-                    {
-                        if (motion != null) motion.Apply(ref sample, time);
-                    }
+                        if (motion != null)
+                            motion.Apply(ref sample, time);
 
                     sample.Position = entry.Offset
-                        + Quaternion.Euler(entry.Rotation)
-                        * Vector3.Scale(sample.Position, entry.Scale);
+                                      + Quaternion.Euler(entry.Rotation)
+                                      * Vector3.Scale(sample.Position, entry.Scale);
                     sample.Rotation = Quaternion.Euler(entry.Rotation) * sample.Rotation;
                     sample.Scale = Vector3.Scale(sample.Scale, entry.Scale);
                     _samples.Add(sample);
@@ -183,10 +240,8 @@ namespace qoooo.Controller
                 var matrix = Matrix4x4.TRS(sample.Position, sample.Rotation, sample.Scale);
 
                 for (var vertex = 0; vertex < 4; vertex++)
-                {
                     vertices[vertexIndex + vertex] = matrix.MultiplyPoint3x4(
                         vertices[vertexIndex + vertex] - center);
-                }
             }
 
             _textMesh.UpdateVertexData(TMP_VertexDataUpdateFlags.Vertices);

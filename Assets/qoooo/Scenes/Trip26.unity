@@ -165,20 +165,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Textures.TextureLayer
   _sourceComponent: {fileID: 1601494012}
   _effect: {fileID: 0}
-  _useChromaKey: 0
+  _useChromaKey:
+    _id: texture.background.chroma-key
+    _displayName: Use Chroma Key
+    _defaultValue: 0
   _effectParams:
     IsInvert: 0
     IsMosaic: 0
     MosaicSize: 8
     IsTiling: 0
-    Tiling: {x: 1, y: 1}
+    TileNum: {x: 0, y: 0}
     Offset: {x: 0, y: 0}
-    IsMirrorX: 0
-    IsMirrorY: 0
-    IsGlitch: 0
-    GlitchAmount: 0.1
-    GlitchSpeed: 1
-    GlitchBlockSize: 20
 --- !u!1 &181277144
 GameObject:
   m_ObjectHideFlags: 0
@@ -258,7 +255,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4659f45cb1ea43669b5a20279f044aa7, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Textures.OutputSettings
   _resolution: {x: 1920, y: 1080}
 --- !u!114 &236619168
@@ -271,7 +268,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3b09355b49834ad3aac8f02445a0f259, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Controller.FrameRateController
 --- !u!1 &280421024
 GameObject:
@@ -333,20 +330,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Textures.TextureLayer
   _sourceComponent: {fileID: 291929309}
   _effect: {fileID: 280421026}
-  _useChromaKey: 1
+  _useChromaKey:
+    _id: texture.text.chroma-key
+    _displayName: Use Chroma Key
+    _defaultValue: 1
   _effectParams:
     IsInvert: 0
     IsMosaic: 0
     MosaicSize: 8
     IsTiling: 0
-    Tiling: {x: 1, y: 1}
+    TileNum: {x: 0, y: 0}
     Offset: {x: 0, y: 0}
-    IsMirrorX: 0
-    IsMirrorY: 0
-    IsGlitch: 0
-    GlitchAmount: 0.1
-    GlitchSpeed: 1
-    GlitchBlockSize: 20
 --- !u!1 &291929304
 GameObject:
   m_ObjectHideFlags: 0
@@ -502,6 +496,10 @@ GameObject:
   - component: {fileID: 312310171}
   - component: {fileID: 312310170}
   - component: {fileID: 312310169}
+  - component: {fileID: 312310177}
+  - component: {fileID: 312310176}
+  - component: {fileID: 312310175}
+  - component: {fileID: 312310174}
   m_Layer: 0
   m_Name: TextRenderer
   m_TagString: Untagged
@@ -596,7 +594,64 @@ MonoBehaviour:
       _scale: {x: 1, y: 1, z: 1}
       _motions:
       - {fileID: 312310169}
+  - _name: Grid
+    _entries:
+    - _enabled: 1
+      _sampler: {fileID: 312310177}
+      _offset: {x: 0, y: 0, z: 0}
+      _rotation: {x: 0, y: 0, z: 0}
+      _scale: {x: 1, y: 1, z: 1}
+      _motions: []
+  - _name: Rectangle Loop
+    _entries:
+    - _enabled: 1
+      _sampler: {fileID: 312310176}
+      _offset: {x: 0, y: 0, z: 0}
+      _rotation: {x: 0, y: 0, z: 0}
+      _scale: {x: 1, y: 1, z: 1}
+      _motions: []
+  - _name: Corner Rotate
+    _entries:
+    - _enabled: 1
+      _sampler: {fileID: 312310175}
+      _offset: {x: 0, y: 0, z: 0}
+      _rotation: {x: 0, y: 0, z: 0}
+      _scale: {x: 1, y: 1, z: 1}
+      _motions: []
+  - _name: Typewriter
+    _entries:
+    - _enabled: 1
+      _sampler: {fileID: 312310174}
+      _offset: {x: 0, y: 0, z: 0}
+      _rotation: {x: 0, y: 0, z: 0}
+      _scale: {x: 1, y: 1, z: 1}
+      _motions: []
   _patternIndex: 0
+  _layout:
+    _id: text.layout
+    _displayName: Text Layout
+    _options:
+    - Three Circles
+    _defaultValue: 0
+  _animationSpeed:
+    _id: text.animation-speed
+    _displayName: Text Animation Speed
+    _defaultValue: 1
+    _min: 0
+    _max: 3
+  _transformMode:
+    _id: text.transform-mode
+    _displayName: Text Transform Mode
+    _stateCount: 3
+    _defaultValue: 0
+  _rebuild:
+    _id: text.rebuild
+    _displayName: Rebuild Text
+  _blink:
+    _id: text.blink
+    _displayName: Text Beat Blink
+    _defaultSteps: 01010100
+    _division: 0
 --- !u!114 &312310172
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -741,6 +796,78 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &312310174
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 312310167}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e427ed1b8c7401fa5132a68baf077e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Pattern.TextTypewriterPattern
+  _charactersPerSecond: 16
+  _pauseDuration: 4
+  _spacing: 0.6
+  _offset: {x: 0, y: 0, z: 0}
+--- !u!114 &312310175
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 312310167}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 93f81267110a4a2b92d6dd70d0cc4bad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Pattern.TextCornerRotatePattern
+  _size: {x: 10, y: 6}
+  _margin: 1
+  _rotationSpeed: 57.29578
+  _scale: 2
+--- !u!114 &312310176
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 312310167}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36ce4bebdd9e4bcb96d930c61a52841d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Pattern.TextRectangleLoopPattern
+  _size: {x: 10, y: 6}
+  _loopScales:
+  - 0.5
+  - 0.95
+  _baseGlyphCount: 100
+  _moveSpeed: 1
+  _cornerDistance: 0.2
+  _normalCharacterProbability: 0.9
+  _timeScale: 2
+--- !u!114 &312310177
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 312310167}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb147850b5c145a48646b87d869d8844, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Pattern.TextGridPattern
+  _columns: 10
+  _rows: 6
+  _size: {x: 10, y: 6}
+  _cycleLength: 16
+  _easeDuration: 2
+  _timeScale: 2
+  _randomTimeRange: 1000
 --- !u!1 &323828710
 GameObject:
   m_ObjectHideFlags: 0
@@ -888,7 +1015,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 449bb8c5bc314153945220f6d144ce32, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Preview.PreviewController
   _compositor: {fileID: 2134837972}
   _rawImage: {fileID: 1802518066}
@@ -903,7 +1030,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
   m_IgnoreReversedGraphics: 1
   m_BlockingObjects: 0
@@ -920,7 +1047,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
   m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
@@ -1210,20 +1337,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Textures.TextureLayer
   _sourceComponent: {fileID: 1591138853}
   _effect: {fileID: 734515093}
-  _useChromaKey: 1
+  _useChromaKey:
+    _id: texture.model.chroma-key
+    _displayName: Use Chroma Key
+    _defaultValue: 1
   _effectParams:
     IsInvert: 0
     IsMosaic: 0
     MosaicSize: 8
     IsTiling: 0
-    Tiling: {x: 1, y: 1}
+    TileNum: {x: 0, y: 0}
     Offset: {x: 0, y: 0}
-    IsMirrorX: 0
-    IsMirrorY: 0
-    IsGlitch: 0
-    GlitchAmount: 0.1
-    GlitchSpeed: 1
-    GlitchBlockSize: 20
 --- !u!1001 &941677467
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1414,6 +1538,7 @@ Transform:
   m_Children:
   - {fileID: 1510833906}
   - {fileID: 1845645385}
+  - {fileID: 1862739132}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1482633482
@@ -1805,9 +1930,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Textures.MaterialTextureSource
   _material: {fileID: 2100000, guid: aa547f326dcf34a34bdec0e5b63bed6c, type: 2}
-  _patternType: 0
-  _colorA: {r: 0.025, g: 0.025, b: 0.04, a: 1}
-  _colorB: {r: 0.12, g: 0.12, b: 0.18, a: 1}
+  _pattern:
+    _id: background.pattern
+    _displayName: Background Pattern
+    _options:
+    - Noise Texture
+    - Diagonal Stripe
+    - Vertical Stripe
+    - Horizontal Stripe
+    - Wave Stripe
+    - Checkerboard
+    - Polka Dot
+    - Sunburst
+    - Grid Line
+    - Psychedelic Ring
+    _defaultValue: 0
+  _mainColor: {r: 0.025, g: 0.025, b: 0.04, a: 1}
+  _subColor: {r: 0.12, g: 0.12, b: 0.18, a: 1}
   _tiling: {x: 12, y: 8}
   _offset: {x: 0, y: 0}
   _speed: {x: 0.15, y: 0}
@@ -1860,7 +1999,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 86710e43de46f6f4bac7c8e50813a599, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.AspectRatioFitter
   m_AspectMode: 3
   m_AspectRatio: 1.7777778
@@ -1874,7 +2013,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -1947,6 +2086,261 @@ MonoBehaviour:
   _texts:
   - {fileID: 312310171}
   _selectedIndex: 0
+--- !u!1 &1862739131
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1862739132}
+  - component: {fileID: 1862739134}
+  - component: {fileID: 1862739139}
+  - component: {fileID: 1862739138}
+  - component: {fileID: 1862739137}
+  - component: {fileID: 1862739136}
+  - component: {fileID: 1862739135}
+  - component: {fileID: 1862739140}
+  - component: {fileID: 1862739142}
+  - component: {fileID: 1862739141}
+  m_Layer: 0
+  m_Name: MIDI
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1862739132
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1862739131}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1214743070}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1862739134
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1862739131}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6954a2e340691433589fd70cdbb22f97, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Timing.BpmManager
+  _initialBpm: 120
+--- !u!114 &1862739135
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1862739131}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e13bd52bd3b344e299a964292bc482a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Midi.MidiSystemController
+  _parameterRegistry: {fileID: 1862739139}
+  _parameterRuntime: {fileID: 1862739138}
+  _midiInput: {fileID: 1862739137}
+  _apcController: {fileID: 1862739136}
+  _profileStore: {fileID: 1862739140}
+  _midiOutput: {fileID: 1862739142}
+  _ledRenderer: {fileID: 1862739141}
+--- !u!114 &1862739136
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1862739131}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ae704ae9ca3d4b8088d5330adedfa29, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Midi.ApcMiniMk2ParameterController
+  _input: {fileID: 1862739137}
+  _parameters: {fileID: 1862739139}
+  _toggles:
+  - ParameterId: texture.background.chroma-key
+    Button:
+      Assigned: 1
+      Page: 0
+      Row: 0
+      Column: 0
+  - ParameterId: texture.text.chroma-key
+    Button:
+      Assigned: 1
+      Page: 0
+      Row: 0
+      Column: 1
+  - ParameterId: texture.model.chroma-key
+    Button:
+      Assigned: 1
+      Page: 0
+      Row: 0
+      Column: 2
+  _radios:
+  - ParameterId: model.motion
+    OptionButtons:
+    - Assigned: 1
+      Page: 0
+      Row: 1
+      Column: 0
+    - Assigned: 1
+      Page: 0
+      Row: 1
+      Column: 1
+    - Assigned: 1
+      Page: 0
+      Row: 1
+      Column: 2
+  _oneshots:
+  - ParameterId: model.reset-transform
+    Button:
+      Assigned: 1
+      Page: 0
+      Row: 1
+      Column: 3
+  _momentaries:
+  - ParameterId: text.rebuild
+    Button:
+      Assigned: 1
+      Page: 0
+      Row: 1
+      Column: 4
+  _states:
+  - ParameterId: text.transform-mode
+    Button:
+      Assigned: 1
+      Page: 0
+      Row: 1
+      Column: 5
+  _sequences:
+  - ParameterId: text.blink
+    StepButtons:
+    - Assigned: 1
+      Page: 0
+      Row: 2
+      Column: 0
+    - Assigned: 1
+      Page: 0
+      Row: 2
+      Column: 1
+    - Assigned: 1
+      Page: 0
+      Row: 2
+      Column: 2
+    - Assigned: 1
+      Page: 0
+      Row: 2
+      Column: 3
+  _floats:
+  - ParameterId: model.scale
+    Assigned: 1
+    FaderIndex: 0
+  - ParameterId: text.animation-speed
+    Assigned: 1
+    FaderIndex: 1
+  _faderButtonFunctions: 000000000100000000000000010000000000000001000000000000000100000000000000
+  _faderRandomDivision: 0
+  _logResolvedInput: 1
+--- !u!114 &1862739137
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1862739131}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb6e122f9cf594b96883ed8d1e5395e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Midi.MinisMidiInput
+  _productName: APC mini mk2 Control
+  _channel: 0
+  _logInputEvents: 1
+--- !u!114 &1862739138
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1862739131}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 234805b2d9f9c4ec287111cafcf52e37, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Parameters.MidiParameterRuntime
+  _registry: {fileID: 1862739139}
+--- !u!114 &1862739139
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1862739131}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b3fe5b5153e348c3970d1dc39f76835, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Parameters.MidiParameterRegistry
+--- !u!114 &1862739140
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1862739131}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5f4130f0c4634949b0623a3f222f8f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Midi.MidiProfileStore
+  _controller: {fileID: 1862739136}
+  _registry: {fileID: 1862739139}
+--- !u!114 &1862739141
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1862739131}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ee5aee0a3bb3e4e85af4b3e38395cdf2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Midi.ApcMiniMk2LedRenderer
+  _output: {fileID: 1862739142}
+  _controller: {fileID: 1862739136}
+  _registry: {fileID: 1862739139}
+  _refreshRate: 15
+--- !u!114 &1862739142
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1862739131}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e1d41104f11741998b1754923d9fcaa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Midi.RtMidiOutput
+  _productName: APC mini mk2
+  _channel: 6
+  _logConnection: 1
 --- !u!4 &1972641571 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7069483604218698939, guid: 294647d664c060f4c9f98dd44f5e4e82, type: 3}
@@ -2050,6 +2444,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f37f57dfad344b39a581bbc8f5e2894e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Controller.ModelController
+  _scale:
+    _id: model.scale
+    _displayName: Model Scale
+    _defaultValue: 20
+    _min: 5
+    _max: 40
+  _motion:
+    _id: model.motion
+    _displayName: Model Motion
+    _options:
+    - Still
+    - Spin
+    - Pulse
+    _defaultValue: 0
+  _resetTransform:
+    _id: model.reset-transform
+    _displayName: Reset Model Transform
 --- !u!1 &2059799735
 GameObject:
   m_ObjectHideFlags: 0

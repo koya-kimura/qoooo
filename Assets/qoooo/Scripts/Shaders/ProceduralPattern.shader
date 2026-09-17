@@ -2,12 +2,20 @@ Shader "Custom/ProceduralPattern"
 {
     Properties
     {
-        [Enum(Checker, 0, Stripes, 1, Solid, 2)] _PatternType("Pattern", Int) = 0
-        _ColorA("Color A", Color) = (0.04, 0.04, 0.06, 1)
-        _ColorB("Color B", Color) = (0.25, 0.25, 0.35, 1)
-        _Tiling("Tiling", Vector) = (12, 8, 0, 0)
-        _Offset("Offset", Vector) = (0, 0, 0, 0)
-        _Speed("Speed", Vector) = (0, 0, 0, 0)
+        [Enum(NoiseTexture, 0, DiagonalStripes, 1, VerticalStripes, 2, HorizontalStripes, 3, WaveStripes, 4, Checkerboard, 5, PolkaDot, 6, Sunburst, 7, GridLines, 8, PsychedelicRings, 9)]
+        _PatternType("Pattern", Int) = 0
+
+        _MainColor("Main Color", Color) = (1, 1, 1, 1)
+        _SubColor("Sub Color", Color) = (0, 0, 0, 1)
+
+        _Beat("Beat", Float) = 0
+
+        _Resolution("Resolution", Vector) = (0, 0, 0, 0)
+
+        _Tiling("UV Scale", Vector) = (1, 1, 0, 0)
+        _Offset("UV Offset", Vector) = (0, 0, 0, 0)
+        _Speed("UV Speed", Vector) = (0, 0, 0, 0)
+
         _Opacity("Opacity", Range(0, 1)) = 1
     }
 
@@ -27,11 +35,15 @@ Shader "Custom/ProceduralPattern"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
+            #include "Util/PatternMath.hlsl"
+            #include "Pattern/PatternDispatcher.hlsl"
+
             struct Attributes
             {
                 float4 positionOS : POSITION;
                 float2 uv : TEXCOORD0;
             };
+
 
             struct Varyings
             {
@@ -39,51 +51,136 @@ Shader "Custom/ProceduralPattern"
                 float2 uv : TEXCOORD0;
             };
 
-            int _PatternType;
-            int _PatternChecker;
-            int _PatternStripes;
-            int _PatternSolid;
-            half4 _ColorA;
-            half4 _ColorB;
-            float4 _Tiling;
-            float4 _Offset;
-            float4 _Speed;
-            half _Opacity;
 
-            Varyings vert(Attributes input)
+            CBUFFER_START(UnityPerMaterial)
+                int _PatternType;
+
+                half4 _MainColor;
+                half4 _SubColor;
+
+                float _Beat;
+
+                float4 _Resolution;
+
+                float4 _Tiling;
+                float4 _Offset;
+                float4 _Speed;
+
+                half _Opacity;
+
+            CBUFFER_END
+
+
+            Varyings vert(
+                Attributes input
+            )
             {
                 Varyings output;
-                output.positionHCS = TransformObjectToHClip(input.positionOS.xyz);
-                output.uv = input.uv;
+
+                output.positionHCS =
+                    TransformObjectToHClip(
+                        input.positionOS.xyz
+                    );
+
+                output.uv =
+                    input.uv;
+
                 return output;
             }
 
-            half4 frag(Varyings input) : SV_Target
+
+            half4 frag(
+                Varyings input
+            ) : SV_Target
             {
-                float2 uv = input.uv * max(_Tiling.xy, float2(1.0, 1.0));
-                uv += _Offset.xy + _Speed.xy * _Time.y;
+                // ----------------------------------
+                // Resolution
+                // ----------------------------------
 
-                half selector;
-                if (_PatternType == _PatternChecker)
+                float2 resolution =
+                    _Resolution.xy;
+
+                if (
+                    resolution.x <= 0.0
+                    || resolution.y <= 0.0
+                )
                 {
-                    selector = fmod(floor(uv.x) + floor(uv.y), 2.0);
-                }
-                else if (_PatternType == _PatternStripes)
-                {
-                    selector = step(0.5, frac(uv.x));
-                }
-                else if (_PatternType == _PatternSolid)
-                {
-                    selector = 0.0;
-                }
-                else
-                {
-                    selector = 0.0;
+                    resolution =
+                        _ScreenParams.xy;
                 }
 
-                half4 color = lerp(_ColorA, _ColorB, selector);
-                color.a *= _Opacity;
-                return color;
+
+                // ----------------------------------
+                // UV
+                // ----------------------------------
+
+                float2 uv =
+                    input.uv;
+
+                uv *=
+                    max(
+                        _Tiling.xy,
+                        float2(
+                            0.0001,
+                            0.0001
+                        )
+                    );
+
+                uv +=
+                    _Offset.xy;
+
+                uv +=
+                    _Speed.xy
+                    * _Time.y;
+
+
+                // 元GLSLと同じ
+                // アスペクト補正
+                uv =
+                    ApplyAspectCorrection(
+                        uv,
+                        resolution
+                    );
+
+
+                // ----------------------------------
+                // Pattern Context
+                // ----------------------------------
+
+                PatternContext context;
+
+                context.beat =
+                    _Beat;
+
+                context.time =
+                    _Time.y;
+
+                context.resolution =
+                    resolution;
+
+                context.mainColor =
+                    _MainColor.rgb;
+
+                context.subColor =
+                    _SubColor.rgb;
+
+
+                // ----------------------------------
+                // Evaluate
+                // ----------------------------------
+
+                float3 patternColor =
+                    EvaluateProceduralPattern(
+                        _PatternType,
+                        uv,
+                        context
+                    );
+
+
+                return half4(
+                    patternColor,
+                    _Opacity
+                );
             }
             ENDHLSL
         }

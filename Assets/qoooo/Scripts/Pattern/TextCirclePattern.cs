@@ -5,7 +5,12 @@ namespace qoooo.Pattern
 {
     public class TextCirclePattern : MonoBehaviour, ITextPattern
     {
-        [SerializeField] [Min(0f)] private float _radius = 3f;
+        [SerializeField]
+        [Min(0f)]
+        [Tooltip(
+            "Circle center to each glyph center, in TMP local units. Text length changes angular spacing, not this radius.")]
+        private float _radius = 3f;
+
         [SerializeField] private float _startAngle;
         [SerializeField] private bool _faceOutward = true;
 

@@ -26,7 +26,7 @@ Shader "Custom/TextureComposite"
             #pragma fragment frag
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Utils/Effect.hlsl"
+            #include "Util/Effect.hlsl"
 
             struct Attributes
             {
@@ -89,7 +89,7 @@ Shader "Custom/TextureComposite"
             #pragma fragment frag
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Utils/Effect.hlsl"
+            #include "Util/Effect.hlsl"
 
             struct Attributes
             {

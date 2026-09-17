@@ -10,11 +10,18 @@ namespace qoooo.View
     public class UiBuilder : MonoBehaviour
     {
         private List<IUiTarget> _targets;
+        private List<IPrefsSaveParticipant> _saveParticipants;
 
         [Inject]
         public void Constructs(IEnumerable<IUiTarget> targets)
         {
             _targets = targets.ToList();
+        }
+
+        [Inject]
+        public void ConstructSaveParticipants(IEnumerable<IPrefsSaveParticipant> participants)
+        {
+            _saveParticipants = participants.ToList();
         }
 
         void Start()
@@ -37,9 +44,24 @@ namespace qoooo.View
             return UI.Window("Qoooo",
                 UI.Column(
                     UI.Column(launchers),
-                    UI.Button("Save", Prefs.Save)
+                    UI.Button("Save", SavePrefs)
                     )
                );
+        }
+
+        private void SavePrefs()
+        {
+            try
+            {
+                foreach (var participant in _saveParticipants ?? new List<IPrefsSaveParticipant>()) participant.PrepareSave();
+                Prefs.Save();
+                foreach (var participant in _saveParticipants ?? new List<IPrefsSaveParticipant>()) participant.CommitSave();
+            }
+            catch (System.Exception exception)
+            {
+                foreach (var participant in _saveParticipants ?? new List<IPrefsSaveParticipant>()) participant.AbortSave();
+                Debug.LogError($"[Prefs] Save failed: {exception}", this);
+            }
         }
     }
 }
