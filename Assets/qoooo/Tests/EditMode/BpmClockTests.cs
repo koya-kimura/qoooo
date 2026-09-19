@@ -1,5 +1,5 @@
 using NUnit.Framework;
-using qoooo.Timing;
+using qoooo.Foundation.Timing;
 
 namespace qoooo.Tests.EditMode
 {

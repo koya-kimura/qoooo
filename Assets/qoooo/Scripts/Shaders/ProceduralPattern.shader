@@ -2,7 +2,6 @@ Shader "Custom/ProceduralPattern"
 {
     Properties
     {
-        [Enum(NoiseTexture, 0, DiagonalStripes, 1, VerticalStripes, 2, HorizontalStripes, 3, WaveStripes, 4, Checkerboard, 5, PolkaDot, 6, Sunburst, 7, GridLines, 8, PsychedelicRings, 9)]
         _PatternType("Pattern", Int) = 0
 
         _MainColor("Main Color", Color) = (1, 1, 1, 1)

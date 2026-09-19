@@ -1,5 +1,5 @@
 using NUnit.Framework;
-using qoooo.Midi;
+using qoooo.Midi.Apc;
 
 namespace qoooo.Tests.EditMode
 {

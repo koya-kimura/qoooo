@@ -24,13 +24,4 @@ float2 Mosaic(float2 uv, float2 res, float grid)
     return (floor(uv * cells) + 0.5) / cells;
 }
 
-float4 ChromaKey(float4 color, float3 keyColor, float threshold, float softness)
-{
-    float distanceFromKey = distance(color.rgb, keyColor);
-    float safeSoftness = max(softness, 0.00001);
-    color.a *= smoothstep(threshold, threshold + safeSoftness, distanceFromKey);
-
-    return color;
-}
-
 #endif
