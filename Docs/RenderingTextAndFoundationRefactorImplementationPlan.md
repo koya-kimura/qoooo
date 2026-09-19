@@ -1,5 +1,9 @@
 # Rendering / Text / Foundation Refactor 実装計画（草案）
 
+> **Status: Partially implemented plan.** この文書は設計判断と移行経緯を残す資料である。
+> 現行仕様は[Architecture.md](Architecture.md)、実装状況は
+> [Architecture/PlanStatus.md](Architecture/PlanStatus.md)を参照する。
+
 ## Objective
 
 Trip26 の背景描画を正しく復旧し、増えたプロシージャルパターンとテキスト配置を UI / APC mini mk2 の共通 Parameter から操作できるようにする。同時に、BPM・乱数・MIDI parameter provider・ディレクトリ配置を責務に沿って整理する。
@@ -103,10 +107,10 @@ TextController (MIDI provider)
 
 Textは次の二層を厳密に分ける。
 
-| 層 | interface | 責務 | 例 |
-| --- | --- | --- | --- |
-| Layout | `ITextPattern` | glyphの文字index、位置、初期回転、初期scale、順序を生成 | Circle / Grid / Rectangle Loop / Corner Rotate / Typewriter |
-| Motion | `TextGlyphMotion` | layout後の個々の glyph sampleへ時間変化を加える | Rotate、将来のPulse / Wave等 |
+| 層     | interface         | 責務                                                    | 例                                                          |
+| ------ | ----------------- | ------------------------------------------------------- | ----------------------------------------------------------- |
+| Layout | `ITextPattern`    | glyphの文字index、位置、初期回転、初期scale、順序を生成 | Circle / Grid / Rectangle Loop / Corner Rotate / Typewriter |
+| Motion | `TextGlyphMotion` | layout後の個々の glyph sampleへ時間変化を加える         | Rotate、将来のPulse / Wave等                                |
 
 `TextPattern` を `TextLayoutDefinition` に改名するかは、既存Sceneのserialized typeを壊すため本計画では**改名しない**。代わりに fieldとUIの表示名を `Layouts` / `Layout Entries` に統一する。`_radius` は `Radius (TMP local units)` に表示変更し、Tooltipで「Circle中心からglyph中心まで。文字数は角度間隔だけを変える」と説明する。serialized field名を変える場合は必ず `[FormerlySerializedAs("_radius")]` を付ける。
 
@@ -126,49 +130,49 @@ Textは次の二層を厳密に分ける。
 
 ### 新規
 
-| Path | Responsibility |
-| --- | --- |
-| `Assets/qoooo/Scripts/Timing/IBpmSource.cs` | BPM read interface。 |
-| `Assets/qoooo/Scripts/Rendering/Procedural/ProceduralPatternId.cs` | C# Pattern ID enumとoption表示名の固定catalogue。 |
-| `Assets/qoooo/Scripts/Shaders/Rendering/Procedural/PatternIds.hlsl` | HLSL側のPattern integer constant。 |
-| `Assets/qoooo/Tests/EditMode/Rendering/ProceduralPatternContractTests.cs` | C# catalogueとshader property契約の検証。 |
-| `Assets/qoooo/Tests/EditMode/Midi/PcgCompatibilityTests.cs` | 旧PcgHashと統一Pcgの決定的出力検証（削除前だけ存在）。 |
-| `Assets/qoooo/Tests/EditMode/Text/TextLayoutSelectionTests.cs` | layout option、選択clamp、profile migrationの検証。 |
+| Path                                                                      | Responsibility                                         |
+| ------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `Assets/qoooo/Scripts/Timing/IBpmSource.cs`                               | BPM read interface。                                   |
+| `Assets/qoooo/Scripts/Rendering/Procedural/ProceduralPatternId.cs`        | C# Pattern ID enumとoption表示名の固定catalogue。      |
+| `Assets/qoooo/Scripts/Shaders/Rendering/Procedural/PatternIds.hlsl`       | HLSL側のPattern integer constant。                     |
+| `Assets/qoooo/Tests/EditMode/Rendering/ProceduralPatternContractTests.cs` | C# catalogueとshader property契約の検証。              |
+| `Assets/qoooo/Tests/EditMode/Midi/PcgCompatibilityTests.cs`               | 旧PcgHashと統一Pcgの決定的出力検証（削除前だけ存在）。 |
+| `Assets/qoooo/Tests/EditMode/Text/TextLayoutSelectionTests.cs`            | layout option、選択clamp、profile migrationの検証。    |
 
 ### 変更
 
-| Path | Change |
-| --- | --- |
-| `Assets/qoooo/Scripts/Textures/MaterialTextureSource.cs` | Shader property名、IBpmSource DI、Pattern catalogue参照、material契約検査、UIの色名・pattern UIを更新。 |
-| `Assets/qoooo/Materials/ProceduralBackground.mat` | `_ColorA/_ColorB` を `_MainColor/_SubColor` へ移行し、旧saved propertyを除く。 |
-| `Assets/qoooo/Scripts/Shaders/ProceduralPattern.shader` | Property / CBUFFER contractを確定し、共通IDsとpattern dispatcherをinclude。 |
-| `Assets/qoooo/Scripts/Shaders/Pattern/PatternDispatcher.hlsl` | `PatternIds.hlsl` のIDを使用。 |
-| `Assets/qoooo/Scripts/Shaders/Pattern/PatternBasic.hlsl` | categoryごとのHLSLへ分割する場合の共通basic patternのみを残す。 |
-| `Assets/qoooo/Scripts/Textures/TextureLayer.cs` | source Parameterの列挙は維持しつつGroup API削除。 |
-| `Assets/qoooo/Scripts/Parameters/IMidiParameterContainer.cs` | `MidiParameterGroupName` を削除。 |
-| `Assets/qoooo/Scripts/Parameters/RadioParameter.cs` | editor-time option同期・profile migrationで必要な、安全なoption置換APIを追加。 |
-| `Assets/qoooo/Scripts/Midi/MidiProfileData.cs`, `MidiProfileStore.cs` | text.layout option順変更に耐えるprofile version migrationを追加。 |
-| `Assets/qoooo/Scripts/Controller/TextController.cs` | `text.layout` parameter、UI metadata、layout選択、DI BPM（時間同期を採用するmotionで必要な場合）を追加。 |
-| `Assets/qoooo/Scripts/Pattern/TextCirclePattern.cs` | radiusの単位・対象を明示するfield名とTooltip。 |
-| `Assets/qoooo/Scripts/Pattern/TextGridPattern.cs`, `TextRectangleLoopPattern.cs`, `TextCornerRotatePattern.cs`, `TextTypewriterPattern.cs` | layout naming / validationを統一。Time sourceは採用決定後にIBpmSourceまたは明示的なunscaled timeへ統一。 |
-| `Assets/qoooo/Scripts/Pattern/TextRotateMotion.cs` | motion説明と時間sourceを統一。 |
-| `Assets/qoooo/Scripts/Midi/ApcMiniMk2ParameterController.cs`, `MidiParameterRuntime.cs`, `MidiSystemController.cs`, `MinisMidiInput.cs` | serialized BpmManager参照をIBpmSource注入に移行し、初期化順を整える。 |
-| `Assets/qoooo/Scripts/Midi/ApcMiniMk2Controller.cs` | `PcgHash` を `Util.Pcg` へ置換。 |
-| `Assets/qoooo/Scenes/Trip26.unity` | 新pattern components / layouts / `text.layout` parameter、DI済み参照削除、Background material参照を保存。 |
+| Path                                                                                                                                       | Change                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `Assets/qoooo/Scripts/Textures/MaterialTextureSource.cs`                                                                                   | Shader property名、IBpmSource DI、Pattern catalogue参照、material契約検査、UIの色名・pattern UIを更新。   |
+| `Assets/qoooo/Materials/ProceduralBackground.mat`                                                                                          | `_ColorA/_ColorB` を `_MainColor/_SubColor` へ移行し、旧saved propertyを除く。                            |
+| `Assets/qoooo/Scripts/Shaders/ProceduralPattern.shader`                                                                                    | Property / CBUFFER contractを確定し、共通IDsとpattern dispatcherをinclude。                               |
+| `Assets/qoooo/Scripts/Shaders/Pattern/PatternDispatcher.hlsl`                                                                              | `PatternIds.hlsl` のIDを使用。                                                                            |
+| `Assets/qoooo/Scripts/Shaders/Pattern/PatternBasic.hlsl`                                                                                   | categoryごとのHLSLへ分割する場合の共通basic patternのみを残す。                                           |
+| `Assets/qoooo/Scripts/Textures/TextureLayer.cs`                                                                                            | source Parameterの列挙は維持しつつGroup API削除。                                                         |
+| `Assets/qoooo/Scripts/Parameters/IMidiParameterContainer.cs`                                                                               | `MidiParameterGroupName` を削除。                                                                         |
+| `Assets/qoooo/Scripts/Parameters/RadioParameter.cs`                                                                                        | editor-time option同期・profile migrationで必要な、安全なoption置換APIを追加。                            |
+| `Assets/qoooo/Scripts/Midi/MidiProfileData.cs`, `MidiProfileStore.cs`                                                                      | text.layout option順変更に耐えるprofile version migrationを追加。                                         |
+| `Assets/qoooo/Scripts/Controller/TextController.cs`                                                                                        | `text.layout` parameter、UI metadata、layout選択、DI BPM（時間同期を採用するmotionで必要な場合）を追加。  |
+| `Assets/qoooo/Scripts/Pattern/TextCirclePattern.cs`                                                                                        | radiusの単位・対象を明示するfield名とTooltip。                                                            |
+| `Assets/qoooo/Scripts/Pattern/TextGridPattern.cs`, `TextRectangleLoopPattern.cs`, `TextCornerRotatePattern.cs`, `TextTypewriterPattern.cs` | layout naming / validationを統一。Time sourceは採用決定後にIBpmSourceまたは明示的なunscaled timeへ統一。  |
+| `Assets/qoooo/Scripts/Pattern/TextRotateMotion.cs`                                                                                         | motion説明と時間sourceを統一。                                                                            |
+| `Assets/qoooo/Scripts/Midi/ApcMiniMk2ParameterController.cs`, `MidiParameterRuntime.cs`, `MidiSystemController.cs`, `MinisMidiInput.cs`    | serialized BpmManager参照をIBpmSource注入に移行し、初期化順を整える。                                     |
+| `Assets/qoooo/Scripts/Midi/ApcMiniMk2Controller.cs`                                                                                        | `PcgHash` を `Util.Pcg` へ置換。                                                                          |
+| `Assets/qoooo/Scenes/Trip26.unity`                                                                                                         | 新pattern components / layouts / `text.layout` parameter、DI済み参照削除、Background material参照を保存。 |
 
 ### 削除
 
-| Path | Change |
-| --- | --- |
+| Path                                   | Change                           |
+| -------------------------------------- | -------------------------------- |
 | `Assets/qoooo/Scripts/Midi/PcgHash.cs` | compatibility test合格後に削除。 |
 
 ### 将来の整理候補（今回の実装対象外）
 
-| Path | Change |
-| --- | --- |
-| `Assets/qoooo/Scripts/Shaders/Pattern/*` | `Assets/qoooo/Scripts/Shaders/Rendering/Procedural/{Core,Patterns}/` へUnity metaを伴って移動。 |
-| `Assets/qoooo/Scripts/Pattern/*` | `Assets/qoooo/Scripts/Text/{Layouts,Motions,Model}/` へUnity metaを伴って移動。namespaceは今回維持。 |
-| `Assets/qoooo/Scripts/Midi/*` | `Assets/qoooo/Scripts/Midi/{Input,Output,Apc,Binding,Profile}/` へ責務単位で移動。 |
+| Path                                     | Change                                                                                               |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `Assets/qoooo/Scripts/Shaders/Pattern/*` | `Assets/qoooo/Scripts/Shaders/Rendering/Procedural/{Core,Patterns}/` へUnity metaを伴って移動。      |
+| `Assets/qoooo/Scripts/Pattern/*`         | `Assets/qoooo/Scripts/Text/{Layouts,Motions,Model}/` へUnity metaを伴って移動。namespaceは今回維持。 |
+| `Assets/qoooo/Scripts/Midi/*`            | `Assets/qoooo/Scripts/Midi/{Input,Output,Apc,Binding,Profile}/` へ責務単位で移動。                   |
 
 ## Interfaces / Data Structures
 

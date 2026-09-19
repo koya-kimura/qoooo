@@ -1,5 +1,9 @@
 # 型付きParameterを中心としたAPC mini mk2入出力・Binding実装計画
 
+> **Status: Partially implemented plan.** 実装済み部分と未実装の構想が混在するため、
+> 現行仕様には[Architecture.md](Architecture.md)、差分確認には
+> [Architecture/PlanStatus.md](Architecture/PlanStatus.md)を使用する。
+
 ## Objective
 
 各VJ機能が所有する型付きの論理Parameterを、RosettaUI、APC mini mk2、将来のKeyboard入力から共通して操作できる基盤を実装する。
@@ -223,18 +227,18 @@ OneshotはGrid Note On時に解決したParameterをphysical note別のpressed t
 
 各serviceの公開lifecycle APIを次に固定する。
 
-| Service | API |
-| --- | --- |
-| `MidiParameterRegistry` | `Initialize(IEnumerable<IMidiParameterProvider>)`, `TryGet(string, out IMidiBindableParameter)`, `Descriptors`, `Dispose()` |
-| `MidiProfileStore` | serialized `_defaultMapping` / `_defaultSettings`, `Initialize(registry, persistence)`, `WorkingMapping`, `WorkingSettings`, `PrepareSave()`, `CommitSave()`, `AbortSave()`, `Revert()`, `ResetMapping()`, `ResetValues()`, `Dispose()` |
-| `MidiParameterRuntime` | `Initialize(registry, bpmManager, applyPendingChanges)`, `Update(-110)` 冒頭でpending適用後にframe reset/Sequence更新, `Dispose()` |
-| `MinisMidiInput` | `StartInput(settings)`, `ApplySettings(settings)`, `StopInput()` |
-| `RtMidiOutput` | `StartOutput(settings)`, `ApplySettings(settings)`, `StopOutput(bool drainPending)` |
-| `ApcMiniMk2Surface` | `Initialize(input)`, semantic control events, `Dispose()` |
-| `ApcMiniMk2ListenController` | `Initialize(profileStore)`, `Begin(parameterId, slotIndex, kind)`, `TryConsume(controlEvent)`, `Cancel(reason)`, `Dispose()` |
-| `ApcMiniMk2Controller` | `Initialize(surface, bindingRegistry, listen, bpm)`, `Rebind(registry)`, LED/UI用状態query, `Dispose()` |
-| `ApcMiniMk2Runtime` | `Initialize(controller, bpmManager, applyPendingChanges)`, `Update(-90)` 冒頭でpending適用後にbeat更新, `Dispose()` |
-| `ApcMiniMk2LedRenderer` | `Initialize(output, controller, registry)`, `InvalidateAll()`, `FlushIfDue()`, `Dispose()` |
+| Service                      | API                                                                                                                                                                                                                                     |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MidiParameterRegistry`      | `Initialize(IEnumerable<IMidiParameterProvider>)`, `TryGet(string, out IMidiBindableParameter)`, `Descriptors`, `Dispose()`                                                                                                             |
+| `MidiProfileStore`           | serialized `_defaultMapping` / `_defaultSettings`, `Initialize(registry, persistence)`, `WorkingMapping`, `WorkingSettings`, `PrepareSave()`, `CommitSave()`, `AbortSave()`, `Revert()`, `ResetMapping()`, `ResetValues()`, `Dispose()` |
+| `MidiParameterRuntime`       | `Initialize(registry, bpmManager, applyPendingChanges)`, `Update(-110)` 冒頭でpending適用後にframe reset/Sequence更新, `Dispose()`                                                                                                      |
+| `MinisMidiInput`             | `StartInput(settings)`, `ApplySettings(settings)`, `StopInput()`                                                                                                                                                                        |
+| `RtMidiOutput`               | `StartOutput(settings)`, `ApplySettings(settings)`, `StopOutput(bool drainPending)`                                                                                                                                                     |
+| `ApcMiniMk2Surface`          | `Initialize(input)`, semantic control events, `Dispose()`                                                                                                                                                                               |
+| `ApcMiniMk2ListenController` | `Initialize(profileStore)`, `Begin(parameterId, slotIndex, kind)`, `TryConsume(controlEvent)`, `Cancel(reason)`, `Dispose()`                                                                                                            |
+| `ApcMiniMk2Controller`       | `Initialize(surface, bindingRegistry, listen, bpm)`, `Rebind(registry)`, LED/UI用状態query, `Dispose()`                                                                                                                                 |
+| `ApcMiniMk2Runtime`          | `Initialize(controller, bpmManager, applyPendingChanges)`, `Update(-90)` 冒頭でpending適用後にbeat更新, `Dispose()`                                                                                                                     |
+| `ApcMiniMk2LedRenderer`      | `Initialize(output, controller, registry)`, `InvalidateAll()`, `FlushIfDue()`, `Dispose()`                                                                                                                                              |
 
 上表以外からservice内部list、event delegate、RtMidi handleを直接変更しない。
 
@@ -242,22 +246,22 @@ Binding UIとListen Controllerは `WorkingMapping` のlistを直接変更せず�
 
 ## Design Decisions
 
-| 決定 | 理由 | 採用しない案 |
-| --- | --- | --- |
-| owner所有の型付きParameter | UI/MIDI/Keyboardの共通状態となり、MIDIなしでも成立する。 | MIDIの文字列Dictionaryを状態ownerにする。 |
-| stable semantic ID | renameに耐え、人間が読め、Prefs復元に使える。 | GUID、GameObject path自動生成。 |
-| 明示的Provider登録 | ownership/lifecycleが明確。 | static自己登録、reflection。 |
-| Parameter型からBinding Typeを決定 | 不正組合せとType dropdownをなくす。 | Typeを別選択。 |
-| Binding型別list | 不要fieldを構造上なくす。 | union class、`SerializeReference` 多態list。 |
-| Scene default + Prefs override | Unityの初期値と実行時編集を両立する。 | Sceneのみ、Prefsのみ、コード直書き。 |
-| 用途別version付きrecord | migration/reset境界と一括整合性を保つ。 | itemごとのPrefs key。 |
-| last change wins | 複数入力を対等に扱う。 | 固定優先順位。 |
-| Fader Pickup | UI/復元値から物理位置へのjumpを防ぐ。 | 即時追従、relative。 |
-| Oneshot/Momentary名称維持 | 単独利用の既存理解を優先する。 | Gate/Triggerへrename。 |
-| raw I/OとAPC Surface分離 | MIDI out、Listen、LED追加後も責務を保つ。 | 一classへ集約。 |
-| worker MIDI out | native callからmain threadを守る。 | 同期送信。 |
-| 自動LED投影 | 入力と表示の不一致を防ぐ。 | consumerがLEDを直接操作。 |
-| 単一 `trip26` Profile | 現用途に十分。schemaは将来拡張可能にする。 | 初回からProfile管理UI。 |
+| 決定                              | 理由                                                     | 採用しない案                                 |
+| --------------------------------- | -------------------------------------------------------- | -------------------------------------------- |
+| owner所有の型付きParameter        | UI/MIDI/Keyboardの共通状態となり、MIDIなしでも成立する。 | MIDIの文字列Dictionaryを状態ownerにする。    |
+| stable semantic ID                | renameに耐え、人間が読め、Prefs復元に使える。            | GUID、GameObject path自動生成。              |
+| 明示的Provider登録                | ownership/lifecycleが明確。                              | static自己登録、reflection。                 |
+| Parameter型からBinding Typeを決定 | 不正組合せとType dropdownをなくす。                      | Typeを別選択。                               |
+| Binding型別list                   | 不要fieldを構造上なくす。                                | union class、`SerializeReference` 多態list。 |
+| Scene default + Prefs override    | Unityの初期値と実行時編集を両立する。                    | Sceneのみ、Prefsのみ、コード直書き。         |
+| 用途別version付きrecord           | migration/reset境界と一括整合性を保つ。                  | itemごとのPrefs key。                        |
+| last change wins                  | 複数入力を対等に扱う。                                   | 固定優先順位。                               |
+| Fader Pickup                      | UI/復元値から物理位置へのjumpを防ぐ。                    | 即時追従、relative。                         |
+| Oneshot/Momentary名称維持         | 単独利用の既存理解を優先する。                           | Gate/Triggerへrename。                       |
+| raw I/OとAPC Surface分離          | MIDI out、Listen、LED追加後も責務を保つ。                | 一classへ集約。                              |
+| worker MIDI out                   | native callからmain threadを守る。                       | 同期送信。                                   |
+| 自動LED投影                       | 入力と表示の不一致を防ぐ。                               | consumerがLEDを直接操作。                    |
+| 単一 `trip26` Profile             | 現用途に十分。schemaは将来拡張可能にする。               | 初回からProfile管理UI。                      |
 
 ## Files to Change
 
@@ -265,69 +269,69 @@ Binding UIとListen Controllerは `WorkingMapping` のlistを直接変更せず�
 
 ### Parameter
 
-| 種別 | パス | 責務 |
-| --- | --- | --- |
-| 新規 | `Assets/qoooo/Scripts/Parameters/IParameterValue.cs` | read/write値interfaceと変更通知。 |
-| 新規 | `Assets/qoooo/Scripts/Parameters/IMidiBindableParameter.cs` | ID、表示名、kind、reset/save contract。 |
-| 新規 | `Assets/qoooo/Scripts/Parameters/IMidiParameterProvider.cs` | ownerのParameter列挙。 |
-| 新規 | `Assets/qoooo/Scripts/Parameters/BoolParameter.cs` | Toggle値。 |
-| 新規 | `Assets/qoooo/Scripts/Parameters/RadioParameter.cs` | option名、index validation。 |
-| 新規 | `Assets/qoooo/Scripts/Parameters/StateParameter.cs` | state countと循環。 |
-| 新規 | `Assets/qoooo/Scripts/Parameters/OneshotParameter.cs` | Note OnからOffまでの状態。 |
-| 新規 | `Assets/qoooo/Scripts/Parameters/MomentaryParameter.cs` | 1 frame flag、event、発火回数。 |
-| 新規 | `Assets/qoooo/Scripts/Parameters/SequenceParameter.cs` | 固定steps、pattern、division、active step。 |
-| 新規 | `Assets/qoooo/Scripts/Parameters/FloatParameter.cs` | min/max付き連続値と正規化変換。 |
-| 新規 | `Assets/qoooo/Scripts/Parameters/MidiParameterRegistry.cs` | Provider収集、ID validation/index。 |
-| 新規 | `Assets/qoooo/Scripts/Parameters/MidiParameterRuntime.cs` | Momentary frame resetとSequence beat更新。 |
+| 種別 | パス                                                        | 責務                                        |
+| ---- | ----------------------------------------------------------- | ------------------------------------------- |
+| 新規 | `Assets/qoooo/Scripts/Parameters/IParameterValue.cs`        | read/write値interfaceと変更通知。           |
+| 新規 | `Assets/qoooo/Scripts/Parameters/IMidiBindableParameter.cs` | ID、表示名、kind、reset/save contract。     |
+| 新規 | `Assets/qoooo/Scripts/Parameters/IMidiParameterProvider.cs` | ownerのParameter列挙。                      |
+| 新規 | `Assets/qoooo/Scripts/Parameters/BoolParameter.cs`          | Toggle値。                                  |
+| 新規 | `Assets/qoooo/Scripts/Parameters/RadioParameter.cs`         | option名、index validation。                |
+| 新規 | `Assets/qoooo/Scripts/Parameters/StateParameter.cs`         | state countと循環。                         |
+| 新規 | `Assets/qoooo/Scripts/Parameters/OneshotParameter.cs`       | Note OnからOffまでの状態。                  |
+| 新規 | `Assets/qoooo/Scripts/Parameters/MomentaryParameter.cs`     | 1 frame flag、event、発火回数。             |
+| 新規 | `Assets/qoooo/Scripts/Parameters/SequenceParameter.cs`      | 固定steps、pattern、division、active step。 |
+| 新規 | `Assets/qoooo/Scripts/Parameters/FloatParameter.cs`         | min/max付き連続値と正規化変換。             |
+| 新規 | `Assets/qoooo/Scripts/Parameters/MidiParameterRegistry.cs`  | Provider収集、ID validation/index。         |
+| 新規 | `Assets/qoooo/Scripts/Parameters/MidiParameterRuntime.cs`   | Momentary frame resetとSequence beat更新。  |
 
 ### MIDI transport and APC
 
-| 種別 | パス | 責務 |
-| --- | --- | --- |
-| 新規 | `Assets/qoooo/Scripts/Midi/IMidiInput.cs` | raw Note/CCのframe確定済みAPI。 |
-| 新規 | `Assets/qoooo/Scripts/Midi/IMidiOutput.cs` | raw Note/CC/SysEx送信API。 |
-| 新規 | `Assets/qoooo/Scripts/Midi/MinisMidiInput.cs` | Minis接続、filter/channel、queue drain。 |
-| 新規 | `Assets/qoooo/Scripts/Midi/RtMidiOutput.cs` | worker、port filter、reconnect、bounded queue。 |
-| 変更 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2Constants.cs` | LED behaviour、palette、出力定数を追加。 |
-| 変更 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2Layout.cs` | control名と安全な座標/Note変換。 |
-| 新規 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2Surface.cs` | raw番号からAPC物理control eventへの変換とListen source。 |
-| 新規 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2LedRenderer.cs` | 共通色、dirty、page/reconnect再描画。 |
-| 新規 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2Runtime.cs` | `Update(-90)` でControllerのFader Random beat更新。 |
-| 新規 | `Assets/qoooo/Scripts/Midi/MidiSystemController.cs` | subsystemの明示初期化、更新開始、逆順破棄。 |
-| 変更 | `Assets/qoooo/Scripts/Timing/BpmManager.cs` | 実行順を-120へ変更しParameter Runtimeより先にbeat更新。 |
+| 種別 | パス                                                 | 責務                                                     |
+| ---- | ---------------------------------------------------- | -------------------------------------------------------- |
+| 新規 | `Assets/qoooo/Scripts/Midi/IMidiInput.cs`            | raw Note/CCのframe確定済みAPI。                          |
+| 新規 | `Assets/qoooo/Scripts/Midi/IMidiOutput.cs`           | raw Note/CC/SysEx送信API。                               |
+| 新規 | `Assets/qoooo/Scripts/Midi/MinisMidiInput.cs`        | Minis接続、filter/channel、queue drain。                 |
+| 新規 | `Assets/qoooo/Scripts/Midi/RtMidiOutput.cs`          | worker、port filter、reconnect、bounded queue。          |
+| 変更 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2Constants.cs`   | LED behaviour、palette、出力定数を追加。                 |
+| 変更 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2Layout.cs`      | control名と安全な座標/Note変換。                         |
+| 新規 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2Surface.cs`     | raw番号からAPC物理control eventへの変換とListen source。 |
+| 新規 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2LedRenderer.cs` | 共通色、dirty、page/reconnect再描画。                    |
+| 新規 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2Runtime.cs`     | `Update(-90)` でControllerのFader Random beat更新。      |
+| 新規 | `Assets/qoooo/Scripts/Midi/MidiSystemController.cs`  | subsystemの明示初期化、更新開始、逆順破棄。              |
+| 変更 | `Assets/qoooo/Scripts/Timing/BpmManager.cs`          | 実行順を-120へ変更しParameter Runtimeより先にbeat更新。  |
 
 ### Binding, persistence and UI
 
-| 種別 | パス | 責務 |
-| --- | --- | --- |
-| 変更 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2Binding.cs` | union型を型別Binding DTO/slotへ置換。 |
-| 変更 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2BindingRegistry.cs` | 型別list統合、一意性、Parameter解決、未解決保持。 |
-| 変更 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2Controller.cs` | 文字列storeを削除しParameterを操作。Pickup/Fader mode管理。 |
-| 削除 | `Assets/qoooo/Scripts/Midi/IApcMiniMk2Controller.cs` | 旧文字列getter/write API。新Controllerは内部concrete型として使用。 |
-| 新規 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2ListenController.cs` | 単一Listen session、移動、cancel、入力抑制。 |
-| 新規 | `Assets/qoooo/Scripts/Midi/MidiProfileData.cs` | version付きMapping/State/Settings DTO。 |
-| 新規 | `Assets/qoooo/Scripts/Midi/IMidiProfilePersistence.cs` | Profile Storeが使用するload/stage/rollback境界。 |
-| 新規 | `Assets/qoooo/Scripts/Midi/PrefsMidiProfilePersistence.cs` | 3つの `PrefsAny<T>` を包むproduction adapter。 |
-| 新規 | `Assets/qoooo/Scripts/Midi/MidiProfileStore.cs` | Scene default copy、Prefs load/save/revert/reset。 |
-| 新規 | `Assets/qoooo/Scripts/Midi/MidiBindingUi.cs` | `MidiSystemController` が所有するplain C# UI builder。型別RosettaUI、Listen、未解決修復。 |
-| 新規 | `Assets/qoooo/Scripts/Midi/MidiSettingsUi.cs` | `MidiSystemController` が所有するplain C#接続設定UI builder。 |
-| 新規 | `Assets/qoooo/Scripts/View/IPrefsSaveParticipant.cs` | `Prefs.Save` 前後のsnapshot準備・確定hook。 |
-| 変更 | `Assets/qoooo/Scripts/View/UiBuilder.cs` | save participantを注入し、Prepare → Prefs.Save → Commitの順で実行。 |
-| 置換後削除 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2MidiInput.cs` | 移行中のcomposition facade。新構造統合後に削除。 |
-| 変更 | `Assets/qoooo/Scenes/Trip26.unity` | 新components、標準Mapping、接続設定。 |
+| 種別       | パス                                                       | 責務                                                                                      |
+| ---------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| 変更       | `Assets/qoooo/Scripts/Midi/ApcMiniMk2Binding.cs`           | union型を型別Binding DTO/slotへ置換。                                                     |
+| 変更       | `Assets/qoooo/Scripts/Midi/ApcMiniMk2BindingRegistry.cs`   | 型別list統合、一意性、Parameter解決、未解決保持。                                         |
+| 変更       | `Assets/qoooo/Scripts/Midi/ApcMiniMk2Controller.cs`        | 文字列storeを削除しParameterを操作。Pickup/Fader mode管理。                               |
+| 削除       | `Assets/qoooo/Scripts/Midi/IApcMiniMk2Controller.cs`       | 旧文字列getter/write API。新Controllerは内部concrete型として使用。                        |
+| 新規       | `Assets/qoooo/Scripts/Midi/ApcMiniMk2ListenController.cs`  | 単一Listen session、移動、cancel、入力抑制。                                              |
+| 新規       | `Assets/qoooo/Scripts/Midi/MidiProfileData.cs`             | version付きMapping/State/Settings DTO。                                                   |
+| 新規       | `Assets/qoooo/Scripts/Midi/IMidiProfilePersistence.cs`     | Profile Storeが使用するload/stage/rollback境界。                                          |
+| 新規       | `Assets/qoooo/Scripts/Midi/PrefsMidiProfilePersistence.cs` | 3つの `PrefsAny<T>` を包むproduction adapter。                                            |
+| 新規       | `Assets/qoooo/Scripts/Midi/MidiProfileStore.cs`            | Scene default copy、Prefs load/save/revert/reset。                                        |
+| 新規       | `Assets/qoooo/Scripts/Midi/MidiBindingUi.cs`               | `MidiSystemController` が所有するplain C# UI builder。型別RosettaUI、Listen、未解決修復。 |
+| 新規       | `Assets/qoooo/Scripts/Midi/MidiSettingsUi.cs`              | `MidiSystemController` が所有するplain C#接続設定UI builder。                             |
+| 新規       | `Assets/qoooo/Scripts/View/IPrefsSaveParticipant.cs`       | `Prefs.Save` 前後のsnapshot準備・確定hook。                                               |
+| 変更       | `Assets/qoooo/Scripts/View/UiBuilder.cs`                   | save participantを注入し、Prepare → Prefs.Save → Commitの順で実行。                       |
+| 置換後削除 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2MidiInput.cs`         | 移行中のcomposition facade。新構造統合後に削除。                                          |
+| 変更       | `Assets/qoooo/Scenes/Trip26.unity`                         | 新components、標準Mapping、接続設定。                                                     |
 
 ### Tests
 
-| 種別 | パス | 責務 |
-| --- | --- | --- |
-| 新規 | `Assets/qoooo/Tests/EditMode/ParameterTests.cs` | 型別validation、Changed、reset、Momentary。 |
-| 新規 | `Assets/qoooo/Tests/EditMode/MidiBindingRegistryTests.cs` | 一意性、型解決、未解決、移動。 |
-| 新規 | `Assets/qoooo/Tests/EditMode/MidiProfileStoreTests.cs` | round-trip、version、revert/reset。 |
-| 新規 | `Assets/qoooo/Tests/EditMode/ApcMiniMk2ControllerTests.cs` | Binding、Listen、Pickup、page、Fader mode。 |
-| 新規 | `Assets/qoooo/Tests/EditMode/ApcMiniMk2LedRendererTests.cs` | Type表示、dirty、page、reconnect。 |
-| 新規 | `Assets/qoooo/Scripts/qoooo.Runtime.asmdef` | runtime scriptsをtest assemblyから参照可能にする。 |
-| 新規 | `Assets/qoooo/Scripts/AssemblyInfo.cs` | `InternalsVisibleTo("qoooo.EditModeTests")` でinternal coreをtest可能にする。 |
-| 新規 | `Assets/qoooo/Tests/EditMode/qoooo.EditModeTests.asmdef` | NUnit test discoveryを有効化する。 |
+| 種別 | パス                                                        | 責務                                                                          |
+| ---- | ----------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| 新規 | `Assets/qoooo/Tests/EditMode/ParameterTests.cs`             | 型別validation、Changed、reset、Momentary。                                   |
+| 新規 | `Assets/qoooo/Tests/EditMode/MidiBindingRegistryTests.cs`   | 一意性、型解決、未解決、移動。                                                |
+| 新規 | `Assets/qoooo/Tests/EditMode/MidiProfileStoreTests.cs`      | round-trip、version、revert/reset。                                           |
+| 新規 | `Assets/qoooo/Tests/EditMode/ApcMiniMk2ControllerTests.cs`  | Binding、Listen、Pickup、page、Fader mode。                                   |
+| 新規 | `Assets/qoooo/Tests/EditMode/ApcMiniMk2LedRendererTests.cs` | Type表示、dirty、page、reconnect。                                            |
+| 新規 | `Assets/qoooo/Scripts/qoooo.Runtime.asmdef`                 | runtime scriptsをtest assemblyから参照可能にする。                            |
+| 新規 | `Assets/qoooo/Scripts/AssemblyInfo.cs`                      | `InternalsVisibleTo("qoooo.EditModeTests")` でinternal coreをtest可能にする。 |
+| 新規 | `Assets/qoooo/Tests/EditMode/qoooo.EditModeTests.asmdef`    | NUnit test discoveryを有効化する。                                            |
 
 既存VJ classは、具体的なMIDI割当を行うclassだけ同じ変更単位でParameter化する。
 
@@ -680,19 +684,19 @@ Runtime StateのParameter欠損/kind不一致entryは起動時に適用しない
 
 ### LED rules
 
-| 対象 | 非アクティブ | アクティブ |
-| --- | --- | --- |
-| 未割当Pad | Off | - |
-| Toggle | Dim Green | Bright Green |
-| Radio | Dim Blue | Bright Blue |
-| Oneshot | Dim Yellow | Bright Yellow while true |
-| Momentary | Dim White | Bright White for at least one flush |
-| State | Dim Cyan | 共通paletteをstate indexで循環 |
-| Sequence | Off | Orange、active stepはWhite優先 |
-| Listen | - | Blink |
-| Scene page | Off | current page On（単色LED） |
-| Track / Mute | Off | On |
-| Track / Random | Off | Blink |
+| 対象           | 非アクティブ | アクティブ                          |
+| -------------- | ------------ | ----------------------------------- |
+| 未割当Pad      | Off          | -                                   |
+| Toggle         | Dim Green    | Bright Green                        |
+| Radio          | Dim Blue     | Bright Blue                         |
+| Oneshot        | Dim Yellow   | Bright Yellow while true            |
+| Momentary      | Dim White    | Bright White for at least one flush |
+| State          | Dim Cyan     | 共通paletteをstate indexで循環      |
+| Sequence       | Off          | Orange、active stepはWhite優先      |
+| Listen         | -            | Blink                               |
+| Scene page     | Off          | current page On（単色LED）          |
+| Track / Mute   | Off          | On                                  |
+| Track / Random | Off          | Blink                               |
 
 ShiftにはLEDがないためMaster modeはRosettaUI上だけで確認する。
 
@@ -887,28 +891,28 @@ MIDI Mapping
 
 ## Edge Cases
 
-| ケース | 期待動作 |
-| --- | --- |
-| MIDI未接続 | Parameter/UI/Prefsは通常動作し、output queueを増やさない。 |
-| outputだけ未接続 | input継続。再接続後に全LED同期。 |
-| ID重複 | 両方Binding対象外、owner付きerror一回。 |
-| Parameter欠損 | 未解決保持、I/O無効、UI修復可能。 |
-| Parameter kind変更 | 未解決扱い。自動変換しない。 |
-| Radio option数変更 | 共通slot維持、余剰は修復対象。 |
-| Sequence step数変更 | 共通pattern/slotだけ復元、残りdefault。 |
-| 使用済みPadをListen | 旧slotから新slotへ移し値は変えない。 |
-| Listen中のdisconnect | session維持、Cancelか再接続を待つ。 |
-| Oneshot保持中のpage変更 | Note On時のParameterを記録し、元のParameterをNote Offで解除する。 |
-| Oneshot保持中のMapping変更/切断 | 保持中Parameterを全てfalseへ戻してstuck状態を残さない。 |
-| Fader noise | threshold/Pickup成立前は値を変えない。 |
-| UI変更後のFader | Pickup成立まで論理値維持。 |
-| Mute/Random解除 | Pickupへ戻りjumpしない。 |
-| 同frame Momentary複数回 | poll=true、event/countは回数分。 |
-| Reset後Saveしない | 次回は最後の保存状態へ戻る。 |
-| 未知schema | Scene defaultで起動しwarning一回。 |
-| output queue飽和 | 古い更新を統合/破棄しdesired stateから再送可能。 |
-| worker停止遅延 | 短い上限付きjoin後にshutdown継続。 |
-| Domain Reload無効 | static event/sessionを残さない。 |
+| ケース                          | 期待動作                                                          |
+| ------------------------------- | ----------------------------------------------------------------- |
+| MIDI未接続                      | Parameter/UI/Prefsは通常動作し、output queueを増やさない。        |
+| outputだけ未接続                | input継続。再接続後に全LED同期。                                  |
+| ID重複                          | 両方Binding対象外、owner付きerror一回。                           |
+| Parameter欠損                   | 未解決保持、I/O無効、UI修復可能。                                 |
+| Parameter kind変更              | 未解決扱い。自動変換しない。                                      |
+| Radio option数変更              | 共通slot維持、余剰は修復対象。                                    |
+| Sequence step数変更             | 共通pattern/slotだけ復元、残りdefault。                           |
+| 使用済みPadをListen             | 旧slotから新slotへ移し値は変えない。                              |
+| Listen中のdisconnect            | session維持、Cancelか再接続を待つ。                               |
+| Oneshot保持中のpage変更         | Note On時のParameterを記録し、元のParameterをNote Offで解除する。 |
+| Oneshot保持中のMapping変更/切断 | 保持中Parameterを全てfalseへ戻してstuck状態を残さない。           |
+| Fader noise                     | threshold/Pickup成立前は値を変えない。                            |
+| UI変更後のFader                 | Pickup成立まで論理値維持。                                        |
+| Mute/Random解除                 | Pickupへ戻りjumpしない。                                          |
+| 同frame Momentary複数回         | poll=true、event/countは回数分。                                  |
+| Reset後Saveしない               | 次回は最後の保存状態へ戻る。                                      |
+| 未知schema                      | Scene defaultで起動しwarning一回。                                |
+| output queue飽和                | 古い更新を統合/破棄しdesired stateから再送可能。                  |
+| worker停止遅延                  | 短い上限付きjoin後にshutdown継続。                                |
+| Domain Reload無効               | static event/sessionを残さない。                                  |
 
 ## Verification
 
@@ -947,18 +951,18 @@ MIDI Mapping
 
 ## Risks
 
-| リスク | 対策 |
-| --- | --- |
-| Parameter化が大規模化 | MIDI対応する実機能だけを一つずつ移行する。 |
-| ID変更でPrefsが切れる | semantic ID、validation、未解決保持、schema version。 |
+| リスク                        | 対策                                                                                                          |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Parameter化が大規模化         | MIDI対応する実機能だけを一つずつ移行する。                                                                    |
+| ID変更でPrefsが切れる         | semantic ID、validation、未解決保持、schema version。                                                         |
 | PrefsGUIの複雑型serialization | version recordごとに `PrefsAny<T>` を使用し、実装の最初にround-trip testでUnity serialization対象を検証する。 |
-| RosettaUI可変listの再構築 | Mapping revision変更時だけdynamic elementを再構築。 |
-| Momentary LEDが短すぎる | Rendererで最低1 flush latch。 |
-| RtMidi native call停止 | worker限定、bounded queue、短いjoin。 |
-| 古いLED message | desired stateをsource of truthにしてfull redraw可能にする。 |
-| 別portへ誤接続 | 独立filter、接続port表示、APC名default。 |
-| Pickup成立困難 | crossingと許容幅を併用しUIへ待機表示。 |
-| Scene defaultとPrefsの混同 | dirty/save状態とRevert/Resetの意味をUI表示。 |
+| RosettaUI可変listの再構築     | Mapping revision変更時だけdynamic elementを再構築。                                                           |
+| Momentary LEDが短すぎる       | Rendererで最低1 flush latch。                                                                                 |
+| RtMidi native call停止        | worker限定、bounded queue、短いjoin。                                                                         |
+| 古いLED message               | desired stateをsource of truthにしてfull redraw可能にする。                                                   |
+| 別portへ誤接続                | 独立filter、接続port表示、APC名default。                                                                      |
+| Pickup成立困難                | crossingと許容幅を併用しUIへ待機表示。                                                                        |
+| Scene defaultとPrefsの混同    | dirty/save状態とRevert/Resetの意味をUI表示。                                                                  |
 
 rollbackはParameter ownerを旧primitive fieldへ戻し、新MIDI componentsをSceneから外して旧 `ApcMiniMk2MidiInput` を再有効化する。旧Mappingは空のため逆変換不要。
 

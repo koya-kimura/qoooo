@@ -1,5 +1,9 @@
 # APC mini mk2 MIDI In / BPM 実装計画
 
+> **Status: Historical implementation plan.** この文書は初期設計の記録であり、
+> 現行仕様ではない。現在の構成は[Architecture.md](Architecture.md)、この計画との差分は
+> [Architecture/PlanStatus.md](Architecture/PlanStatus.md)を参照する。
+
 ## Objective
 
 `Trip26` シーンで Akai APC mini mk2 の **MIDI input** を keijiro の Minis 1.3.2 経由で受信し、ページ付き 8 × 8 パッド、フェーダー、フェーダーボタンと 7 種のバインディング状態を、既存 VJ 機能から安全に読み取れるようにする。
@@ -18,15 +22,15 @@
 
 調査対象は `master` の `cfc453f3ae22613429f5157dde0006119aea212a`（2026-09-14）である。
 
-| 項目 | 現状と根拠 |
-| --- | --- |
-| Unity | Unity 6000.3.12f1。`ProjectSettings/ProjectVersion.txt`。 |
-| MIDI 依存 | `Packages/manifest.json` に `jp.keijiro.minis: 1.3.2`、`Packages/packages-lock.json` に `com.unity.inputsystem: 1.19.0` が存在する。追加・更新しない。 |
-| Input System | `ProjectSettings/ProjectSettings.asset` の `activeInputHandler: 1` で有効。 |
-| Scene | 稼働シーンは `Assets/qoooo/Scenes/Trip26.unity`。`Managers` 配下に `ModelManager` と `TextManager`、別に `UiBuilder` がある。 |
-| DI | `Assets/qoooo/Resources/ProjectContainer.prefab` は UnitySimpleContainer の自動バインドを利用し、`UiBuilder` は `IUiTarget` を列挙注入する。MIDI基盤は DI 登録を必要としない。 |
-| 時間管理 | `Assets/qoooo/Scripts` に BPM/beat/tempo の所有者はない。各コンポーネントは必要に応じ `Time.time` を直接使う。 |
-| テスト | プロジェクト固有の EditMode/PlayMode テスト、asmdef は存在しない。 |
+| 項目         | 現状と根拠                                                                                                                                                                     |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Unity        | Unity 6000.3.12f1。`ProjectSettings/ProjectVersion.txt`。                                                                                                                      |
+| MIDI 依存    | `Packages/manifest.json` に `jp.keijiro.minis: 1.3.2`、`Packages/packages-lock.json` に `com.unity.inputsystem: 1.19.0` が存在する。追加・更新しない。                         |
+| Input System | `ProjectSettings/ProjectSettings.asset` の `activeInputHandler: 1` で有効。                                                                                                    |
+| Scene        | 稼働シーンは `Assets/qoooo/Scenes/Trip26.unity`。`Managers` 配下に `ModelManager` と `TextManager`、別に `UiBuilder` がある。                                                  |
+| DI           | `Assets/qoooo/Resources/ProjectContainer.prefab` は UnitySimpleContainer の自動バインドを利用し、`UiBuilder` は `IUiTarget` を列挙注入する。MIDI基盤は DI 登録を必要としない。 |
+| 時間管理     | `Assets/qoooo/Scripts` に BPM/beat/tempo の所有者はない。各コンポーネントは必要に応じ `Time.time` を直接使う。                                                                 |
+| テスト       | プロジェクト固有の EditMode/PlayMode テスト、asmdef は存在しない。                                                                                                             |
 
 Minis の実装も確認済みである。`MidiDevice` は MIDI メッセージ受信後に動的生成され、`onWillNoteOn`、`onWillNoteOff`、`onWillControlChange` は Input System の control state 更新前に発火する。そのため callback 引数の note/CC 番号と value だけを使用する。Minis の `description.product` はポート名に ` Channel 0` を付加した値であり、製品名は完全一致ではなく部分一致で照合する。
 
@@ -34,13 +38,13 @@ Minis の実装も確認済みである。`MidiDevice` は MIDI メッセージ�
 
 今回追加で確認した資料は、定数の正と実装パターンの参考に限定して使う。添付コードが持つ LED 出力、RtMidi、全 MIDI デバイスの合成、UI エミュレーションを本プロジェクトへ移植するものではない。
 
-| 参照 | 確認した事実・採用内容 | 今回採用しない内容 |
-| --- | --- | --- |
-| `APC mini mk2 - Communication Protocol - v1.0.pdf` | Port 0 / MIDI Channel 0 における Clip Launch `0x00..0x3F`、Track Button `0x64..0x6B`、Scene Launch `0x70..0x77`、Shift `0x7A`、Fader 1–8 `CC 0x30..0x37`、Master Fader `CC 0x38` を `ApcMiniMk2Constants` の根拠にする。 | LED、RGB SysEx、Device Enquiry、Introduction Message。 |
-| `ApcMiniMk2.cs` | 機材固有の番号・範囲・座標変換を1つの静的クラスへ集約する。 | `IMidiOutput` extension、LED palette/behavior。 |
-| `MidiInput.cs` | Minis callback は raw event を queue するだけにして、一定の早い `Update` で queue を drain し状態を確定する。二重 buffer で、処理中に届いたイベントを次回へ残す。 | 全デバイス/channels の合成、pitch bend/aftertouch/全CC monitor、RosettaUI monitor。 |
-| `IMidiInput.cs`、`MidiBinding.cs`、`MidiCcBinding.cs` | 接続状態と入力状態を明示的な read API として出し、未割当・範囲外は安全な既定値を返す。 | MIDI learn、動的な任意 note/CC 割当。 |
-| `MidiSurface.cs`、`MidiOutput.cs`、`IMidiSurface.cs`、`IMidiOutput.cs`、`MidiDiagnostics.cs` | lifecycle 時の購読解除、接続状態の観測、診断時に MIDI 処理を止めない方針を参考にする。 | 操作面UI、実機不在時のエミュレーション、LED flush、出力ポート管理、永続診断ログ。 |
+| 参照                                                                                         | 確認した事実・採用内容                                                                                                                                                                                                   | 今回採用しない内容                                                                  |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| `APC mini mk2 - Communication Protocol - v1.0.pdf`                                           | Port 0 / MIDI Channel 0 における Clip Launch `0x00..0x3F`、Track Button `0x64..0x6B`、Scene Launch `0x70..0x77`、Shift `0x7A`、Fader 1–8 `CC 0x30..0x37`、Master Fader `CC 0x38` を `ApcMiniMk2Constants` の根拠にする。 | LED、RGB SysEx、Device Enquiry、Introduction Message。                              |
+| `ApcMiniMk2.cs`                                                                              | 機材固有の番号・範囲・座標変換を1つの静的クラスへ集約する。                                                                                                                                                              | `IMidiOutput` extension、LED palette/behavior。                                     |
+| `MidiInput.cs`                                                                               | Minis callback は raw event を queue するだけにして、一定の早い `Update` で queue を drain し状態を確定する。二重 buffer で、処理中に届いたイベントを次回へ残す。                                                        | 全デバイス/channels の合成、pitch bend/aftertouch/全CC monitor、RosettaUI monitor。 |
+| `IMidiInput.cs`、`MidiBinding.cs`、`MidiCcBinding.cs`                                        | 接続状態と入力状態を明示的な read API として出し、未割当・範囲外は安全な既定値を返す。                                                                                                                                   | MIDI learn、動的な任意 note/CC 割当。                                               |
+| `MidiSurface.cs`、`MidiOutput.cs`、`IMidiSurface.cs`、`IMidiOutput.cs`、`MidiDiagnostics.cs` | lifecycle 時の購読解除、接続状態の観測、診断時に MIDI 処理を止めない方針を参考にする。                                                                                                                                   | 操作面UI、実機不在時のエミュレーション、LED flush、出力ポート管理、永続診断ログ。   |
 
 ## Problem
 
@@ -103,37 +107,37 @@ Time.unscaledDeltaTime
 
 ## Design Decisions
 
-| 決定 | 理由・影響 | 採用しない案 |
-| --- | --- | --- |
-| Mapping は `Trip26` の `ApcMiniMk2MidiInput` に直接シリアライズ | ユーザー合意済み。現在の単一シーン運用に合い、専用アセットを増やさない。 | ScriptableObject、JSON、Prefs。 |
-| ドメイン状態は通常 C# class | Minis/Unity 実機なしで決定論的テストできる。 | MonoBehaviour に全ロジックを集約。 |
-| BPM は `BpmManager` facade + `BpmClock` | Unity lifecycle と TypeScript 互換の純粋計算を分離する。 | MIDI adapter 内で beat を生成する。 |
-| `unscaledDeltaTime` を BPM の時刻源にする | VJ の `timeScale` と独立し、外部音楽との同期を保つ。 | `deltaTime`。timeScale が変わると BPM が変わる。 |
-| callback は event queue に蓄積して `Update` で確定 | callback と利用側 Update の順序を固定し、複数入力を取りこぼさず、Controller を Unity callback から分離する。 | callback 内で Controller と VJ state を直接更新。 |
-| device change 時に一度全解除して再走査 | callback の重複購読を避け、切断・再接続を単純化する。 | 対象毎の部分的な購読差分管理。 |
-| product 名は部分一致、channel は 0 に限定 | Minis の product 表記には ` Channel 0` が加わる。別 MIDI 機器の混入を防ぐ。 | 全 `MidiDevice` を無条件購読。 |
-| APC物理定数は `ApcMiniMk2Constants` にだけ置く | PDFの Port/Channel/Note/CC 定義と、ドメインの page/row/col を分離して番号の散在を防ぐ。 | binding/adapter/scene に数値リテラルを散在。 |
-| Random は TypeScript 互換 PCG | 同一 beat と cellKey に対する結果を再現する。 | `UnityEngine.Random`。 |
+| 決定                                                            | 理由・影響                                                                                                   | 採用しない案                                      |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------- |
+| Mapping は `Trip26` の `ApcMiniMk2MidiInput` に直接シリアライズ | ユーザー合意済み。現在の単一シーン運用に合い、専用アセットを増やさない。                                     | ScriptableObject、JSON、Prefs。                   |
+| ドメイン状態は通常 C# class                                     | Minis/Unity 実機なしで決定論的テストできる。                                                                 | MonoBehaviour に全ロジックを集約。                |
+| BPM は `BpmManager` facade + `BpmClock`                         | Unity lifecycle と TypeScript 互換の純粋計算を分離する。                                                     | MIDI adapter 内で beat を生成する。               |
+| `unscaledDeltaTime` を BPM の時刻源にする                       | VJ の `timeScale` と独立し、外部音楽との同期を保つ。                                                         | `deltaTime`。timeScale が変わると BPM が変わる。  |
+| callback は event queue に蓄積して `Update` で確定              | callback と利用側 Update の順序を固定し、複数入力を取りこぼさず、Controller を Unity callback から分離する。 | callback 内で Controller と VJ state を直接更新。 |
+| device change 時に一度全解除して再走査                          | callback の重複購読を避け、切断・再接続を単純化する。                                                        | 対象毎の部分的な購読差分管理。                    |
+| product 名は部分一致、channel は 0 に限定                       | Minis の product 表記には ` Channel 0` が加わる。別 MIDI 機器の混入を防ぐ。                                  | 全 `MidiDevice` を無条件購読。                    |
+| APC物理定数は `ApcMiniMk2Constants` にだけ置く                  | PDFの Port/Channel/Note/CC 定義と、ドメインの page/row/col を分離して番号の散在を防ぐ。                      | binding/adapter/scene に数値リテラルを散在。      |
+| Random は TypeScript 互換 PCG                                   | 同一 beat と cellKey に対する結果を再現する。                                                                | `UnityEngine.Random`。                            |
 
 ## Files to Change
 
-| 種別 | パス | 内容 |
-| --- | --- | --- |
-| 新規 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2Constants.cs` | PDF準拠の Port/Channel、Grid/Track/Scene/Shift の note 範囲、Fader 1–8 と Master Fader の CC、個数、範囲判定 helper。既定フェーダーボタン機能。 |
-| 新規 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2Layout.cs` | note ⇔ row/col、page 付き `cellKey` の純粋変換。 |
-| 新規 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2Binding.cs` | `[Serializable]` mapping 型、binding 種別、セル位置、登録後セル、フェーダーモード enum。polymorphic な7型を避け、共通の `BindingType` と全種別フィールドを持つ1定義型にする。 |
-| 新規 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2BindingRegistry.cs` | mapping の検証、セル索引、初期値と deep copy を構築する純粋 class。 |
-| 新規 | `Assets/qoooo/Scripts/Midi/IApcMiniMk2Controller.cs` | 利用側が依存する状態読み取り・入力更新契約。 |
-| 新規 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2Controller.cs` | note/CC/page/fader/beat/Momentary の純粋状態遷移。 |
-| 新規 | `Assets/qoooo/Scripts/Midi/PcgHash.cs` | TypeScript 版の unsigned 32-bit / float32 互換 PCG ハッシュ。 |
-| 新規 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2MidiInput.cs` | Minis adapter、device lifecycle、`MidiSuccess`、Controller facade、Scene 設定。 |
-| 新規 | `Assets/qoooo/Scripts/Timing/BpmClock.cs` | 提示された TypeScript `BPMManager` と同じ純粋状態遷移。 |
-| 新規 | `Assets/qoooo/Scripts/Timing/BpmManager.cs` | `BpmClock` を所有し、Unity の unscaled delta time を渡す MonoBehaviour facade。 |
-| 新規 | `Assets/qoooo/Tests/EditMode/ApcMiniMk2LayoutTests.cs` | 座標・セルキーのテスト。 |
-| 新規 | `Assets/qoooo/Tests/EditMode/ApcMiniMk2BindingRegistryTests.cs` | mapping 検証・初期値・deep copy のテスト。 |
-| 新規 | `Assets/qoooo/Tests/EditMode/ApcMiniMk2ControllerTests.cs` | 全 binding、fader、beat、フォールバックのテスト。 |
-| 新規 | `Assets/qoooo/Tests/EditMode/BpmClockTests.cs` | BPM、Tap Tempo、同期、剰余、拍境界反映のテスト。 |
-| 変更 | `Assets/qoooo/Scenes/Trip26.unity` | `Managers` の子として `MIDI` GameObject を追加し、`BpmManager` と `ApcMiniMk2MidiInput`、初期 mapping をシリアライズ。 |
+| 種別 | パス                                                            | 内容                                                                                                                                                                          |
+| ---- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 新規 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2Constants.cs`              | PDF準拠の Port/Channel、Grid/Track/Scene/Shift の note 範囲、Fader 1–8 と Master Fader の CC、個数、範囲判定 helper。既定フェーダーボタン機能。                               |
+| 新規 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2Layout.cs`                 | note ⇔ row/col、page 付き `cellKey` の純粋変換。                                                                                                                              |
+| 新規 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2Binding.cs`                | `[Serializable]` mapping 型、binding 種別、セル位置、登録後セル、フェーダーモード enum。polymorphic な7型を避け、共通の `BindingType` と全種別フィールドを持つ1定義型にする。 |
+| 新規 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2BindingRegistry.cs`        | mapping の検証、セル索引、初期値と deep copy を構築する純粋 class。                                                                                                           |
+| 新規 | `Assets/qoooo/Scripts/Midi/IApcMiniMk2Controller.cs`            | 利用側が依存する状態読み取り・入力更新契約。                                                                                                                                  |
+| 新規 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2Controller.cs`             | note/CC/page/fader/beat/Momentary の純粋状態遷移。                                                                                                                            |
+| 新規 | `Assets/qoooo/Scripts/Midi/PcgHash.cs`                          | TypeScript 版の unsigned 32-bit / float32 互換 PCG ハッシュ。                                                                                                                 |
+| 新規 | `Assets/qoooo/Scripts/Midi/ApcMiniMk2MidiInput.cs`              | Minis adapter、device lifecycle、`MidiSuccess`、Controller facade、Scene 設定。                                                                                               |
+| 新規 | `Assets/qoooo/Scripts/Timing/BpmClock.cs`                       | 提示された TypeScript `BPMManager` と同じ純粋状態遷移。                                                                                                                       |
+| 新規 | `Assets/qoooo/Scripts/Timing/BpmManager.cs`                     | `BpmClock` を所有し、Unity の unscaled delta time を渡す MonoBehaviour facade。                                                                                               |
+| 新規 | `Assets/qoooo/Tests/EditMode/ApcMiniMk2LayoutTests.cs`          | 座標・セルキーのテスト。                                                                                                                                                      |
+| 新規 | `Assets/qoooo/Tests/EditMode/ApcMiniMk2BindingRegistryTests.cs` | mapping 検証・初期値・deep copy のテスト。                                                                                                                                    |
+| 新規 | `Assets/qoooo/Tests/EditMode/ApcMiniMk2ControllerTests.cs`      | 全 binding、fader、beat、フォールバックのテスト。                                                                                                                             |
+| 新規 | `Assets/qoooo/Tests/EditMode/BpmClockTests.cs`                  | BPM、Tap Tempo、同期、剰余、拍境界反映のテスト。                                                                                                                              |
+| 変更 | `Assets/qoooo/Scenes/Trip26.unity`                              | `Managers` の子として `MIDI` GameObject を追加し、`BpmManager` と `ApcMiniMk2MidiInput`、初期 mapping をシリアライズ。                                                        |
 
 変更しないファイルは `Packages/manifest.json`、`Packages/packages-lock.json`、`ProjectSettings/ProjectSettings.asset`、既存 UI/レンダリング/出力コンポーネントである。依存はすでに導入済みである。
 
@@ -292,21 +296,21 @@ public sealed class BpmManager : MonoBehaviour
 
 ## Edge Cases
 
-| 条件 | 期待動作 |
-| --- | --- |
-| 起動時に APC 未接続 | 初期値のまま稼働。`MidiSuccess == false`。 |
+| 条件                                 | 期待動作                                                                       |
+| ------------------------------------ | ------------------------------------------------------------------------------ |
+| 起動時に APC 未接続                  | 初期値のまま稼働。`MidiSuccess == false`。                                     |
 | Minis がまだデバイスを生成していない | 接続済みでも `MidiSuccess == false`。初回操作後の device change で再走査する。 |
-| 対象外 product/channel、複数候補 | 対象外を無視し、候補の先頭1台だけ購読する。 |
-| Note On velocity 0 | Note Off と同じ遷移。 |
-| page 変更後の Note Off | 添付仕様どおり、解放時の現在 page の Oneshot に作用する。 |
-| 外部入力範囲外・未知 key | 例外にせず、無視または規定フォールバック。 |
-| 無効 mapping | 原因をログに出し、入力を有効化しない。既存VJを停止させない。 |
-| beat が同じ整数区間 | random 値を再生成しない。 |
-| beat 飛越し・逆行 | 中間 beat を補間せず、渡された最新の `floor(beat)` で更新する。 |
-| empty sequence | `SequenceActive` は false。 |
-| Tap 間隔 0 以下 | BPM を更新しない。 |
-| BPM/Sync 引数が範囲外 | BPM は 1–1000 へ clamp。barCount/beatsPerBar/count は 1 へ正規化。 |
-| disable/destroy の重複 | event 解除は冪等。 |
+| 対象外 product/channel、複数候補     | 対象外を無視し、候補の先頭1台だけ購読する。                                    |
+| Note On velocity 0                   | Note Off と同じ遷移。                                                          |
+| page 変更後の Note Off               | 添付仕様どおり、解放時の現在 page の Oneshot に作用する。                      |
+| 外部入力範囲外・未知 key             | 例外にせず、無視または規定フォールバック。                                     |
+| 無効 mapping                         | 原因をログに出し、入力を有効化しない。既存VJを停止させない。                   |
+| beat が同じ整数区間                  | random 値を再生成しない。                                                      |
+| beat 飛越し・逆行                    | 中間 beat を補間せず、渡された最新の `floor(beat)` で更新する。                |
+| empty sequence                       | `SequenceActive` は false。                                                    |
+| Tap 間隔 0 以下                      | BPM を更新しない。                                                             |
+| BPM/Sync 引数が範囲外                | BPM は 1–1000 へ clamp。barCount/beatsPerBar/count は 1 へ正規化。             |
+| disable/destroy の重複               | event 解除は冪等。                                                             |
 
 ## Verification
 
@@ -343,16 +347,16 @@ public sealed class BpmManager : MonoBehaviour
 
 ## Risks
 
-| リスク | 緩和策 / rollback |
-| --- | --- |
-| OS により MIDI port/product 名が違う | 最初の実機操作で product をログ確認し、部分一致 field を調整する。 |
-| Minis は操作前に device を公開しない | 未接続を非致命とし、初回操作を促す状態を公開する。 |
-| 再接続で callback が重複する | 全解除→再走査→1台購読を徹底し、実機で単発遷移を確認する。 |
-| callback と利用側 Update の順番で状態が揺れる | callback は queue への追加だけに限定し、`ApcMiniMk2MidiInput.Update` を唯一の入力確定点にする。 |
-| TypeScript/C# の uint/float が異なる | PCG を `uint` と float32 bit 操作で移植し、固定値テストを追加する。 |
-| シーン直列 mapping の編集競合 | 単一 `Trip26` シーンに限定し、mapping の変更は scene diff としてレビューする。 |
-| BPM と MIDI の Update 順が変わる | `DefaultExecutionOrder` attribute で順序をコード化する。 |
-| MIDI基盤が既存VJ機能を壊す | 既存クラスへ直接依存しない。rollback は `Trip26` の `MIDI` GameObject と新規 Scripts/Tests を戻すだけで可能。 |
+| リスク                                        | 緩和策 / rollback                                                                                             |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| OS により MIDI port/product 名が違う          | 最初の実機操作で product をログ確認し、部分一致 field を調整する。                                            |
+| Minis は操作前に device を公開しない          | 未接続を非致命とし、初回操作を促す状態を公開する。                                                            |
+| 再接続で callback が重複する                  | 全解除→再走査→1台購読を徹底し、実機で単発遷移を確認する。                                                     |
+| callback と利用側 Update の順番で状態が揺れる | callback は queue への追加だけに限定し、`ApcMiniMk2MidiInput.Update` を唯一の入力確定点にする。               |
+| TypeScript/C# の uint/float が異なる          | PCG を `uint` と float32 bit 操作で移植し、固定値テストを追加する。                                           |
+| シーン直列 mapping の編集競合                 | 単一 `Trip26` シーンに限定し、mapping の変更は scene diff としてレビューする。                                |
+| BPM と MIDI の Update 順が変わる              | `DefaultExecutionOrder` attribute で順序をコード化する。                                                      |
+| MIDI基盤が既存VJ機能を壊す                    | 既存クラスへ直接依存しない。rollback は `Trip26` の `MIDI` GameObject と新規 Scripts/Tests を戻すだけで可能。 |
 
 ## Assumptions
 
