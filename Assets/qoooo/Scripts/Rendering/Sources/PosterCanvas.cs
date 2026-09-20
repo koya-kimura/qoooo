@@ -51,12 +51,19 @@ namespace qoooo.Rendering.Sources
             "Typography Layout",
             new[] { "Poster Copy", "Headline", "Labels" });
 
+        [SerializeField]
+        private RadioParameter _mainText = new(
+            "poster.main-text",
+            "Poster Main Text",
+            new[] { "QOOOO", "TRIP26", "LIVE VISUAL" });
+
         private IResolutionContainer _resolutionContainer;
         private int _currentPreset = -1;
         private int _currentModelLayout = -1;
         private int _currentTypographyLayout = -1;
         private int _builtModelLayout = -1;
         private int _builtTypographyLayout = -1;
+        private int _builtMainText = -1;
         private bool _isApplyingPreset;
         private TextMeshProUGUI _textMeasurer;
 
@@ -71,6 +78,7 @@ namespace qoooo.Rendering.Sources
                 yield return _layout;
                 yield return _modelLayout;
                 yield return _typographyLayout;
+                yield return _mainText;
             }
         }
 
@@ -94,10 +102,12 @@ namespace qoooo.Rendering.Sources
 
             var modelLayout = _modelLayout.Value;
             var typographyLayout = _typographyLayout.Value;
+            var mainText = _mainText.Value;
             if (_builtModelLayout == modelLayout
-                && _builtTypographyLayout == typographyLayout) return;
+                && _builtTypographyLayout == typographyLayout
+                && _builtMainText == mainText) return;
 
-            RebuildLayout(texture, modelLayout, typographyLayout);
+            RebuildLayout(texture, modelLayout, typographyLayout, mainText);
         }
 
         private void SynchronizeParameterOptions()
@@ -114,10 +124,15 @@ namespace qoooo.Rendering.Sources
                 "poster.typography-layout",
                 "Typography Layout",
                 new[] { "Poster Copy", "Headline", "Labels" });
+            _mainText ??= new RadioParameter(
+                "poster.main-text",
+                "Poster Main Text",
+                new[] { "QOOOO", "TRIP26", "LIVE VISUAL" });
 
             _layout.ReplaceOptions(new[] { "Editorial", "Split", "Modular", "Custom" });
             _modelLayout.ReplaceOptions(new[] { "Hero", "Split", "Repeat" });
             _typographyLayout.ReplaceOptions(new[] { "Poster Copy", "Headline", "Labels" });
+            _mainText.ReplaceOptions(new[] { "QOOOO", "TRIP26", "LIVE VISUAL" });
         }
 
         public void Image(Texture texture, float x, float y, float width, float height)
@@ -431,6 +446,7 @@ namespace qoooo.Rendering.Sources
 
             var modelLayout = _modelLayout.Value;
             var typographyLayout = _typographyLayout.Value;
+            var mainText = _mainText.Value;
             var axisChanged = (_currentModelLayout >= 0 && _currentModelLayout != modelLayout)
                               || (_currentTypographyLayout >= 0
                                   && _currentTypographyLayout != typographyLayout);
@@ -453,7 +469,7 @@ namespace qoooo.Rendering.Sources
             _isApplyingPreset = false;
         }
 
-        private void RebuildLayout(Texture texture, int modelLayout, int typographyLayout)
+        private void RebuildLayout(Texture texture, int modelLayout, int typographyLayout, int mainText)
         {
             GetTextMeasurer();
             ClearLayout();
@@ -486,6 +502,17 @@ namespace qoooo.Rendering.Sources
 
             _builtModelLayout = modelLayout;
             _builtTypographyLayout = typographyLayout;
+            _builtMainText = mainText;
+        }
+
+        private string GetMainText()
+        {
+            return _mainText.Value switch
+            {
+                1 => "TRIP26",
+                2 => "LIVE VISUAL",
+                _ => "QOOOO"
+            };
         }
 
         private void ClearLayout()

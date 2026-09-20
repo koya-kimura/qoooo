@@ -181,10 +181,11 @@ Current Parameters:
 poster.layout              Radio: Editorial / Split / Modular / Custom
 poster.model-layout        Radio: Hero / Split / Repeat
 poster.typography-layout   Radio: Poster Copy / Headline / Labels
+poster.main-text           Radio: QOOOO / TRIP26 / LIVE VISUAL
 Owner: PosterCanvas
 ```
 
-`poster.model-layout` controls only Model RawImage placement. `poster.typography-layout` controls Text and its supporting SolidRect/Line/Band graphics. `poster.layout` is a compatibility Safe Preset: Editorial applies Hero + Poster Copy, Split applies Split + Headline, and Modular applies Repeat + Labels. Editing either independent axis sets it to Custom. The existing APC mapping still assigns only Editorial / Split / Modular to Page 0, Row 0, Columns 0-2; Custom and the independent axes are unassigned.
+`poster.model-layout` controls only Model RawImage placement. `poster.typography-layout` controls Text and its supporting SolidRect/Line/Band graphics. `poster.main-text` changes only the leading text within each Typography Layout. `poster.layout` is a compatibility Safe Preset: Editorial applies Hero + Poster Copy, Split applies Split + Headline, and Modular applies Repeat + Labels. Editing either independent layout axis sets it to Custom; main text is not part of the Safe Preset. The existing APC mapping still assigns only Editorial / Split / Modular to Page 0, Row 0, Columns 0-2; Custom and the independent axes are unassigned.
 
 ### Texture Effects
 

@@ -36,11 +36,13 @@ Posterの操作軸は次の3つである。
 | `poster.layout`              | Editorial / Split / Modular / Custom         | 下記2軸を同時設定する互換Safe Preset      |
 | `poster.model-layout`        | Hero / Split / Repeat                        | Model RenderTextureの数、位置、crop、回転 |
 | `poster.typography-layout`   | Poster Copy / Headline / Labels              | TextとRect、Line、Band等のsupport graphics |
+| `poster.main-text`           | QOOOO / TRIP26 / LIVE VISUAL                 | Typography Layout内の主役Text             |
 
 Editorial、Split、Modularは同じindexのModel LayoutとTypography Layoutを適用する。
 いずれかの独立軸を直接変更すると`poster.layout`はCustomになる。2軸の一方が変化した時だけ、
 既存要素をclearし、Model、Typographyの順でPoster UIを再構築する。Typography側は全面を覆う
-不透明Rectを生成せず、下層の`background.pattern`と共存する。
+不透明Rectを生成せず、下層の`background.pattern`と共存する。`poster.main-text`はSafe Preset
+に含めず、変更時はPosterを再構築する。
 
 ## Procedural background
 

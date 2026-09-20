@@ -40,7 +40,7 @@ namespace qoooo.Rendering.Sources
             Line(width - margin - column * 0.7f, height * 0.3f,
                 width - margin, height * 0.78f, unit * 0.006f,
                 new Color(1f, 0.78f, 0.2f, 1f));
-            Text("QOOOO", width - margin, height * 0.045f, unit * 0.12f, Color.white,
+            Text(GetMainText(), width - margin, height * 0.045f, unit * 0.12f, Color.white,
                 PosterHorizontalAlign.Right, PosterVerticalAlign.Top);
             Text("LIVE VISUAL / 026", width * 0.5f, height * 0.185f, unit * 0.025f,
                 new Color(1f, 0.78f, 0.2f, 1f),
@@ -81,7 +81,7 @@ namespace qoooo.Rendering.Sources
 
             Line(margin, height * 0.16f, width - margin, height * 0.16f,
                 unit * 0.005f, Color.white);
-            Text("SPLIT / 026", margin, height * 0.055f, unit * 0.09f, Color.white,
+            Text(GetMainText(), margin, height * 0.055f, unit * 0.09f, Color.white,
                 PosterHorizontalAlign.Left, PosterVerticalAlign.Top);
             Text("TWO CHANNEL STUDY", margin, height * 0.9f, unit * 0.028f,
                 new Color(0.05f, 0.035f, 0.07f, 1f),
@@ -123,7 +123,7 @@ namespace qoooo.Rendering.Sources
 
             Line(margin, height * 0.88f, width - margin, height * 0.88f,
                 unit * 0.005f, new Color(0.95f, 0.76f, 0.18f, 1f));
-            Text("MODULAR", margin, height * 0.07f, unit * 0.065f, Color.white,
+            Text(GetMainText(), margin, height * 0.07f, unit * 0.065f, Color.white,
                 PosterHorizontalAlign.Left, PosterVerticalAlign.Top);
             Text("04 / SHARED SIGNALS", width - margin, height * 0.9f, unit * 0.028f,
                 new Color(0.95f, 0.76f, 0.18f, 1f),
