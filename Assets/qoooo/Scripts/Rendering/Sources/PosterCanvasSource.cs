@@ -67,7 +67,7 @@ namespace qoooo.Rendering.Sources
                 && _output.height == resolution.y) return;
 
             ReleaseTexture();
-            _output = new RenderTexture(resolution.x, resolution.y, 0, RenderTextureFormat.ARGB32)
+            _output = new RenderTexture(resolution.x, resolution.y, 24, RenderTextureFormat.ARGB32)
             {
                 name = $"{name} Texture",
                 filterMode = FilterMode.Bilinear,
