@@ -364,6 +364,7 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Rendering.Sources.PosterCanvas
   _verificationTextureSource: {fileID: 1591138853}
+  _posterFont: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
 --- !u!1 &181277144
 GameObject:
   m_ObjectHideFlags: 0

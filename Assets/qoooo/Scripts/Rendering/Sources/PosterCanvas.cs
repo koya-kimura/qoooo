@@ -1,3 +1,4 @@
+using TMPro;
 using qoooo.Rendering.Composition;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,12 +12,28 @@ namespace qoooo.Rendering.Sources
         Cover
     }
 
+    public enum PosterHorizontalAlign
+    {
+        Left,
+        Center,
+        Right
+    }
+
+    public enum PosterVerticalAlign
+    {
+        Top,
+        Center,
+        Bottom
+    }
+
     public class PosterCanvas : MonoBehaviour
     {
         [SerializeField] private MonoBehaviour _verificationTextureSource;
+        [SerializeField] private TMP_FontAsset _posterFont;
 
         private IResolutionContainer _resolutionContainer;
-        private bool _verificationImagesCreated;
+        private bool _posterLayoutCreated;
+        private TextMeshProUGUI _textMeasurer;
 
         public float Width => _resolutionContainer?.Resolution.x ?? 1920f;
         public float Height => _resolutionContainer?.Resolution.y ?? 1080f;
@@ -30,7 +47,7 @@ namespace qoooo.Rendering.Sources
 
         private void Update()
         {
-            CreateVerificationImages();
+            CreatePosterLayout();
         }
 
         public void Image(Texture texture, float x, float y, float width, float height)
@@ -118,6 +135,42 @@ namespace qoooo.Rendering.Sources
             imageObject.GetComponent<Image>().color = color;
         }
 
+        public void Text(
+            string text,
+            float x,
+            float y,
+            float fontSize,
+            Color color,
+            PosterHorizontalAlign horizontalAlign,
+            PosterVerticalAlign verticalAlign)
+        {
+            if (_posterFont == null) return;
+
+            var textObject = new GameObject("Poster Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+            var textMesh = textObject.GetComponent<TextMeshProUGUI>();
+            textMesh.rectTransform.SetParent(transform, false);
+            ConfigureText(textMesh, text, fontSize, color);
+
+            var preferred = textMesh.GetPreferredValues(text ?? string.Empty);
+            var pivot = new Vector2(
+                GetHorizontalPivot(horizontalAlign),
+                GetVerticalPivot(verticalAlign));
+            textMesh.rectTransform.anchorMin = new Vector2(0f, 1f);
+            textMesh.rectTransform.anchorMax = new Vector2(0f, 1f);
+            textMesh.rectTransform.pivot = pivot;
+            textMesh.rectTransform.anchoredPosition = new Vector2(x, -y);
+            textMesh.rectTransform.sizeDelta = preferred;
+        }
+
+        public float TextWidth(string text, float fontSize)
+        {
+            if (_posterFont == null) return 0f;
+
+            var textMeasurer = GetTextMeasurer();
+            ConfigureText(textMeasurer, text, fontSize, Color.white);
+            return textMeasurer.GetPreferredValues(text ?? string.Empty).x;
+        }
+
         private RawImage CreateImage(
             Texture texture,
             float x,
@@ -148,6 +201,54 @@ namespace qoooo.Rendering.Sources
             rectTransform.pivot = new Vector2(0f, 1f);
             rectTransform.anchoredPosition = new Vector2(x, -y);
             rectTransform.sizeDelta = new Vector2(width, height);
+        }
+
+        private TextMeshProUGUI GetTextMeasurer()
+        {
+            if (_textMeasurer != null) return _textMeasurer;
+
+            var measureObject = new GameObject("Poster Text Measurer", typeof(RectTransform), typeof(TextMeshProUGUI));
+            measureObject.transform.SetParent(transform, false);
+            _textMeasurer = measureObject.GetComponent<TextMeshProUGUI>();
+            _textMeasurer.enabled = false;
+            return _textMeasurer;
+        }
+
+        private void ConfigureText(
+            TextMeshProUGUI textMesh,
+            string text,
+            float fontSize,
+            Color color)
+        {
+            textMesh.font = _posterFont;
+            textMesh.text = text ?? string.Empty;
+            textMesh.fontSize = fontSize;
+            textMesh.color = color;
+            textMesh.enableAutoSizing = false;
+            textMesh.textWrappingMode = TextWrappingModes.NoWrap;
+            textMesh.overflowMode = TextOverflowModes.Overflow;
+            textMesh.richText = false;
+            textMesh.raycastTarget = false;
+        }
+
+        private static float GetHorizontalPivot(PosterHorizontalAlign alignment)
+        {
+            return alignment switch
+            {
+                PosterHorizontalAlign.Center => 0.5f,
+                PosterHorizontalAlign.Right => 1f,
+                _ => 0f
+            };
+        }
+
+        private static float GetVerticalPivot(PosterVerticalAlign alignment)
+        {
+            return alignment switch
+            {
+                PosterVerticalAlign.Center => 0.5f,
+                PosterVerticalAlign.Bottom => 0f,
+                _ => 1f
+            };
         }
 
         private static Rect CalculateCoverUvRect(Texture texture, float destinationWidth, float destinationHeight)
@@ -182,24 +283,51 @@ namespace qoooo.Rendering.Sources
             return new Rect(uvX, uvY, uvWidth, uvHeight);
         }
 
-        private void CreateVerificationImages()
+        private void CreatePosterLayout()
         {
-            if (_verificationImagesCreated) return;
+            if (_posterLayoutCreated) return;
 
             var texture = (_verificationTextureSource as ITextureContainer)?.Texture;
             if (texture == null) return;
 
-            SolidRect(Width * 0.06f, Height * 0.08f, Width * 0.84f, Height * 0.8f,
-                new Color(0.08f, 0.18f, 0.42f, 1f));
-            Image(texture, Width * 0.1f, Height * 0.15f, Width * 0.4f, Height * 0.6f);
-            Image(texture, Width * 0.62f, Height * 0.15f, Width * 0.23f, Height * 0.35f, PosterFit.Cover);
-            Image(texture, Width * 0.37f, Height * 0.62f, Width * 0.25f, Height * 0.22f,
-                texture.width * 0.5f, 0f, texture.width * 0.5f, texture.height);
-            Line(Width * 0.1f, Height * 0.1f, Width * 0.9f, Height * 0.1f,
-                SizeUnit * 0.008f, Color.white);
-            Line(Width * 0.77f, Height * 0.58f, Width * 0.9f, Height * 0.82f,
-                SizeUnit * 0.008f, Color.white);
-            _verificationImagesCreated = true;
+            var width = Width;
+            var height = Height;
+            var unit = SizeUnit;
+            var margin = width * 0.04f;
+            var column = (width - margin * 2f) / 12f;
+
+            SolidRect(0f, 0f, width, height, new Color(0.035f, 0.045f, 0.07f, 1f));
+            SolidRect(margin + column * 2f, height * 0.28f, column * 8f, height * 0.54f,
+                new Color(0.08f, 0.42f, 0.38f, 1f));
+            SolidRect(0f, height * 0.87f, width, height * 0.13f,
+                new Color(0.9f, 0.22f, 0.16f, 1f));
+            SolidRect(margin, height * 0.16f, column * 1.8f, unit * 0.018f,
+                new Color(1f, 0.78f, 0.2f, 1f));
+
+            Image(texture, margin + column * 3f, height * 0.3f, column * 5.6f, height * 0.53f,
+                PosterFit.Cover);
+            Image(texture, margin, height * 0.43f, column * 2.15f, column * 2.15f,
+                PosterFit.Cover);
+            Image(texture, margin + column * 9.65f, height * 0.36f, column * 1.7f, height * 0.3f,
+                texture.width * 0.5f, texture.height * 0.1f,
+                texture.width * 0.5f, texture.height * 0.8f);
+            Image(texture, margin + column * 0.8f, height * 0.7f, column * 2.7f, height * 0.11f,
+                PosterFit.Cover);
+
+            Line(margin, height * 0.24f, width - margin, height * 0.24f,
+                unit * 0.004f, Color.white);
+            Line(width - margin - column * 0.7f, height * 0.3f,
+                width - margin, height * 0.78f, unit * 0.006f,
+                new Color(1f, 0.78f, 0.2f, 1f));
+            Text("QOOOO", width - margin, height * 0.045f, unit * 0.12f, Color.white,
+                PosterHorizontalAlign.Right, PosterVerticalAlign.Top);
+            Text("LIVE VISUAL / 026", width * 0.5f, height * 0.185f, unit * 0.025f,
+                new Color(1f, 0.78f, 0.2f, 1f),
+                PosterHorizontalAlign.Center, PosterVerticalAlign.Top);
+            Text("GENERATIVE VISUAL SYSTEM", margin, height * 0.91f, unit * 0.025f,
+                new Color(0.035f, 0.045f, 0.07f, 1f),
+                PosterHorizontalAlign.Left, PosterVerticalAlign.Top);
+            _posterLayoutCreated = true;
         }
     }
 }
