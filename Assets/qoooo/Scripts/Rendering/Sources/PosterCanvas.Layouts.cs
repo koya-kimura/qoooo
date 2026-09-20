@@ -31,19 +31,19 @@ namespace qoooo.Rendering.Sources
             var column = (width - margin * 2f) / 12f;
 
             SolidRect(0f, height * 0.87f, width, height * 0.13f,
-                new Color(0.9f, 0.22f, 0.16f, 1f));
+                PaletteMain);
             SolidRect(margin, height * 0.16f, column * 1.8f, unit * 0.018f,
-                new Color(1f, 0.78f, 0.2f, 1f), 4f);
+                PaletteSub, 4f);
 
             Line(margin, height * 0.24f, width - margin, height * 0.24f,
                 unit * 0.004f, Color.white);
             Line(width - margin - column * 0.7f, height * 0.3f,
                 width - margin, height * 0.78f, unit * 0.006f,
-                new Color(1f, 0.78f, 0.2f, 1f));
+                PaletteSub);
             Text(GetMainText(), width - margin, height * 0.045f, unit * 0.12f, Color.white,
                 PosterHorizontalAlign.Right, PosterVerticalAlign.Top);
             Text("LIVE VISUAL / 026", width * 0.5f, height * 0.185f, unit * 0.025f,
-                new Color(1f, 0.78f, 0.2f, 1f),
+                PaletteSub,
                 PosterHorizontalAlign.Center, PosterVerticalAlign.Top, -6f);
             Text("GENERATIVE VISUAL SYSTEM", margin, height * 0.91f, unit * 0.025f,
                 new Color(0.035f, 0.045f, 0.07f, 1f),
@@ -77,7 +77,7 @@ namespace qoooo.Rendering.Sources
             var margin = width * 0.05f;
 
             SolidRect(0f, height * 0.86f, width, height * 0.14f,
-                new Color(0.95f, 0.76f, 0.18f, 1f));
+                PaletteMain);
 
             Line(margin, height * 0.16f, width - margin, height * 0.16f,
                 unit * 0.005f, Color.white);
@@ -117,16 +117,16 @@ namespace qoooo.Rendering.Sources
             var block = (width - margin * 2f - gap * 3f) / 4f;
 
             SolidRect(margin, height * 0.27f, block * 1.4f, height * 0.22f,
-                new Color(0.14f, 0.53f, 0.48f, 1f));
+                PaletteMain);
             SolidRect(margin + (block + gap) * 2f, height * 0.55f, block * 1.85f, height * 0.2f,
-                new Color(0.93f, 0.28f, 0.17f, 1f), 3f);
+                PaletteSub, 3f);
 
             Line(margin, height * 0.88f, width - margin, height * 0.88f,
-                unit * 0.005f, new Color(0.95f, 0.76f, 0.18f, 1f));
+                unit * 0.005f, PaletteSub);
             Text(GetMainText(), margin, height * 0.07f, unit * 0.065f, Color.white,
                 PosterHorizontalAlign.Left, PosterVerticalAlign.Top);
             Text("04 / SHARED SIGNALS", width - margin, height * 0.9f, unit * 0.028f,
-                new Color(0.95f, 0.76f, 0.18f, 1f),
+                PaletteSub,
                 PosterHorizontalAlign.Right, PosterVerticalAlign.Top);
             Text("QOOOO", margin + block * 0.1f, height * 0.31f, unit * 0.04f,
                 new Color(0.025f, 0.055f, 0.055f, 1f),

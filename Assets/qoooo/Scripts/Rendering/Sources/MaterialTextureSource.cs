@@ -47,6 +47,7 @@ namespace qoooo.Rendering.Sources
 
         private RenderTexture _output;
         private IResolutionContainer _resolutionContainer;
+        private IPaletteProvider _palette;
         private IBpmSource _bpmSource;
         private bool _materialContractValidated;
         private bool _hasValidMaterialContract;
@@ -59,10 +60,11 @@ namespace qoooo.Rendering.Sources
         }
 
         [Inject]
-        public void Construct(IResolutionContainer resolutionContainer, IBpmSource bpmSource)
+        public void Construct(IResolutionContainer resolutionContainer, IBpmSource bpmSource, IPaletteProvider palette)
         {
             _resolutionContainer = resolutionContainer;
             _bpmSource = bpmSource;
+            _palette = palette;
         }
 
         private void Update()
@@ -109,8 +111,8 @@ namespace qoooo.Rendering.Sources
         {
             if (!ValidateMaterialContract()) return false;
             _material.SetInt("_PatternType", _pattern.Value);
-            _material.SetColor("_MainColor", _mainColor);
-            _material.SetColor("_SubColor", _subColor);
+            _material.SetColor("_MainColor", _palette?.Main ?? _mainColor);
+            _material.SetColor("_SubColor", _palette?.Sub ?? _subColor);
             _material.SetVector("_Tiling", _tiling);
             _material.SetVector("_Offset", _offset);
             _material.SetVector("_Speed", _speed);

@@ -58,12 +58,16 @@ namespace qoooo.Rendering.Sources
             new[] { "QOOOO", "TRIP26", "LIVE VISUAL" });
 
         private IResolutionContainer _resolutionContainer;
+        private IPaletteProvider _palette;
         private int _currentPreset = -1;
         private int _currentModelLayout = -1;
         private int _currentTypographyLayout = -1;
         private int _builtModelLayout = -1;
         private int _builtTypographyLayout = -1;
         private int _builtMainText = -1;
+        private Color _builtPaletteMain;
+        private Color _builtPaletteSub;
+        private bool _hasBuiltPalette;
         private bool _isApplyingPreset;
         private TextMeshProUGUI _textMeasurer;
 
@@ -88,9 +92,10 @@ namespace qoooo.Rendering.Sources
         }
 
         [Inject]
-        public void Construct(IResolutionContainer resolutionContainer)
+        public void Construct(IResolutionContainer resolutionContainer, IPaletteProvider palette)
         {
             _resolutionContainer = resolutionContainer;
+            _palette = palette;
         }
 
         private void Update()
@@ -103,9 +108,14 @@ namespace qoooo.Rendering.Sources
             var modelLayout = _modelLayout.Value;
             var typographyLayout = _typographyLayout.Value;
             var mainText = _mainText.Value;
+            var paletteMain = PaletteMain;
+            var paletteSub = PaletteSub;
             if (_builtModelLayout == modelLayout
                 && _builtTypographyLayout == typographyLayout
-                && _builtMainText == mainText) return;
+                && _builtMainText == mainText
+                && _hasBuiltPalette
+                && _builtPaletteMain == paletteMain
+                && _builtPaletteSub == paletteSub) return;
 
             RebuildLayout(texture, modelLayout, typographyLayout, mainText);
         }
@@ -503,6 +513,9 @@ namespace qoooo.Rendering.Sources
             _builtModelLayout = modelLayout;
             _builtTypographyLayout = typographyLayout;
             _builtMainText = mainText;
+            _builtPaletteMain = PaletteMain;
+            _builtPaletteSub = PaletteSub;
+            _hasBuiltPalette = true;
         }
 
         private string GetMainText()
@@ -514,6 +527,9 @@ namespace qoooo.Rendering.Sources
                 _ => "QOOOO"
             };
         }
+
+        private Color PaletteMain => _palette?.Main ?? new Color(0.9f, 0.22f, 0.16f, 1f);
+        private Color PaletteSub => _palette?.Sub ?? new Color(1f, 0.78f, 0.2f, 1f);
 
         private void ClearLayout()
         {
