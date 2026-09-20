@@ -49,8 +49,9 @@ Parameterの公開経路は2つある。
 | Owner                        | Parameter ID                                                                               |
 | ---------------------------- | ------------------------------------------------------------------------------------------ |
 | procedural background source | `background.pattern`                                                                       |
-| model                        | `model.scale`、`model.motion`、`model.reset-transform`                                     |
+| model                        | `model.scale`、`model.motion`、`model.reset-transform`、`model.active`                      |
 | text                         | `text.layout`、`text.animation-speed`、`text.transform-mode`、`text.rebuild`、`text.blink` |
+| poster                       | `poster.layout`、`poster.model-layout`、`poster.typography-layout`                          |
 
 ## MIDI input
 

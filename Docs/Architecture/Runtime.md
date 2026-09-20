@@ -7,7 +7,7 @@
 - `Managers`: frame rateやアプリ全体のmanager
 - `MIDI`: BPM、Parameter registry/runtime、MIDI input/output、APC controller、LED、profile
 - `Sources`: procedural backgroundやcamera由来のtexture source
-- `Layers`: Background / Model / Textの`TextureLayer`
+- `Layers`: Background / Model / Text / Posterの`TextureLayer`
 - `TextureCompositor`: layerの最終合成
 - `UiBuilder`: RosettaUIのwindow構築
 - `PreviewCanvas`: 合成結果のGame View表示

@@ -175,16 +175,16 @@ Current public authoring surface:
 
 Coordinates use a top-left origin with X right and Y down. Positive authoring rotation is clockwise.
 
-Current Parameter:
+Current Parameters:
 
 ```text
-ID: poster.layout
-Type: RadioParameter
-Options: Editorial / Split / Modular
+poster.layout              Radio: Editorial / Split / Modular / Custom
+poster.model-layout        Radio: Hero / Split / Repeat
+poster.typography-layout   Radio: Poster Copy / Headline / Labels
 Owner: PosterCanvas
 ```
 
-Each current layout is still a coupled completed composition containing Model RawImage placement, Text, SolidRect/Line graphics, colors, and drawing order. The existing APC mapping assigns its three options to Page 0, Row 0, Columns 0-2.
+`poster.model-layout` controls only Model RawImage placement. `poster.typography-layout` controls Text and its supporting SolidRect/Line/Band graphics. `poster.layout` is a compatibility Safe Preset: Editorial applies Hero + Poster Copy, Split applies Split + Headline, and Modular applies Repeat + Labels. Editing either independent axis sets it to Custom. The existing APC mapping still assigns only Editorial / Split / Modular to Page 0, Row 0, Columns 0-2; Custom and the independent axes are unassigned.
 
 ### Texture Effects
 
@@ -325,13 +325,11 @@ Visual Preset
 
 The final APC cheat sheet will be maintained in Google Sheets. Do not rush a complete mapping redesign before the beta Parameter set is stable. New Parameters should be registry-visible and bindable first; Scene pad allocation should be a separate explicit task.
 
-## Next task
+## Latest completed task
 
-Highest priority after this handoff:
-
-**Separate Model Texture Layout and Typography Layout into independent Parameter axes.**
-
-Do not implement this while creating the handoff. The expected implementation remains small and local: no generic composition graph, no new manager, and no preset framework.
+Model Texture Layout and Typography Layout are independent Parameter axes. The former coupled
+`poster.layout` remains as a local compatibility macro; no generic composition graph, manager,
+or preset framework was added.
 
 ## Do not do
 

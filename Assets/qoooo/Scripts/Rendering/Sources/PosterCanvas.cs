@@ -37,10 +37,27 @@ namespace qoooo.Rendering.Sources
         private RadioParameter _layout = new(
             "poster.layout",
             "Poster Layout",
-            new[] { "Editorial", "Split", "Modular" });
+            new[] { "Editorial", "Split", "Modular", "Custom" });
+
+        [SerializeField]
+        private RadioParameter _modelLayout = new(
+            "poster.model-layout",
+            "Model Texture Layout",
+            new[] { "Hero", "Split", "Repeat" });
+
+        [SerializeField]
+        private RadioParameter _typographyLayout = new(
+            "poster.typography-layout",
+            "Typography Layout",
+            new[] { "Poster Copy", "Headline", "Labels" });
 
         private IResolutionContainer _resolutionContainer;
-        private int _currentLayout = -1;
+        private int _currentPreset = -1;
+        private int _currentModelLayout = -1;
+        private int _currentTypographyLayout = -1;
+        private int _builtModelLayout = -1;
+        private int _builtTypographyLayout = -1;
+        private bool _isApplyingPreset;
         private TextMeshProUGUI _textMeasurer;
 
         public float Width => _resolutionContainer?.Resolution.x ?? 1920f;
@@ -49,7 +66,17 @@ namespace qoooo.Rendering.Sources
 
         public IEnumerable<IMidiBindableParameter> MidiParameters
         {
-            get { yield return _layout; }
+            get
+            {
+                yield return _layout;
+                yield return _modelLayout;
+                yield return _typographyLayout;
+            }
+        }
+
+        private void Awake()
+        {
+            SynchronizeParameterOptions();
         }
 
         [Inject]
@@ -60,13 +87,37 @@ namespace qoooo.Rendering.Sources
 
         private void Update()
         {
+            SynchronizeLayoutParameters();
+
             var texture = (_verificationTextureSource as ITextureContainer)?.Texture;
             if (texture == null) return;
 
-            var layout = GetLayoutIndex();
-            if (_currentLayout == layout) return;
+            var modelLayout = _modelLayout.Value;
+            var typographyLayout = _typographyLayout.Value;
+            if (_builtModelLayout == modelLayout
+                && _builtTypographyLayout == typographyLayout) return;
 
-            RebuildLayout(texture, layout);
+            RebuildLayout(texture, modelLayout, typographyLayout);
+        }
+
+        private void SynchronizeParameterOptions()
+        {
+            _layout ??= new RadioParameter(
+                "poster.layout",
+                "Poster Layout",
+                new[] { "Editorial", "Split", "Modular", "Custom" });
+            _modelLayout ??= new RadioParameter(
+                "poster.model-layout",
+                "Model Texture Layout",
+                new[] { "Hero", "Split", "Repeat" });
+            _typographyLayout ??= new RadioParameter(
+                "poster.typography-layout",
+                "Typography Layout",
+                new[] { "Poster Copy", "Headline", "Labels" });
+
+            _layout.ReplaceOptions(new[] { "Editorial", "Split", "Modular", "Custom" });
+            _modelLayout.ReplaceOptions(new[] { "Hero", "Split", "Repeat" });
+            _typographyLayout.ReplaceOptions(new[] { "Poster Copy", "Headline", "Labels" });
         }
 
         public void Image(Texture texture, float x, float y, float width, float height)
@@ -363,34 +414,78 @@ namespace qoooo.Rendering.Sources
             return new Rect(uvX, uvY, uvWidth, uvHeight);
         }
 
-        private int GetLayoutIndex()
+        private void SynchronizeLayoutParameters()
         {
-            return _layout.Value switch
+            var preset = _layout.Value;
+            if (_currentPreset != preset)
             {
-                1 => 1,
-                2 => 2,
-                _ => 0
-            };
+                _currentPreset = preset;
+                if (preset < 3)
+                {
+                    ApplyPreset(preset);
+                    _currentModelLayout = _modelLayout.Value;
+                    _currentTypographyLayout = _typographyLayout.Value;
+                    return;
+                }
+            }
+
+            var modelLayout = _modelLayout.Value;
+            var typographyLayout = _typographyLayout.Value;
+            var axisChanged = (_currentModelLayout >= 0 && _currentModelLayout != modelLayout)
+                              || (_currentTypographyLayout >= 0
+                                  && _currentTypographyLayout != typographyLayout);
+
+            if (axisChanged && !_isApplyingPreset && _layout.Value != 3)
+            {
+                _layout.TrySetValue(3);
+                _currentPreset = 3;
+            }
+
+            _currentModelLayout = modelLayout;
+            _currentTypographyLayout = typographyLayout;
         }
 
-        private void RebuildLayout(Texture texture, int layout)
+        private void ApplyPreset(int preset)
         {
+            _isApplyingPreset = true;
+            _modelLayout.TrySetValue(preset);
+            _typographyLayout.TrySetValue(preset);
+            _isApplyingPreset = false;
+        }
+
+        private void RebuildLayout(Texture texture, int modelLayout, int typographyLayout)
+        {
+            GetTextMeasurer();
             ClearLayout();
 
-            switch (layout)
+            switch (modelLayout)
             {
                 case 1:
-                    BuildSplitLayout(texture);
+                    BuildModelSplit(texture);
                     break;
                 case 2:
-                    BuildModularLayout(texture);
+                    BuildModelRepeat(texture);
                     break;
                 default:
-                    BuildEditorialLayout(texture);
+                    BuildModelHero(texture);
                     break;
             }
 
-            _currentLayout = layout;
+            switch (typographyLayout)
+            {
+                case 1:
+                    BuildTypographyHeadline();
+                    break;
+                case 2:
+                    BuildTypographyLabels();
+                    break;
+                default:
+                    BuildTypographyPosterCopy();
+                    break;
+            }
+
+            _builtModelLayout = modelLayout;
+            _builtTypographyLayout = typographyLayout;
         }
 
         private void ClearLayout()
