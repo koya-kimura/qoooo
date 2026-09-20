@@ -16,8 +16,7 @@ namespace qoooo.Rendering.Models
         private OneshotParameter _resetTransform = new("model.reset-transform", "Reset Model Transform");
 
         [SerializeField]
-        private SequenceParameter _visibilitySequence = new(
-            "model.visibility-sequence", "Model Visibility", new[] { true, true, true, true });
+        private BoolParameter _active = new("model.active", "Model Active", true);
 
         private readonly Quaternion _initialRotation = Quaternion.identity;
         private Renderer[] _renderers;
@@ -39,7 +38,7 @@ namespace qoooo.Rendering.Models
             }
 
             transform.localScale = Vector3.one * scale;
-            SetRendererVisibility(_visibilitySequence.ActiveStep < 0 || _visibilitySequence.IsActive);
+            SetRendererVisibility(_active.Value);
         }
 
         public IEnumerable<IMidiBindableParameter> MidiParameters
@@ -49,7 +48,7 @@ namespace qoooo.Rendering.Models
                 yield return _scale;
                 yield return _motion;
                 yield return _resetTransform;
-                yield return _visibilitySequence;
+                yield return _active;
             }
         }
 
