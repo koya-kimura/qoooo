@@ -3612,6 +3612,20 @@ MonoBehaviour:
       Page: 0
       Row: 1
       Column: 2
+  - ParameterId: poster.layout
+    OptionButtons:
+    - Assigned: 1
+      Page: 0
+      Row: 0
+      Column: 0
+    - Assigned: 1
+      Page: 0
+      Row: 0
+      Column: 1
+    - Assigned: 1
+      Page: 0
+      Row: 0
+      Column: 2
   _oneshots:
   - ParameterId: model.reset-transform
     Button:
