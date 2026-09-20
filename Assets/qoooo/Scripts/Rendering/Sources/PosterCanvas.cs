@@ -63,12 +63,25 @@ namespace qoooo.Rendering.Sources
             float height,
             PosterFit fit)
         {
+            Image(texture, x, y, width, height, fit, 0f);
+        }
+
+        public void Image(
+            Texture texture,
+            float x,
+            float y,
+            float width,
+            float height,
+            PosterFit fit,
+            float rotation)
+        {
             if (texture == null) return;
 
             var image = CreateImage(texture, x, y, width, height);
             image.uvRect = fit == PosterFit.Cover
                 ? CalculateCoverUvRect(texture, width, height)
                 : new Rect(0f, 0f, 1f, 1f);
+            SetRotation(image.rectTransform, rotation);
         }
 
         public void Image(
@@ -82,11 +95,28 @@ namespace qoooo.Rendering.Sources
             float sourceWidth,
             float sourceHeight)
         {
+            Image(texture, x, y, width, height,
+                sourceX, sourceY, sourceWidth, sourceHeight, 0f);
+        }
+
+        public void Image(
+            Texture texture,
+            float x,
+            float y,
+            float width,
+            float height,
+            float sourceX,
+            float sourceY,
+            float sourceWidth,
+            float sourceHeight,
+            float rotation)
+        {
             if (texture == null) return;
 
             var image = CreateImage(texture, x, y, width, height);
             image.uvRect = CalculateCropUvRect(
                 texture, sourceX, sourceY, sourceWidth, sourceHeight);
+            SetRotation(image.rectTransform, rotation);
         }
 
         public void SolidRect(
@@ -96,10 +126,22 @@ namespace qoooo.Rendering.Sources
             float height,
             Color color)
         {
+            SolidRect(x, y, width, height, color, 0f);
+        }
+
+        public void SolidRect(
+            float x,
+            float y,
+            float width,
+            float height,
+            Color color,
+            float rotation)
+        {
             var imageObject = new GameObject("Poster Solid Rect", typeof(RectTransform), typeof(Image));
             var rectTransform = imageObject.GetComponent<RectTransform>();
             rectTransform.SetParent(transform, false);
             ConfigureTopLeftRect(rectTransform, x, y, width, height);
+            SetRotation(rectTransform, rotation);
 
             imageObject.GetComponent<Image>().color = color;
         }
@@ -144,6 +186,19 @@ namespace qoooo.Rendering.Sources
             PosterHorizontalAlign horizontalAlign,
             PosterVerticalAlign verticalAlign)
         {
+            Text(text, x, y, fontSize, color, horizontalAlign, verticalAlign, 0f);
+        }
+
+        public void Text(
+            string text,
+            float x,
+            float y,
+            float fontSize,
+            Color color,
+            PosterHorizontalAlign horizontalAlign,
+            PosterVerticalAlign verticalAlign,
+            float rotation)
+        {
             if (_posterFont == null) return;
 
             var textObject = new GameObject("Poster Text", typeof(RectTransform), typeof(TextMeshProUGUI));
@@ -160,6 +215,7 @@ namespace qoooo.Rendering.Sources
             textMesh.rectTransform.pivot = pivot;
             textMesh.rectTransform.anchoredPosition = new Vector2(x, -y);
             textMesh.rectTransform.sizeDelta = preferred;
+            SetRotation(textMesh.rectTransform, rotation);
         }
 
         public float TextWidth(string text, float fontSize)
@@ -201,6 +257,11 @@ namespace qoooo.Rendering.Sources
             rectTransform.pivot = new Vector2(0f, 1f);
             rectTransform.anchoredPosition = new Vector2(x, -y);
             rectTransform.sizeDelta = new Vector2(width, height);
+        }
+
+        private static void SetRotation(RectTransform rectTransform, float rotation)
+        {
+            rectTransform.localRotation = Quaternion.Euler(0f, 0f, -rotation);
         }
 
         private TextMeshProUGUI GetTextMeasurer()
@@ -302,7 +363,7 @@ namespace qoooo.Rendering.Sources
             SolidRect(0f, height * 0.87f, width, height * 0.13f,
                 new Color(0.9f, 0.22f, 0.16f, 1f));
             SolidRect(margin, height * 0.16f, column * 1.8f, unit * 0.018f,
-                new Color(1f, 0.78f, 0.2f, 1f));
+                new Color(1f, 0.78f, 0.2f, 1f), 4f);
 
             Image(texture, margin + column * 3f, height * 0.3f, column * 5.6f, height * 0.53f,
                 PosterFit.Cover);
@@ -310,7 +371,7 @@ namespace qoooo.Rendering.Sources
                 PosterFit.Cover);
             Image(texture, margin + column * 9.65f, height * 0.36f, column * 1.7f, height * 0.3f,
                 texture.width * 0.5f, texture.height * 0.1f,
-                texture.width * 0.5f, texture.height * 0.8f);
+                texture.width * 0.5f, texture.height * 0.8f, 9f);
             Image(texture, margin + column * 0.8f, height * 0.7f, column * 2.7f, height * 0.11f,
                 PosterFit.Cover);
 
@@ -323,7 +384,7 @@ namespace qoooo.Rendering.Sources
                 PosterHorizontalAlign.Right, PosterVerticalAlign.Top);
             Text("LIVE VISUAL / 026", width * 0.5f, height * 0.185f, unit * 0.025f,
                 new Color(1f, 0.78f, 0.2f, 1f),
-                PosterHorizontalAlign.Center, PosterVerticalAlign.Top);
+                PosterHorizontalAlign.Center, PosterVerticalAlign.Top, -6f);
             Text("GENERATIVE VISUAL SYSTEM", margin, height * 0.91f, unit * 0.025f,
                 new Color(0.035f, 0.045f, 0.07f, 1f),
                 PosterHorizontalAlign.Left, PosterVerticalAlign.Top);
