@@ -856,6 +856,8 @@ Grid Layout側が渡すrotation値を、
 - Model Source 0〜16でPoster Image配置が維持されることを確認
 - Visual refinement後、Hero / Supporting TypographyのPalette panel支持とLarge / Small hierarchyを再確認
 - Legacy TextLayerを通常Compositionから外し、`text.*` Parameterを維持したままPosterのみが最終出力されることを確認
+- `Poster Composer`で4 documentの追加・選択・並べ替え・複製・削除と即時描画を確認
+- Qoooo Save後のPlay Mode再起動で4 documentの編集内容が復元されることを確認
 
 ---
 

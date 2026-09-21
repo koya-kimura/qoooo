@@ -76,6 +76,17 @@ namespace qoooo.Rendering.Sources
         public float Width => _resolutionContainer?.Resolution.x ?? 1920f;
         public float Height => _resolutionContainer?.Resolution.y ?? 1080f;
         public float SizeUnit => Mathf.Min(Width, Height);
+        public int ActiveDocumentIndex => _layout.Value;
+        public PosterLibrary Library
+        {
+            get
+            {
+                EnsureDefaultLibrary();
+                return _library;
+            }
+        }
+
+        public PosterDocument ActiveDocument => Library.GetDocument(ActiveDocumentIndex);
 
         public IEnumerable<IMidiBindableParameter> MidiParameters
         {
@@ -131,6 +142,18 @@ namespace qoooo.Rendering.Sources
         public void MarkDirty()
         {
             _documentDirty = true;
+        }
+
+        public void SelectDocument(int index)
+        {
+            _layout.TrySetValue(index);
+        }
+
+        public void ReplaceLibrary(PosterLibrary library)
+        {
+            _library = library;
+            EnsureDefaultLibrary();
+            MarkDirty();
         }
 
         private void EnsureDefaultLibrary()
