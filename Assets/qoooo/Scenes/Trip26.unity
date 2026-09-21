@@ -440,22 +440,6 @@ MonoBehaviour:
     - Modular
     - Custom
     _defaultValue: 0
-  _modelLayout:
-    _id: poster.model-layout
-    _displayName: Model Texture Layout
-    _options:
-    - Hero
-    - Split
-    - Repeat
-    _defaultValue: 0
-  _typographyLayout:
-    _id: poster.typography-layout
-    _displayName: Typography Layout
-    _options:
-    - Poster Copy
-    - Headline
-    - Labels
-    _defaultValue: 0
   _mainText:
     _id: poster.main-text
     _displayName: Poster Main Text
@@ -804,7 +788,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &291929305
 Transform:
   m_ObjectHideFlags: 0
@@ -951,7 +935,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &312310168
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4051,34 +4035,6 @@ MonoBehaviour:
       Page: 2
       Row: 0
       Column: 2
-  - ParameterId: poster.model-layout
-    OptionButtons:
-    - Assigned: 1
-      Page: 3
-      Row: 0
-      Column: 0
-    - Assigned: 1
-      Page: 3
-      Row: 0
-      Column: 1
-    - Assigned: 1
-      Page: 3
-      Row: 0
-      Column: 2
-  - ParameterId: poster.typography-layout
-    OptionButtons:
-    - Assigned: 1
-      Page: 4
-      Row: 0
-      Column: 0
-    - Assigned: 1
-      Page: 4
-      Row: 0
-      Column: 1
-    - Assigned: 1
-      Page: 4
-      Row: 0
-      Column: 2
   - ParameterId: poster.main-text
     OptionButtons:
     - Assigned: 1
@@ -4149,28 +4105,6 @@ MonoBehaviour:
       Page: 5
       Row: 2
       Column: 2
-  - ParameterId: text.layout
-    OptionButtons:
-    - Assigned: 1
-      Page: 6
-      Row: 0
-      Column: 0
-    - Assigned: 1
-      Page: 6
-      Row: 0
-      Column: 1
-    - Assigned: 1
-      Page: 6
-      Row: 0
-      Column: 2
-    - Assigned: 1
-      Page: 6
-      Row: 0
-      Column: 3
-    - Assigned: 1
-      Page: 6
-      Row: 0
-      Column: 4
   _oneshots:
   - ParameterId: model.reset-transform
     Button:
@@ -4178,46 +4112,13 @@ MonoBehaviour:
       Page: 0
       Row: 1
       Column: 3
-  _momentaries:
-  - ParameterId: text.rebuild
-    Button:
-      Assigned: 1
-      Page: 0
-      Row: 1
-      Column: 4
-  _states:
-  - ParameterId: text.transform-mode
-    Button:
-      Assigned: 1
-      Page: 0
-      Row: 1
-      Column: 5
-  _sequences:
-  - ParameterId: text.blink
-    StepButtons:
-    - Assigned: 1
-      Page: 0
-      Row: 2
-      Column: 0
-    - Assigned: 1
-      Page: 0
-      Row: 2
-      Column: 1
-    - Assigned: 1
-      Page: 0
-      Row: 2
-      Column: 2
-    - Assigned: 1
-      Page: 0
-      Row: 2
-      Column: 3
+  _momentaries: []
+  _states: []
+  _sequences: []
   _floats:
   - ParameterId: model.scale
     Assigned: 1
     FaderIndex: 0
-  - ParameterId: text.animation-speed
-    Assigned: 1
-    FaderIndex: 1
   _faderButtonFunctions: 000000000100000000000000010000000000000001000000000000000100000000000000
   _faderRandomDivision: 0
   _logResolvedInput: 1

@@ -42,18 +42,6 @@ namespace qoooo.Rendering.Sources
             new[] { "Editorial", "Split", "Modular", "Custom" });
 
         [SerializeField]
-        private RadioParameter _modelLayout = new(
-            "poster.model-layout",
-            "Model Texture Layout",
-            new[] { "Hero", "Split", "Repeat" });
-
-        [SerializeField]
-        private RadioParameter _typographyLayout = new(
-            "poster.typography-layout",
-            "Typography Layout",
-            new[] { "Poster Copy", "Headline", "Labels" });
-
-        [SerializeField]
         private RadioParameter _mainText = new(
             "poster.main-text",
             "Poster Main Text",
@@ -93,8 +81,6 @@ namespace qoooo.Rendering.Sources
             get
             {
                 yield return _layout;
-                yield return _modelLayout;
-                yield return _typographyLayout;
                 yield return _mainText;
             }
         }
@@ -350,22 +336,12 @@ namespace qoooo.Rendering.Sources
                 "poster.layout",
                 "Poster Layout",
                 new[] { "Editorial", "Split", "Modular", "Custom" });
-            _modelLayout ??= new RadioParameter(
-                "poster.model-layout",
-                "Model Texture Layout",
-                new[] { "Hero", "Split", "Repeat" });
-            _typographyLayout ??= new RadioParameter(
-                "poster.typography-layout",
-                "Typography Layout",
-                new[] { "Poster Copy", "Headline", "Labels" });
             _mainText ??= new RadioParameter(
                 "poster.main-text",
                 "Poster Main Text",
                 new[] { "QOOOO", "TRIP26", "LIVE VISUAL" });
 
             _layout.ReplaceOptions(new[] { "Editorial", "Split", "Modular", "Custom" });
-            _modelLayout.ReplaceOptions(new[] { "Hero", "Split", "Repeat" });
-            _typographyLayout.ReplaceOptions(new[] { "Poster Copy", "Headline", "Labels" });
             _mainText.ReplaceOptions(new[] { "QOOOO", "TRIP26", "LIVE VISUAL" });
         }
 

@@ -32,6 +32,7 @@
 - `AbortSave`はPrefs cacheをrollbackしない。
 - LEDはdesired/current dirty queueではなく、15Hz pollと前回値比較で差分送信する。
 - input callback queueはlockされていない。
+- `poster.model-layout`、`poster.typography-layout`とLegacy `text.*`はTrip26のlive Parameter / MIDI pathからretire済みである。
 
 ## Rendering / Text / Foundation計画
 
@@ -40,11 +41,12 @@
 - `IBpmSource`と`BpmManager`のread-only tempo境界
 - procedural materialの`_MainColor` / `_SubColor` / `_Beat` contract
 - `background.pattern`の10 option Parameter
-- `text.layout`と複数layout sampler
+- 複数Legacy Text layout sampler（Trip26のlive Parameter / MIDI pathからはretire済み）
 - layoutと`TextGlyphMotion`の分離
 - APC Randomで`qoooo.Foundation.Utilities.Pcg`を使用
 - `MidiParameterGroupName`の削除
 - Scriptsの責務別directory / namespace整理
+- PosterDocument / Poster Composerによる最終Poster compositionとLegacy Text runtimeのTrip26停止
 
 未完了または追加検証が必要:
 

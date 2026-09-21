@@ -14,6 +14,16 @@ namespace qoooo.Midi.Profiles
     {
         private const string MappingKey = "qoooo.midi.trip26.mapping.v2";
         private const string StateKey = "qoooo.midi.trip26.state";
+        private static readonly HashSet<string> RetiredParameterIds = new(StringComparer.Ordinal)
+        {
+            "poster.model-layout",
+            "poster.typography-layout",
+            "text.layout",
+            "text.rebuild",
+            "text.transform-mode",
+            "text.blink",
+            "text.animation-speed"
+        };
         [SerializeField] private ApcMiniMk2ParameterController _controller;
         [SerializeField] private MidiParameterRegistry _registry;
         private readonly PrefsAny<ApcMidiMappingData> _mappingPrefs = new(MappingKey);
@@ -30,7 +40,12 @@ namespace qoooo.Midi.Profiles
             if(_initialized || _controller==null || _registry==null)return;
             _sceneDefaultMapping=Copy(_controller.ExportMapping());
             var mapping=_mappingPrefs.Get();
-            if(IsCompatible(mapping)) _controller.ImportMapping(mapping);
+            if(IsCompatible(mapping))
+            {
+                mapping=Copy(mapping);
+                RemoveRetiredBindings(mapping);
+                _controller.ImportMapping(mapping);
+            }
             var state=_statePrefs.Get();
             if(IsCompatible(state)) ApplyState(state);
             _lastSavedMapping=Copy(IsCompatible(mapping) ? mapping : _sceneDefaultMapping);
@@ -120,6 +135,17 @@ namespace qoooo.Midi.Profiles
         }
         private void MarkDirty() => SetDirty(true);
         private void SetDirty(bool value) { if(IsDirty==value)return; IsDirty=value; DirtyChanged?.Invoke(); }
+        private static void RemoveRetiredBindings(ApcMidiMappingData mapping)
+        {
+            mapping.Toggles?.RemoveAll(binding => IsRetired(binding?.ParameterId));
+            mapping.Radios?.RemoveAll(binding => IsRetired(binding?.ParameterId));
+            mapping.Oneshots?.RemoveAll(binding => IsRetired(binding?.ParameterId));
+            mapping.Momentaries?.RemoveAll(binding => IsRetired(binding?.ParameterId));
+            mapping.States?.RemoveAll(binding => IsRetired(binding?.ParameterId));
+            mapping.Sequences?.RemoveAll(binding => IsRetired(binding?.ParameterId));
+            mapping.Floats?.RemoveAll(binding => IsRetired(binding?.ParameterId));
+        }
+        private static bool IsRetired(string parameterId) => RetiredParameterIds.Contains(parameterId ?? string.Empty);
         private static bool IsCompatible(ApcMidiMappingData value) => value != null && value.HasSavedData && value.SchemaVersion==1 && value.ProfileId=="trip26";
         private static bool IsCompatible(MidiParameterStateData value) => value != null && value.HasSavedData && value.SchemaVersion==1 && value.ProfileId=="trip26";
         private static T Copy<T>(T value) where T : new() => value==null ? new T() : JsonUtility.FromJson<T>(JsonUtility.ToJson(value));

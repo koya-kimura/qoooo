@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Text;
 using qoooo.Parameters.Model;
-using qoooo.Parameters.Runtime;
 using qoooo.Text.Layouts;
 using qoooo.Text.Model;
 using TMPro;
@@ -11,7 +10,7 @@ using UnityEngine;
 namespace qoooo.Text.Runtime
 {
     [RequireComponent(typeof(TMP_Text))]
-    public class TextController : MonoBehaviour, IMidiParameterContainer
+    public class TextController : MonoBehaviour
     {
         [SerializeField] private TMP_Text _textMesh;
         [SerializeField] private Camera _outputCamera;
@@ -80,18 +79,6 @@ namespace qoooo.Text.Runtime
         {
             SynchronizeLayoutOptions();
             _meshDirty = true;
-        }
-
-        public IEnumerable<IMidiBindableParameter> MidiParameters
-        {
-            get
-            {
-                yield return _animationSpeed;
-                yield return _layout;
-                yield return _transformMode;
-                yield return _rebuild;
-                yield return _blink;
-            }
         }
 
         public void SetText(string value)

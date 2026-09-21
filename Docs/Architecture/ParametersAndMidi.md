@@ -50,8 +50,11 @@ Parameterの公開経路は2つある。
 | ---------------------------- | ------------------------------------------------------------------------------------------ |
 | procedural background source | `background.pattern`                                                                       |
 | model                        | `model.scale`、`model.motion`、`model.reset-transform`、`model.active`                      |
-| text                         | `text.layout`、`text.animation-speed`、`text.transform-mode`、`text.rebuild`、`text.blink` |
-| poster                       | `poster.layout`、`poster.model-layout`、`poster.typography-layout`、`poster.main-text`       |
+| poster                       | `poster.layout`、`poster.main-text`                                                           |
+
+Legacy `TextController`の`text.*` Parameterと`poster.model-layout`、`poster.typography-layout`は
+Trip26のlive Parameter / MIDI pathからretire済みである。保存済みmappingの該当IDだけはload時に除外し、
+それ以外のunknown mappingは保持する。
 
 ## MIDI input
 

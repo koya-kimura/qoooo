@@ -41,14 +41,14 @@ Element typeは`Text`、`Rect`、`Line`、`Texture(Model / Background)`である
 | ID                           | Options                                      | 責務                                      |
 | ---------------------------- | -------------------------------------------- | ----------------------------------------- |
 | `poster.layout`              | Editorial / Split / Modular / Custom         | Active PosterDocumentの選択                 |
-| `poster.model-layout`        | Hero / Split / Repeat                        | Phase 3 cleanupまで登録を維持。描画には未使用 |
-| `poster.typography-layout`   | Poster Copy / Headline / Labels              | Phase 3 cleanupまで登録を維持。描画には未使用 |
 | `poster.main-text`           | QOOOO / TRIP26 / LIVE VISUAL                 | Typography Layout内の主役Text             |
 
 Default Editorial / Split / Modular / Customは`PosterDocumentFactory`が生成する。Documentまたは
 layout、main text、palette、resolution、source texture参照の変更時に最大1回の全Document rebuildを行う。
 `CurrentDate` / `CurrentTime` Text elementは生成したTMP参照を保持し、値が変わった時だけ`TMP.text`を更新する。
 `poster.main-text`は`MainText` sourceのText elementから参照する。
+`Poster Composer`はこの`PosterLibrary`を編集するauthoring UIである。`poster.model-layout`と
+`poster.typography-layout`はretire済みで、live Parameterには登録されない。
 
 ## Procedural background
 
@@ -83,6 +83,9 @@ HLSL dispatcherの対応に依存する。言語間contractを自動検証する
 
 ## Text model
 
+Legacy Text system（`TextController` / Text Camera / TextLayer）はTrip26最終compositionに含まれない。
+SceneではTextControllerとText Cameraをinactiveにし、`text.*` Parameterはlive MIDI pathへ公開しない。
+
 Textはlayoutとmotionを別の責務として扱う。
 
 | 概念              | 型                 | 責務                                                       |
@@ -103,7 +106,7 @@ Textはlayoutとmotionを別の責務として扱う。
 
 実装済みmotionは`TextRotateMotion`である。
 
-## Text update flow
+## Legacy Text update flow
 
 1. `text.layout`と内部`_patternIndex`を同期する。
 2. `text.rebuild`がtriggerされた場合はbase meshを再構築する。
@@ -113,7 +116,8 @@ Textはlayoutとmotionを別の責務として扱う。
 6. camera viewportと`TextPattern.ReferenceSize/ScreenCoverage`からfit scaleを求める。
 7. source文字index順に表示文字列を作り、TMP vertexへTRSを適用する。
 
-Textが所有するParameter:
+次のfieldはLegacy Text内部のserialized stateとしてコードに残るが、Trip26ではinactiveであり、
+live Parameter Registry、MIDI mapping、Prefs stateには含まれない。
 
 | ID                     | 用途                           |
 | ---------------------- | ------------------------------ |
@@ -124,8 +128,6 @@ Textが所有するParameter:
 | `text.blink`           | beat sequenceによる表示ON/OFF  |
 
 layout optionは`Awake`/`OnValidate`で`TextPattern.Name`から同期される。
-同名optionの検証やprofile schema migrationは現状実装されていないため、保存済みindexがある状態で
-Sceneのlayout順を変える場合は互換性を確認する。
 
 ## Output
 
