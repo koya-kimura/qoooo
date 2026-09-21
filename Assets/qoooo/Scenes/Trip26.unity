@@ -3862,7 +3862,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Midi.ApcMiniMk2ParameterController
   _input: {fileID: 1862739137}
   _parameters: {fileID: 1862739139}
-  _toggles: []
+  _toggles:
+  - ParameterId: model.active
+    Button:
+      Assigned: 1
+      Page: 2
+      Row: 0
+      Column: 3
   _radios:
   - ParameterId: model.motion
     OptionButtons:
@@ -3892,6 +3898,210 @@ MonoBehaviour:
       Page: 0
       Row: 0
       Column: 2
+  - ParameterId: model.source
+    OptionButtons:
+    - Assigned: 1
+      Page: 1
+      Row: 0
+      Column: 0
+    - Assigned: 1
+      Page: 1
+      Row: 0
+      Column: 1
+    - Assigned: 1
+      Page: 1
+      Row: 0
+      Column: 2
+    - Assigned: 1
+      Page: 1
+      Row: 0
+      Column: 3
+    - Assigned: 1
+      Page: 1
+      Row: 0
+      Column: 4
+    - Assigned: 1
+      Page: 1
+      Row: 0
+      Column: 5
+    - Assigned: 1
+      Page: 1
+      Row: 0
+      Column: 6
+    - Assigned: 1
+      Page: 1
+      Row: 0
+      Column: 7
+    - Assigned: 1
+      Page: 1
+      Row: 1
+      Column: 0
+    - Assigned: 1
+      Page: 1
+      Row: 1
+      Column: 1
+    - Assigned: 1
+      Page: 1
+      Row: 1
+      Column: 2
+    - Assigned: 1
+      Page: 1
+      Row: 1
+      Column: 3
+    - Assigned: 1
+      Page: 1
+      Row: 1
+      Column: 4
+    - Assigned: 1
+      Page: 1
+      Row: 1
+      Column: 5
+    - Assigned: 1
+      Page: 1
+      Row: 1
+      Column: 6
+    - Assigned: 1
+      Page: 1
+      Row: 1
+      Column: 7
+    - Assigned: 1
+      Page: 1
+      Row: 2
+      Column: 0
+  - ParameterId: model.camera-pose
+    OptionButtons:
+    - Assigned: 1
+      Page: 2
+      Row: 0
+      Column: 0
+    - Assigned: 1
+      Page: 2
+      Row: 0
+      Column: 1
+    - Assigned: 1
+      Page: 2
+      Row: 0
+      Column: 2
+  - ParameterId: poster.model-layout
+    OptionButtons:
+    - Assigned: 1
+      Page: 3
+      Row: 0
+      Column: 0
+    - Assigned: 1
+      Page: 3
+      Row: 0
+      Column: 1
+    - Assigned: 1
+      Page: 3
+      Row: 0
+      Column: 2
+  - ParameterId: poster.typography-layout
+    OptionButtons:
+    - Assigned: 1
+      Page: 4
+      Row: 0
+      Column: 0
+    - Assigned: 1
+      Page: 4
+      Row: 0
+      Column: 1
+    - Assigned: 1
+      Page: 4
+      Row: 0
+      Column: 2
+  - ParameterId: poster.main-text
+    OptionButtons:
+    - Assigned: 1
+      Page: 4
+      Row: 1
+      Column: 0
+    - Assigned: 1
+      Page: 4
+      Row: 1
+      Column: 1
+    - Assigned: 1
+      Page: 4
+      Row: 1
+      Column: 2
+  - ParameterId: background.pattern
+    OptionButtons:
+    - Assigned: 1
+      Page: 5
+      Row: 0
+      Column: 0
+    - Assigned: 1
+      Page: 5
+      Row: 0
+      Column: 1
+    - Assigned: 1
+      Page: 5
+      Row: 0
+      Column: 2
+    - Assigned: 1
+      Page: 5
+      Row: 0
+      Column: 3
+    - Assigned: 1
+      Page: 5
+      Row: 0
+      Column: 4
+    - Assigned: 1
+      Page: 5
+      Row: 0
+      Column: 5
+    - Assigned: 1
+      Page: 5
+      Row: 0
+      Column: 6
+    - Assigned: 1
+      Page: 5
+      Row: 0
+      Column: 7
+    - Assigned: 1
+      Page: 5
+      Row: 1
+      Column: 0
+    - Assigned: 1
+      Page: 5
+      Row: 1
+      Column: 1
+  - ParameterId: visual.palette
+    OptionButtons:
+    - Assigned: 1
+      Page: 5
+      Row: 2
+      Column: 0
+    - Assigned: 1
+      Page: 5
+      Row: 2
+      Column: 1
+    - Assigned: 1
+      Page: 5
+      Row: 2
+      Column: 2
+  - ParameterId: text.layout
+    OptionButtons:
+    - Assigned: 1
+      Page: 6
+      Row: 0
+      Column: 0
+    - Assigned: 1
+      Page: 6
+      Row: 0
+      Column: 1
+    - Assigned: 1
+      Page: 6
+      Row: 0
+      Column: 2
+    - Assigned: 1
+      Page: 6
+      Row: 0
+      Column: 3
+    - Assigned: 1
+      Page: 6
+      Row: 0
+      Column: 4
   _oneshots:
   - ParameterId: model.reset-transform
     Button:
