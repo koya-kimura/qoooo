@@ -3359,9 +3359,9 @@ MonoBehaviour:
   _scale:
     _id: model.scale
     _displayName: Model Scale
-    _defaultValue: 20
-    _min: 5
-    _max: 40
+    _defaultValue: 1
+    _min: 0.25
+    _max: 1.75
   _motion:
     _id: model.motion
     _displayName: Model Motion

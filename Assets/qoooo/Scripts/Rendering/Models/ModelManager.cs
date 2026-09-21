@@ -26,6 +26,7 @@ namespace qoooo.Rendering.Models
         private int _activeSource = -1;
 
         public GameObject CurrentModel { get; private set; }
+        public IReadOnlyList<GameObject> Models => _models;
         public event Action<GameObject> CurrentModelChanged;
 
         private void Awake()
