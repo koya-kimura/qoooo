@@ -31,8 +31,10 @@ namespace qoooo.Rendering.Sources
 
     public partial class PosterCanvas : MonoBehaviour, IMidiParameterContainer
     {
-        [SerializeField] private MonoBehaviour _verificationTextureSource;
+        [SerializeField] private TextureLayer _modelTextureLayer;
+        [SerializeField] private MonoBehaviour _backgroundTextureSource;
         [SerializeField] private TMP_FontAsset _posterFont;
+        [SerializeField] private PosterLibrary _library = new();
         [SerializeField]
         private RadioParameter _layout = new(
             "poster.layout",
@@ -59,17 +61,17 @@ namespace qoooo.Rendering.Sources
 
         private IResolutionContainer _resolutionContainer;
         private IPaletteProvider _palette;
-        private int _currentPreset = -1;
-        private int _currentModelLayout = -1;
-        private int _currentTypographyLayout = -1;
-        private int _builtModelLayout = -1;
-        private int _builtTypographyLayout = -1;
+        private int _builtLayout = -1;
         private int _builtMainText = -1;
+        private Vector2Int _builtResolution;
+        private Texture _builtModelTexture;
+        private Texture _builtBackgroundTexture;
         private Color _builtPaletteMain;
         private Color _builtPaletteSub;
         private bool _hasBuiltPalette;
-        private bool _isApplyingPreset;
+        private bool _documentDirty = true;
         private TextMeshProUGUI _textMeasurer;
+        private readonly List<DynamicTextBinding> _dynamicTexts = new();
 
         public float Width => _resolutionContainer?.Resolution.x ?? 1920f;
         public float Height => _resolutionContainer?.Resolution.y ?? 1080f;
@@ -89,6 +91,7 @@ namespace qoooo.Rendering.Sources
         private void Awake()
         {
             SynchronizeParameterOptions();
+            EnsureDefaultLibrary();
         }
 
         [Inject]
@@ -100,24 +103,222 @@ namespace qoooo.Rendering.Sources
 
         private void Update()
         {
-            SynchronizeLayoutParameters();
-
-            var texture = (_verificationTextureSource as ITextureContainer)?.Texture;
-            if (texture == null) return;
-
-            var modelLayout = _modelLayout.Value;
-            var typographyLayout = _typographyLayout.Value;
+            var modelTexture = _modelTextureLayer?.Render();
+            var backgroundTexture = (_backgroundTextureSource as ITextureContainer)?.Texture;
+            var document = _library?.GetDocument(_layout.Value);
             var mainText = _mainText.Value;
             var paletteMain = PaletteMain;
             var paletteSub = PaletteSub;
-            if (_builtModelLayout == modelLayout
-                && _builtTypographyLayout == typographyLayout
-                && _builtMainText == mainText
-                && _hasBuiltPalette
-                && _builtPaletteMain == paletteMain
-                && _builtPaletteSub == paletteSub) return;
+            var resolution = new Vector2Int(Mathf.RoundToInt(Width), Mathf.RoundToInt(Height));
+            if (document == null) return;
 
-            RebuildLayout(texture, modelLayout, typographyLayout, mainText);
+            if (_documentDirty
+                || _builtLayout != _layout.Value
+                || _builtMainText != mainText
+                || _builtResolution != resolution
+                || _builtModelTexture != modelTexture
+                || _builtBackgroundTexture != backgroundTexture
+                || !_hasBuiltPalette
+                || _builtPaletteMain != paletteMain
+                || _builtPaletteSub != paletteSub)
+            {
+                RenderDocument(document, modelTexture, backgroundTexture);
+            }
+
+            UpdateDynamicText();
+        }
+
+        public void MarkDirty()
+        {
+            _documentDirty = true;
+        }
+
+        private void EnsureDefaultLibrary()
+        {
+            var defaults = PosterDocumentFactory.CreateDefaultLibrary();
+            _library ??= new PosterLibrary();
+            EnsureDefaultDocument(ref _library.Editorial, defaults.Editorial);
+            EnsureDefaultDocument(ref _library.Split, defaults.Split);
+            EnsureDefaultDocument(ref _library.Modular, defaults.Modular);
+            EnsureDefaultDocument(ref _library.Custom, defaults.Custom);
+        }
+
+        private static void EnsureDefaultDocument(ref PosterDocument document, PosterDocument defaultDocument)
+        {
+            if (document == null
+                || (string.IsNullOrWhiteSpace(document.Name)
+                    && (document.Elements == null || document.Elements.Count == 0)))
+                document = defaultDocument;
+        }
+
+        private void RenderDocument(PosterDocument document, Texture modelTexture, Texture backgroundTexture)
+        {
+            GetTextMeasurer();
+            ClearLayout();
+            _dynamicTexts.Clear();
+
+            // The list is front-to-back for the future Composer UI. Canvas siblings created later render in front.
+            for (var index = document.Elements.Count - 1; index >= 0; index--)
+            {
+                var element = document.Elements[index];
+                if (element == null || !element.Enabled) continue;
+
+                RenderElement(element, modelTexture, backgroundTexture);
+            }
+
+            _builtLayout = _layout.Value;
+            _builtMainText = _mainText.Value;
+            _builtResolution = new Vector2Int(Mathf.RoundToInt(Width), Mathf.RoundToInt(Height));
+            _builtModelTexture = modelTexture;
+            _builtBackgroundTexture = backgroundTexture;
+            _builtPaletteMain = PaletteMain;
+            _builtPaletteSub = PaletteSub;
+            _hasBuiltPalette = true;
+            _documentDirty = false;
+        }
+
+        private void RenderElement(PosterElement element, Texture modelTexture, Texture backgroundTexture)
+        {
+            var placement = ResolvePlacement(element.Placement);
+            var color = ResolveColor(element.Color, element.CustomColor);
+            var rotation = (float)element.Rotation;
+
+            switch (element.Type)
+            {
+                case PosterElementType.Texture:
+                    var texture = element.Texture?.Source == PosterTextureSource.Background
+                        ? backgroundTexture
+                        : modelTexture;
+                    if (texture != null)
+                        Image(texture, placement.x, placement.y, placement.width, placement.height,
+                            element.Texture?.Fit ?? PosterFit.Stretch, rotation);
+                    break;
+
+                case PosterElementType.Rect:
+                    SolidRect(placement.x, placement.y, placement.width, placement.height, color, rotation);
+                    break;
+
+                case PosterElementType.Line:
+                    RenderLine(element, placement, color);
+                    break;
+
+                case PosterElementType.Text:
+                    RenderText(element, placement, color, rotation);
+                    break;
+            }
+        }
+
+        private void RenderLine(PosterElement element, Rect placement, Color color)
+        {
+            var line = element.Line ?? new PosterLineSettings();
+            if (line.UsePlacementBounds)
+            {
+                var isVertical = element.Rotation == PosterRotation.Ninety
+                                 || element.Rotation == PosterRotation.TwoSeventy;
+                if (isVertical)
+                    Line(placement.center.x, placement.y, placement.center.x, placement.yMax, line.Thickness, color);
+                else
+                    Line(placement.x, placement.center.y, placement.xMax, placement.center.y, line.Thickness, color);
+                return;
+            }
+
+            Line(line.Start.x, line.Start.y, line.End.x, line.End.y, line.Thickness, color);
+        }
+
+        private void RenderText(PosterElement element, Rect placement, Color color, float rotation)
+        {
+            var settings = element.Text ?? new PosterTextSettings();
+            var text = ResolveText(settings);
+            var x = settings.HorizontalAlign switch
+            {
+                PosterHorizontalAlign.Center => placement.center.x,
+                PosterHorizontalAlign.Right => placement.xMax,
+                _ => placement.x
+            };
+            var y = settings.VerticalAlign switch
+            {
+                PosterVerticalAlign.Center => placement.center.y,
+                PosterVerticalAlign.Bottom => placement.yMax,
+                _ => placement.y
+            };
+
+            var textMesh = Text(text, x, y, settings.FontSize * SizeUnit, color,
+                settings.HorizontalAlign, settings.VerticalAlign, rotation);
+            if (textMesh != null && IsDynamicText(settings.Source))
+                _dynamicTexts.Add(new DynamicTextBinding(settings, textMesh));
+        }
+
+        private Rect ResolvePlacement(PosterPlacement placement)
+        {
+            placement ??= new PosterPlacement();
+            Rect rect;
+            if (placement.Mode == PosterPlacementMode.Grid)
+            {
+                var column = Mathf.Clamp(placement.Column, 0, PosterGrid.ColumnCount - 1);
+                var columnSpan = Mathf.Clamp(placement.ColumnSpan, 1, PosterGrid.ColumnCount - column);
+                rect = Grid.Rect(column, columnSpan, Mathf.Max(0, placement.Baseline), Mathf.Max(1, placement.BaselineSpan));
+            }
+            else
+            {
+                var width = placement.Width > 0f ? placement.Width : Width - placement.X;
+                var height = placement.Height > 0f ? placement.Height : Height - placement.Y;
+                rect = new Rect(placement.X, placement.Y, Mathf.Max(0f, width), Mathf.Max(0f, height));
+            }
+
+            rect.position += new Vector2(placement.OffsetX * SizeUnit, placement.OffsetY * SizeUnit);
+            return rect;
+        }
+
+        private Color ResolveColor(PosterColorRef color, Color customColor)
+        {
+            return color switch
+            {
+                PosterColorRef.PaletteMain => PaletteMain,
+                PosterColorRef.PaletteSub => PaletteSub,
+                PosterColorRef.Black => Color.black,
+                PosterColorRef.Custom => customColor,
+                _ => Color.white
+            };
+        }
+
+        private string ResolveText(PosterTextSettings settings)
+        {
+            return settings.Source switch
+            {
+                PosterTextSource.MainText => GetMainText(),
+                PosterTextSource.CurrentDate => System.DateTime.Now.ToString(
+                    string.IsNullOrWhiteSpace(settings.Format) ? "yyyy.MM.dd" : settings.Format),
+                PosterTextSource.CurrentTime => System.DateTime.Now.ToString(
+                    string.IsNullOrWhiteSpace(settings.Format) ? "HH:mm" : settings.Format),
+                _ => settings.Literal ?? string.Empty
+            };
+        }
+
+        private void UpdateDynamicText()
+        {
+            foreach (var binding in _dynamicTexts)
+            {
+                if (binding.TextMesh == null) continue;
+                var text = ResolveText(binding.Settings);
+                if (binding.TextMesh.text != text) binding.TextMesh.text = text;
+            }
+        }
+
+        private static bool IsDynamicText(PosterTextSource source)
+        {
+            return source == PosterTextSource.CurrentDate || source == PosterTextSource.CurrentTime;
+        }
+
+        private readonly struct DynamicTextBinding
+        {
+            public readonly PosterTextSettings Settings;
+            public readonly TextMeshProUGUI TextMesh;
+
+            public DynamicTextBinding(PosterTextSettings settings, TextMeshProUGUI textMesh)
+            {
+                Settings = settings;
+                TextMesh = textMesh;
+            }
         }
 
         private void SynchronizeParameterOptions()
@@ -272,7 +473,7 @@ namespace qoooo.Rendering.Sources
             imageObject.GetComponent<Image>().color = color;
         }
 
-        public void Text(
+        public TextMeshProUGUI Text(
             string text,
             float x,
             float y,
@@ -281,10 +482,10 @@ namespace qoooo.Rendering.Sources
             PosterHorizontalAlign horizontalAlign,
             PosterVerticalAlign verticalAlign)
         {
-            Text(text, x, y, fontSize, color, horizontalAlign, verticalAlign, 0f);
+            return Text(text, x, y, fontSize, color, horizontalAlign, verticalAlign, 0f);
         }
 
-        public void Text(
+        public TextMeshProUGUI Text(
             string text,
             float x,
             float y,
@@ -294,7 +495,7 @@ namespace qoooo.Rendering.Sources
             PosterVerticalAlign verticalAlign,
             float rotation)
         {
-            if (_posterFont == null) return;
+            if (_posterFont == null) return null;
 
             var textObject = new GameObject("Poster Text", typeof(RectTransform), typeof(TextMeshProUGUI));
             var textMesh = textObject.GetComponent<TextMeshProUGUI>();
@@ -311,6 +512,7 @@ namespace qoooo.Rendering.Sources
             textMesh.rectTransform.anchoredPosition = new Vector2(x, -y);
             textMesh.rectTransform.sizeDelta = preferred;
             SetRotation(textMesh.rectTransform, rotation);
+            return textMesh;
         }
 
         public float TextWidth(string text, float fontSize)
@@ -437,85 +639,6 @@ namespace qoooo.Rendering.Sources
             var uvHeight = sourceHeight / texture.height;
             var uvY = 1f - (sourceY + sourceHeight) / texture.height;
             return new Rect(uvX, uvY, uvWidth, uvHeight);
-        }
-
-        private void SynchronizeLayoutParameters()
-        {
-            var preset = _layout.Value;
-            if (_currentPreset != preset)
-            {
-                _currentPreset = preset;
-                if (preset < 3)
-                {
-                    ApplyPreset(preset);
-                    _currentModelLayout = _modelLayout.Value;
-                    _currentTypographyLayout = _typographyLayout.Value;
-                    return;
-                }
-            }
-
-            var modelLayout = _modelLayout.Value;
-            var typographyLayout = _typographyLayout.Value;
-            var mainText = _mainText.Value;
-            var axisChanged = (_currentModelLayout >= 0 && _currentModelLayout != modelLayout)
-                              || (_currentTypographyLayout >= 0
-                                  && _currentTypographyLayout != typographyLayout);
-
-            if (axisChanged && !_isApplyingPreset && _layout.Value != 3)
-            {
-                _layout.TrySetValue(3);
-                _currentPreset = 3;
-            }
-
-            _currentModelLayout = modelLayout;
-            _currentTypographyLayout = typographyLayout;
-        }
-
-        private void ApplyPreset(int preset)
-        {
-            _isApplyingPreset = true;
-            _modelLayout.TrySetValue(preset);
-            _typographyLayout.TrySetValue(preset);
-            _isApplyingPreset = false;
-        }
-
-        private void RebuildLayout(Texture texture, int modelLayout, int typographyLayout, int mainText)
-        {
-            GetTextMeasurer();
-            ClearLayout();
-
-            switch (modelLayout)
-            {
-                case 1:
-                    BuildModelSplit(texture);
-                    break;
-                case 2:
-                    BuildModelRepeat(texture);
-                    break;
-                default:
-                    BuildModelHero(texture);
-                    break;
-            }
-
-            switch (typographyLayout)
-            {
-                case 1:
-                    BuildTypographyHeadline();
-                    break;
-                case 2:
-                    BuildTypographyLabels();
-                    break;
-                default:
-                    BuildTypographyPosterCopy();
-                    break;
-            }
-
-            _builtModelLayout = modelLayout;
-            _builtTypographyLayout = typographyLayout;
-            _builtMainText = mainText;
-            _builtPaletteMain = PaletteMain;
-            _builtPaletteSub = PaletteSub;
-            _hasBuiltPalette = true;
         }
 
         private string GetMainText()

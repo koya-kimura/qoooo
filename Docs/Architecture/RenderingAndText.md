@@ -6,13 +6,11 @@
 
 ```mermaid
 flowchart LR
-    BG[MaterialTextureSource] --> BL[Background TextureLayer]
-    MC[Model CameraController] --> ML[Model TextureLayer]
+    BG[MaterialTextureSource] --> PC[PosterCanvas]
+    MC[Model CameraController] --> ME[Shared Model TextureEffect]
+    ME --> PC
     TC[Text CameraController] --> TL[Text TextureLayer]
-    MC --> PC[PosterCanvas]
     PC --> PS[PosterCanvasSource]
-    BL --> COMP[TextureCompositor]
-    ML --> COMP
     TL --> COMP
     PS --> COMP
     COMP --> PREVIEW[PreviewController]
@@ -22,27 +20,35 @@ flowchart LR
 `TextureLayer`は`MonoBehaviour`参照を持つが、`ITextureContainer`実装だけをsourceとして受け付ける。
 任意の`TextureEffect`を適用した後、`TextureCompositor`へ渡す。
 
+Trip26の通常出力では`BackgroundLayer`、`ModelLayer`、`TextLayer`はinactiveであり、
+`PosterLayer`だけをCompositorへ渡す。Background generatorとModel CameraはLayerとは独立してactiveである。
+`PosterCanvas`はBackground textureを直接参照し、ModelLayerの既存`TextureEffect`を一度だけ適用した
+processed Model textureを参照する。
+
 `TextureCompositor`はSceneで設定されたlayer listをBottom-to-Top順に処理し、2枚の
 `RenderTexture`をping-pongして合成する。解像度はDIされた`IResolutionContainer`、通常は
 `OutputSettings`から取得する。
 
 ## Poster composition
 
-`PosterCanvas`はModel Cameraの1枚のRenderTextureを複数の`RawImage`として再利用する。
-Posterの操作軸は次の3つである。
+`PosterCanvas`は`PosterLibrary`から選択された`PosterDocument`を描画する。Documentはfront-to-back順の
+`List<PosterElement>`を持ち、Canvas生成時には逆順に生成するため、List先頭が前面になる。
+Element typeは`Text`、`Rect`、`Line`、`Texture(Model / Background)`である。Placementは既存12-column
+`PosterGrid`またはtop-left基準のFree座標を使い、rotationは0 / 90 / 180 / 270度に限定する。
+
+`poster.layout`はActive PosterDocumentを選択する。
 
 | ID                           | Options                                      | 責務                                      |
 | ---------------------------- | -------------------------------------------- | ----------------------------------------- |
-| `poster.layout`              | Editorial / Split / Modular / Custom         | 下記2軸を同時設定する互換Safe Preset      |
-| `poster.model-layout`        | Hero / Split / Repeat                        | Model RenderTextureの数、位置、crop、回転 |
-| `poster.typography-layout`   | Poster Copy / Headline / Labels              | TextとRect、Line、Band等のsupport graphics |
+| `poster.layout`              | Editorial / Split / Modular / Custom         | Active PosterDocumentの選択                 |
+| `poster.model-layout`        | Hero / Split / Repeat                        | Phase 3 cleanupまで登録を維持。描画には未使用 |
+| `poster.typography-layout`   | Poster Copy / Headline / Labels              | Phase 3 cleanupまで登録を維持。描画には未使用 |
 | `poster.main-text`           | QOOOO / TRIP26 / LIVE VISUAL                 | Typography Layout内の主役Text             |
 
-Editorial、Split、Modularは同じindexのModel LayoutとTypography Layoutを適用する。
-いずれかの独立軸を直接変更すると`poster.layout`はCustomになる。2軸の一方が変化した時だけ、
-既存要素をclearし、Model、Typographyの順でPoster UIを再構築する。Typography側は全面を覆う
-不透明Rectを生成せず、下層の`background.pattern`と共存する。`poster.main-text`はSafe Preset
-に含めず、変更時はPosterを再構築する。
+Default Editorial / Split / Modular / Customは`PosterDocumentFactory`が生成する。Documentまたは
+layout、main text、palette、resolution、source texture参照の変更時に最大1回の全Document rebuildを行う。
+`CurrentDate` / `CurrentTime` Text elementは生成したTMP参照を保持し、値が変わった時だけ`TMP.text`を更新する。
+`poster.main-text`は`MainText` sourceのText elementから参照する。
 
 ## Procedural background
 

@@ -146,7 +146,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0713105401494992afdce67c4f4ba76c, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Rendering.Composition.PaletteProvider
   _palette:
     _id: visual.palette
@@ -415,8 +415,55 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2de7df30d2b9f43fb99f55d2f84b0d3c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Rendering.Sources.PosterCanvas
-  _verificationTextureSource: {fileID: 1591138853}
+  _modelTextureLayer: {fileID: 734515094}
+  _backgroundTextureSource: {fileID: 1601494012}
   _posterFont: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  _library:
+    Editorial:
+      Name: 
+      Elements: []
+    Split:
+      Name: 
+      Elements: []
+    Modular:
+      Name: 
+      Elements: []
+    Custom:
+      Name: 
+      Elements: []
+  _layout:
+    _id: poster.layout
+    _displayName: Poster Layout
+    _options:
+    - Editorial
+    - Split
+    - Modular
+    - Custom
+    _defaultValue: 0
+  _modelLayout:
+    _id: poster.model-layout
+    _displayName: Model Texture Layout
+    _options:
+    - Hero
+    - Split
+    - Repeat
+    _defaultValue: 0
+  _typographyLayout:
+    _id: poster.typography-layout
+    _displayName: Typography Layout
+    _options:
+    - Poster Copy
+    - Headline
+    - Labels
+    _defaultValue: 0
+  _mainText:
+    _id: poster.main-text
+    _displayName: Poster Main Text
+    _options:
+    - QOOOO
+    - TRIP26
+    - LIVE VISUAL
+    _defaultValue: 0
 --- !u!1 &181277144
 GameObject:
   m_ObjectHideFlags: 0
@@ -492,7 +539,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f9dfa5b682dcd46bda6128250e975f58, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineCamera
   Priority:
     Enabled: 1
@@ -689,7 +736,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &280421025
 Transform:
   m_ObjectHideFlags: 0
@@ -1328,7 +1375,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f9dfa5b682dcd46bda6128250e975f58, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineCamera
   Priority:
     Enabled: 1
@@ -3292,7 +3339,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 12c98058f9de41da8cda82764bf79d28, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Manager.ModelManager
   _models:
   - {fileID: 2067453590}
@@ -3312,6 +3359,28 @@ MonoBehaviour:
   - {fileID: 902813841}
   - {fileID: 463963683}
   - {fileID: 515895569}
+  _source:
+    _id: model.source
+    _displayName: Model Source
+    _options:
+    - ArmchairSlopeReplica001
+    - Candles001_CandleMelted02_Geo
+    - FoodCinnamonRolls001
+    - FoodGrapes001_Collection01_Geo
+    - BreadBaguetteFrenchSlice001
+    - Headphones001
+    - JugCeramicGlazed001
+    - Microwave002_Geo
+    - PlantAgave002
+    - PlantBanjoFig001
+    - PlantOrchid001
+    - PlantZZ001
+    - SinkElevated002
+    - SofaReversiReplica001
+    - ToiletModern001
+    - UtensilsJar001
+    - WallLanternExterior001_Geo
+    _defaultValue: 0
 --- !u!4 &1510833906
 Transform:
   m_ObjectHideFlags: 0
@@ -3354,7 +3423,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f37f57dfad344b39a581bbc8f5e2894e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Rendering.Models.ModelController
   _scale:
     _id: model.scale
@@ -3473,11 +3542,11 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 0.3
-  far clip plane: 1000
-  field of view: 60
+  near clip plane: 0.1
+  far clip plane: 5000
+  field of view: 40
   orthographic: 0
-  orthographic size: 5
+  orthographic size: 10
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
@@ -3502,7 +3571,7 @@ Transform:
   m_GameObject: {fileID: 1591138848}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 4.45}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3553,7 +3622,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 72ece51f2901e7445ab60da3685d6b5f, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineBrain
   ShowDebugText: 0
   ShowCameraFrustum: 1
@@ -4453,7 +4522,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f9dfa5b682dcd46bda6128250e975f58, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineCamera
   Priority:
     Enabled: 1
@@ -4710,9 +4779,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Textures.TextureCompositor
   _layers:
-  - {fileID: 78356558}
-  - {fileID: 734515094}
-  - {fileID: 280421028}
   - {fileID: 1993703950}
   _compositeMaterial: {fileID: 2100000, guid: 93372f86947814460ac6375475852c96, type: 2}
 --- !u!4 &2134837973
