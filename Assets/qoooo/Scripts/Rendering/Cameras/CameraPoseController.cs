@@ -1,56 +1,55 @@
-using System;
 using System.Collections.Generic;
+using qoooo.Parameters.Model;
+using qoooo.Parameters.Runtime;
+using Unity.Cinemachine;
 using UnityEngine;
 
 namespace qoooo.Rendering.Cameras
 {
-    [Serializable]
-    public class CameraPose
-    {
-        [SerializeField] private string _name = "Pose";
-        [SerializeField] private Vector3 _position;
-        [SerializeField] private Vector3 _rotation;
-        [SerializeField] private float _fieldOfView = 60f;
-
-        public string Name => _name;
-        public Vector3 Position => _position;
-        public Vector3 Rotation => _rotation;
-        public float FieldOfView => _fieldOfView;
-    }
-
     [RequireComponent(typeof(Camera))]
-    public class CameraPoseController : MonoBehaviour
+    public class CameraPoseController : MonoBehaviour, IMidiParameterContainer
     {
-        [SerializeField] private List<CameraPose> _poses = new();
-        [SerializeField] private int _selectedIndex;
+        [SerializeField]
+        private RadioParameter _cameraPose = new(
+            "model.camera-pose",
+            "Model Camera Pose",
+            new[] { "Front", "Close", "Low Angle" });
 
-        private Camera _camera;
+        [SerializeField] private CinemachineCamera _front;
+        [SerializeField] private CinemachineCamera _close;
+        [SerializeField] private CinemachineCamera _lowAngle;
 
-        public int SelectedIndex => _selectedIndex;
+        private int _activePose = -1;
 
-        private void Awake()
+        public IEnumerable<IMidiBindableParameter> MidiParameters
         {
-            _camera = GetComponent<Camera>();
-            Apply();
+            get { yield return _cameraPose; }
         }
 
-        public void Select(int index)
+        private void Start()
         {
-            if (_poses.Count == 0) return;
-
-            _selectedIndex = Mathf.Clamp(index, 0, _poses.Count - 1);
-            Apply();
+            ApplyPose(_cameraPose.Value);
         }
 
-        private void Apply()
+        private void Update()
         {
-            if (_poses.Count == 0) return;
-            if (_camera == null) _camera = GetComponent<Camera>();
+            if (_activePose != _cameraPose.Value)
+                ApplyPose(_cameraPose.Value);
+        }
 
-            var pose = _poses[Mathf.Clamp(_selectedIndex, 0, _poses.Count - 1)];
-            transform.localPosition = pose.Position;
-            transform.localRotation = Quaternion.Euler(pose.Rotation);
-            _camera.fieldOfView = pose.FieldOfView;
+        private void ApplyPose(int poseIndex)
+        {
+            var selectedIndex = Mathf.Clamp(poseIndex, 0, 2);
+            SetPriority(_front, selectedIndex == 0);
+            SetPriority(_close, selectedIndex == 1);
+            SetPriority(_lowAngle, selectedIndex == 2);
+            _activePose = selectedIndex;
+        }
+
+        private static void SetPriority(CinemachineCamera camera, bool isSelected)
+        {
+            if (camera != null)
+                camera.Priority = isSelected ? 10 : 0;
         }
     }
 }

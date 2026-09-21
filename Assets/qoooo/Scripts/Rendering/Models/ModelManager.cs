@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using qoooo.Parameters.Model;
 using qoooo.Parameters.Runtime;
@@ -23,6 +24,9 @@ namespace qoooo.Rendering.Models
             });
 
         private int _activeSource = -1;
+
+        public GameObject CurrentModel { get; private set; }
+        public event Action<GameObject> CurrentModelChanged;
 
         private void Awake()
         {
@@ -67,12 +71,22 @@ namespace qoooo.Rendering.Models
         private void ApplySource(int sourceIndex)
         {
             var models = _models ?? new List<GameObject>();
+            if (models.Count == 0)
+            {
+                CurrentModel = null;
+                _activeSource = -1;
+                CurrentModelChanged?.Invoke(CurrentModel);
+                return;
+            }
+
             var selectedIndex = Mathf.Clamp(sourceIndex, 0, Mathf.Max(0, models.Count - 1));
+            CurrentModel = models[selectedIndex];
             for (var index = 0; index < models.Count; index++)
                 if (models[index] != null)
                     models[index].SetActive(index == selectedIndex);
 
             _activeSource = selectedIndex;
+            CurrentModelChanged?.Invoke(CurrentModel);
         }
     }
 }
