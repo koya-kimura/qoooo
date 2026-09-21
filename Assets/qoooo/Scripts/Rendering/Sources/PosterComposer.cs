@@ -8,13 +8,14 @@ using UnityEngine;
 
 namespace qoooo.Rendering.Sources
 {
+    [DefaultExecutionOrder(-9100)]
     public sealed class PosterComposer : MonoBehaviour, IUiTarget, IPrefsSaveParticipant
     {
-        private const string PrefsKey = "qoooo.poster.library.v1";
-        private const int SchemaVersion = 1;
+        private const string PrefsKey = "qoooo.poster.library.v2";
+        private const string LegacyPrefsKey = "qoooo.poster.library.v1";
+        private const int SchemaVersion = 2;
         private const float LeftPaneWidth = 300f;
         private static readonly Color SelectedColor = new(0.08f, 0.45f, 0.55f, 0.4f);
-        private static readonly string[] PresetNames = { "Editorial", "Split", "Modular", "Custom" };
         private static readonly string[] TypeNames = { "Text", "Rect", "Line", "Texture" };
         private static readonly string[] PlacementNames = { "Grid", "Free" };
         private static readonly string[] RotationNames = { "0", "90", "180", "270" };
@@ -28,6 +29,7 @@ namespace qoooo.Rendering.Sources
         [SerializeField] private PosterCanvas _posterCanvas;
 
         private readonly PrefsAny<PosterLibraryRecord> _prefs = new(PrefsKey);
+        private readonly PrefsAny<LegacyPosterLibraryRecord> _legacyPrefs = new(LegacyPrefsKey);
         private PosterLibraryRecord _recordBeforePrepare;
         private PosterDocument _observedDocument;
         private PosterElement _selectedElement;
@@ -113,8 +115,19 @@ namespace qoooo.Rendering.Sources
 
         private Element CreateHeader()
         {
+            return UI.DynamicElementOnStatusChanged(
+                GetLibraryStatus,
+                _ => CreateHeaderContent());
+        }
+
+        private Element CreateHeaderContent()
+        {
+            var documents = _posterCanvas.Library.Documents;
+            var names = new string[documents.Count];
+            for (var index = 0; index < documents.Count; index++) names[index] = documents[index].Name;
+
             return UI.Row(
-                UI.Label("Preset"),
+                UI.Label("Layout"),
                 UI.Dropdown(null,
                     () => _posterCanvas.ActiveDocumentIndex,
                     index =>
@@ -122,9 +135,54 @@ namespace qoooo.Rendering.Sources
                         _posterCanvas.SelectDocument(index);
                         SynchronizeSelection();
                     },
-                    PresetNames),
+                    names),
+                UI.Field("Name", () => ActiveDocument?.Name ?? string.Empty, RenameActiveDocument),
+                UI.Button("New", CreateDocument),
+                UI.Button("Duplicate", DuplicateDocument),
+                UI.Button("Delete", DeleteDocument),
                 UI.Space(),
                 UI.HelpBox("Use Qoooo > Save to persist poster changes."));
+        }
+
+        private void CreateDocument()
+        {
+            var documents = _posterCanvas.Library.Documents;
+            documents.Add(new PosterDocument { Name = "Untitled", Elements = new List<PosterElement>() });
+            _posterCanvas.SynchronizeLibrary(documents.Count - 1);
+            SynchronizeSelection();
+        }
+
+        private void DuplicateDocument()
+        {
+            var document = ActiveDocument;
+            if (document == null) return;
+
+            var documents = _posterCanvas.Library.Documents;
+            var duplicate = Copy(document);
+            duplicate.Name = $"{document.Name} Copy";
+            documents.Add(duplicate);
+            _posterCanvas.SynchronizeLibrary(documents.Count - 1);
+            SynchronizeSelection();
+        }
+
+        private void RenameActiveDocument(string name)
+        {
+            var document = ActiveDocument;
+            if (document == null) return;
+
+            document.Name = name;
+            _posterCanvas.SynchronizeLibrary(_posterCanvas.ActiveDocumentIndex);
+        }
+
+        private void DeleteDocument()
+        {
+            var documents = _posterCanvas.Library.Documents;
+            if (documents.Count <= 1) return;
+
+            var index = _posterCanvas.ActiveDocumentIndex;
+            documents.RemoveAt(index);
+            _posterCanvas.SynchronizeLibrary(Mathf.Min(index, documents.Count - 1));
+            SynchronizeSelection();
         }
 
         private Element CreateLayerPane()
@@ -438,6 +496,20 @@ namespace qoooo.Rendering.Sources
             }
         }
 
+        private int GetLibraryStatus()
+        {
+            unchecked
+            {
+                var hash = _posterCanvas?.ActiveDocumentIndex ?? -1;
+                var documents = _posterCanvas?.Library.Documents;
+                if (documents == null) return hash;
+                hash = hash * 31 + documents.Count;
+                foreach (var document in documents)
+                    hash = hash * 31 + (document?.Name?.GetHashCode() ?? 0);
+                return hash;
+            }
+        }
+
         private void SynchronizeSelection()
         {
             var document = ActiveDocument;
@@ -458,13 +530,39 @@ namespace qoooo.Rendering.Sources
         private void LoadSavedLibrary()
         {
             var record = _prefs.Get();
-            if (record == null
-                || !record.HasSavedData
-                || record.SchemaVersion != SchemaVersion
-                || record.Library == null) return;
+            if (record != null
+                && record.HasSavedData
+                && record.SchemaVersion == SchemaVersion
+                && record.Library != null)
+            {
+                _posterCanvas.ReplaceLibrary(Copy(record.Library));
+                Debug.Log("[Poster] Library v2 loaded from Prefs.", this);
+                return;
+            }
 
-            _posterCanvas.ReplaceLibrary(Copy(record.Library));
-            Debug.Log("[Poster] Library loaded from Prefs.", this);
+            var legacyRecord = _legacyPrefs.Get();
+            if (legacyRecord == null
+                || !legacyRecord.HasSavedData
+                || legacyRecord.SchemaVersion != 1
+                || legacyRecord.Library == null) return;
+
+            _posterCanvas.ReplaceLibrary(ConvertLegacyLibrary(legacyRecord.Library));
+            Debug.Log("[Poster] Library v1 migrated from Prefs.", this);
+        }
+
+        private static PosterLibrary ConvertLegacyLibrary(LegacyPosterLibrary legacy)
+        {
+            var library = new PosterLibrary();
+            AddLegacyDocument(library.Documents, legacy.Editorial);
+            AddLegacyDocument(library.Documents, legacy.Split);
+            AddLegacyDocument(library.Documents, legacy.Modular);
+            AddLegacyDocument(library.Documents, legacy.Custom);
+            return library.Documents.Count == 0 ? PosterDocumentFactory.CreateDefaultLibrary() : library;
+        }
+
+        private static void AddLegacyDocument(List<PosterDocument> documents, PosterDocument document)
+        {
+            if (document != null) documents.Add(Copy(document));
         }
 
         private static int CalculateOrderSignature(PosterDocument document)
@@ -514,9 +612,26 @@ namespace qoooo.Rendering.Sources
         [Serializable]
         private sealed class PosterLibraryRecord
         {
-            public int SchemaVersion = 1;
+            public int SchemaVersion = 2;
             public bool HasSavedData;
             public PosterLibrary Library;
+        }
+
+        [Serializable]
+        private sealed class LegacyPosterLibraryRecord
+        {
+            public int SchemaVersion = 1;
+            public bool HasSavedData;
+            public LegacyPosterLibrary Library;
+        }
+
+        [Serializable]
+        private sealed class LegacyPosterLibrary
+        {
+            public PosterDocument Editorial;
+            public PosterDocument Split;
+            public PosterDocument Modular;
+            public PosterDocument Custom;
         }
     }
 }

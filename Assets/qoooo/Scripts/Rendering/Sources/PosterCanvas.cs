@@ -29,6 +29,7 @@ namespace qoooo.Rendering.Sources
         Bottom
     }
 
+    [DefaultExecutionOrder(-9200)]
     public partial class PosterCanvas : MonoBehaviour, IMidiParameterContainer
     {
         [SerializeField] private TextureLayer _modelTextureLayer;
@@ -69,7 +70,7 @@ namespace qoooo.Rendering.Sources
         {
             get
             {
-                EnsureDefaultLibrary();
+                EnsureLibrary();
                 return _library;
             }
         }
@@ -87,8 +88,8 @@ namespace qoooo.Rendering.Sources
 
         private void Awake()
         {
+            EnsureLibrary();
             SynchronizeParameterOptions();
-            EnsureDefaultLibrary();
         }
 
         [Inject]
@@ -138,26 +139,44 @@ namespace qoooo.Rendering.Sources
         public void ReplaceLibrary(PosterLibrary library)
         {
             _library = library;
-            EnsureDefaultLibrary();
+            EnsureLibrary();
+            SynchronizeLayoutOptions();
             MarkDirty();
         }
 
-        private void EnsureDefaultLibrary()
+        public void SynchronizeLibrary(int selectedIndex = -1)
         {
-            var defaults = PosterDocumentFactory.CreateDefaultLibrary();
-            _library ??= new PosterLibrary();
-            EnsureDefaultDocument(ref _library.Editorial, defaults.Editorial);
-            EnsureDefaultDocument(ref _library.Split, defaults.Split);
-            EnsureDefaultDocument(ref _library.Modular, defaults.Modular);
-            EnsureDefaultDocument(ref _library.Custom, defaults.Custom);
+            EnsureLibrary();
+            SynchronizeLayoutOptions();
+            if (selectedIndex >= 0) _layout.TrySetValue(selectedIndex);
+            MarkDirty();
         }
 
-        private static void EnsureDefaultDocument(ref PosterDocument document, PosterDocument defaultDocument)
+        private void EnsureLibrary()
         {
-            if (document == null
-                || (string.IsNullOrWhiteSpace(document.Name)
-                    && (document.Elements == null || document.Elements.Count == 0)))
-                document = defaultDocument;
+            if (_library?.Documents == null || _library.Documents.Count == 0)
+                _library = PosterDocumentFactory.CreateDefaultLibrary();
+
+            _library.Documents.RemoveAll(document => document == null);
+            if (_library.Documents.Count == 0)
+                _library.Documents.Add(new PosterDocument { Name = "Untitled" });
+
+            var usedNames = new HashSet<string>();
+            foreach (var document in _library.Documents)
+            {
+                document.Elements ??= new List<PosterElement>();
+                document.Name = UniqueDocumentName(document.Name, usedNames);
+                usedNames.Add(document.Name);
+            }
+        }
+
+        private static string UniqueDocumentName(string name, HashSet<string> usedNames)
+        {
+            var baseName = string.IsNullOrWhiteSpace(name) ? "Untitled" : name.Trim();
+            var candidate = baseName;
+            for (var suffix = 2; usedNames.Contains(candidate); suffix++)
+                candidate = $"{baseName} {suffix}";
+            return candidate;
         }
 
         private void RenderDocument(PosterDocument document, Texture modelTexture, Texture backgroundTexture)
@@ -341,8 +360,15 @@ namespace qoooo.Rendering.Sources
                 "Poster Main Text",
                 new[] { "QOOOO", "TRIP26", "LIVE VISUAL" });
 
-            _layout.ReplaceOptions(new[] { "Editorial", "Split", "Modular", "Custom" });
+            SynchronizeLayoutOptions();
             _mainText.ReplaceOptions(new[] { "QOOOO", "TRIP26", "LIVE VISUAL" });
+        }
+
+        private void SynchronizeLayoutOptions()
+        {
+            var names = new List<string>(_library.Documents.Count);
+            foreach (var document in _library.Documents) names.Add(document.Name);
+            _layout.ReplaceOptions(names);
         }
 
         public void Image(Texture texture, float x, float y, float width, float height)

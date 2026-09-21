@@ -46,15 +46,18 @@ Parameterの公開経路は2つある。
 
 ## 現在のParameter owner
 
-| Owner                        | Parameter ID                                                                               |
-| ---------------------------- | ------------------------------------------------------------------------------------------ |
-| procedural background source | `background.pattern`                                                                       |
-| model                        | `model.scale`、`model.motion`、`model.reset-transform`、`model.active`                      |
-| poster                       | `poster.layout`、`poster.main-text`                                                           |
+| Owner                        | Parameter ID                                                           |
+| ---------------------------- | ---------------------------------------------------------------------- |
+| procedural background source | `background.pattern`                                                   |
+| model                        | `model.scale`、`model.motion`、`model.reset-transform`、`model.active` |
+| poster                       | `poster.layout`、`poster.main-text`                                    |
 
 Legacy `TextController`の`text.*` Parameterと`poster.model-layout`、`poster.typography-layout`は
 Trip26のlive Parameter / MIDI pathからretire済みである。保存済みmappingの該当IDだけはload時に除外し、
 それ以外のunknown mappingは保持する。
+
+`poster.layout`のoptionは`PosterLibrary.Documents`の`Name`から起動時とDocument CRUD時に同期する。
+option indexとDocument indexは同一で、既存のRadio MIDI mapping形式は変更しない。
 
 ## MIDI input
 

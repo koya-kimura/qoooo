@@ -840,7 +840,7 @@ Grid Layout側が渡すrotation値を、
 - [ ] EditorialがGrid Designへ再設計されている
 - [ ] SplitがGrid Designへ再設計されている
 - [ ] ModularがGrid Designへ再設計されている
-- [ ] `poster.layout` Safe Presetの既存挙動を維持
+- [ ] `poster.layout`と`PosterLibrary.Documents`のindexが一致する
 - [ ] Model Source変更後もLayoutが破綻しない
 - [ ] 既存PosterCanvasのpixel-like authoring APIを維持
 - [ ] Compile error 0
@@ -851,12 +851,13 @@ Grid Layout側が渡すrotation値を、
 - Compile: errors 0 / warnings 0
 - Play Mode: errors 0 / warnings 0
 - Editorial / Split / ModularのGrid配置を確認
-- `poster.layout` 4 document切替と`poster.main-text` 3 optionsを確認
+- `poster.layout` option数とDocument数が一致し、追加・削除後も切替できることを確認
 - Model Source 0〜16でPoster Image配置が維持されることを確認
 - Visual refinement後、Hero / Supporting TypographyのPalette panel支持とLarge / Small hierarchyを再確認
 - Legacy Text runtimeを停止し、Posterのみが最終出力されることを確認
-- `Poster Composer`で4 documentの追加・選択・並べ替え・複製・削除と即時描画を確認
-- Qoooo Save後のPlay Mode再起動で4 documentの編集内容が復元されることを確認
+- `Poster Composer`でDocumentの追加・選択・rename・複製・削除と即時描画を確認
+- v1固定4-field PrefsがDocumentsへmigrationされることを確認
+- Qoooo Save後のPlay Mode再起動で全Documentの編集内容がv2から復元されることを確認
 
 ---
 

@@ -47,6 +47,7 @@
 - `MidiParameterGroupName`の削除
 - Scriptsの責務別directory / namespace整理
 - PosterDocument / Poster Composerによる最終Poster compositionとLegacy Text runtimeのTrip26停止
+- `PosterLibrary.Documents`による可変PosterDocument管理とv1 Prefs migration
 
 未完了または追加検証が必要:
 

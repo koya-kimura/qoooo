@@ -52,20 +52,12 @@ namespace qoooo.Rendering.Sources
     [Serializable]
     public sealed class PosterLibrary
     {
-        public PosterDocument Editorial;
-        public PosterDocument Split;
-        public PosterDocument Modular;
-        public PosterDocument Custom;
+        public List<PosterDocument> Documents = new();
 
         public PosterDocument GetDocument(int index)
         {
-            return index switch
-            {
-                1 => Split,
-                2 => Modular,
-                3 => Custom,
-                _ => Editorial
-            };
+            if (Documents == null || Documents.Count == 0) return null;
+            return Documents[Mathf.Clamp(index, 0, Documents.Count - 1)];
         }
     }
 

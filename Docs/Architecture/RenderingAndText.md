@@ -31,23 +31,26 @@ processed Model textureを参照する。
 
 ## Poster composition
 
-`PosterCanvas`は`PosterLibrary`から選択された`PosterDocument`を描画する。Documentはfront-to-back順の
+`PosterCanvas`は`PosterLibrary.Documents`から選択された`PosterDocument`を描画する。
+`PosterDocument = Layout = Preset`であり、別のslotやpreset型は持たない。Documentはfront-to-back順の
 `List<PosterElement>`を持ち、Canvas生成時には逆順に生成するため、List先頭が前面になる。
 Element typeは`Text`、`Rect`、`Line`、`Texture(Model / Background)`である。Placementは既存12-column
 `PosterGrid`またはtop-left基準のFree座標を使い、rotationは0 / 90 / 180 / 270度に限定する。
 
 `poster.layout`はActive PosterDocumentを選択する。
 
-| ID                           | Options                                      | 責務                                      |
-| ---------------------------- | -------------------------------------------- | ----------------------------------------- |
-| `poster.layout`              | Editorial / Split / Modular / Custom         | Active PosterDocumentの選択                 |
-| `poster.main-text`           | QOOOO / TRIP26 / LIVE VISUAL                 | Typography Layout内の主役Text             |
+| ID                 | Options                              | 責務                          |
+| ------------------ | ------------------------------------ | ----------------------------- |
+| `poster.layout`    | PosterDocument名の動的list            | Active PosterDocumentの選択   |
+| `poster.main-text` | QOOOO / TRIP26 / LIVE VISUAL         | Typography Layout内の主役Text |
 
-Default Editorial / Split / Modular / Customは`PosterDocumentFactory`が生成する。Documentまたは
+初期Editorial / Split / Modular / Customは`PosterDocumentFactory`が`Documents`の先頭4件として生成するが、
+runtimeで特別なslotとして扱わない。Documentまたは
 layout、main text、palette、resolution、source texture参照の変更時に最大1回の全Document rebuildを行う。
 `CurrentDate` / `CurrentTime` Text elementは生成したTMP参照を保持し、値が変わった時だけ`TMP.text`を更新する。
 `poster.main-text`は`MainText` sourceのText elementから参照する。
-`Poster Composer`はこの`PosterLibrary`を編集するauthoring UIである。`poster.model-layout`と
+`Poster Composer`はDocumentの作成、複製、rename、削除とlayer編集を行うauthoring UIである。
+保存先は`qoooo.poster.library.v2`で、旧v1固定4-field recordはload時だけDocumentsへmigrationする。`poster.model-layout`と
 `poster.typography-layout`はretire済みで、live Parameterには登録されない。
 
 ## Procedural background

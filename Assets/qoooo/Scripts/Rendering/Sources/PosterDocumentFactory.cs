@@ -9,10 +9,13 @@ namespace qoooo.Rendering.Sources
         {
             return new PosterLibrary
             {
-                Editorial = CreateDefaultEditorial(),
-                Split = CreateDefaultSplit(),
-                Modular = CreateDefaultModular(),
-                Custom = CreateDefaultCustom()
+                Documents = new List<PosterDocument>
+                {
+                    CreateDefaultEditorial(),
+                    CreateDefaultSplit(),
+                    CreateDefaultModular(),
+                    CreateDefaultCustom()
+                }
             };
         }
 
