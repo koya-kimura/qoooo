@@ -93,6 +93,18 @@ Parameter owner、Rendering、Text自体はMIDI接続の有無に依存しない
 `BpmManager`は`BpmClock`を`Time.unscaledDeltaTime`で更新する唯一のownerである。
 `Rhythm`はbeatをvisual phase/index/noiseへ変換するutilityであり、clock stateを持たない。
 
+## Runtime UI
+
+`UiBuilder`は既存Parameter ownerから同じParameter instanceを収集し、用途別のlauncherを構築する。
+
+- `LIVE CONTROLS`: Model、Camera、Poster、Background / Palette、Rhythm、Effects
+- `AUTHORING TOOLS`: Poster Composer
+- `SETUP / DEBUG`: Output Setup、MIDI Setup
+
+Live UIはTyped Parameterを直接操作し、Poster Composerは`PosterLibrary`を編集する。MIDI Setup内の
+hubは接続状態とReconnectだけを扱い、標準`WindowLauncher`で`MIDI Bindings`（APC assignment）と
+`MIDI Mapping`（profile、rebuild、reset）を子Windowとして開く。Saveはroot windowに残る。
+
 ## Enable / Disable
 
 - `MinisMidiInput`はenable時にInput System device changeを購読し、disable時に解除する。

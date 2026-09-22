@@ -62,24 +62,47 @@ namespace qoooo.Midi.Runtime
         public Element CreateElement()
         {
             return UI.Column(
+                CreateOverviewElement(),
+                // The hub owns navigation only; child windows own their existing MIDI views.
+                UI.WindowLauncher(UI.Window("MIDI Bindings", CreateBindingsElement())),
+                UI.WindowLauncher(UI.Window("MIDI Mapping", CreateMappingElement()))
+            );
+        }
+
+        private Element CreateOverviewElement()
+        {
+            return UI.Column(
                 UI.Label("APC mini mk2"),
                 UI.Label(() => _midiInput != null && _midiInput.IsConnected ? "Input: connected" : "Input: waiting"),
-                UI.Label(() =>
-                    _midiOutput != null && _midiOutput.IsConnected ? "Output: connected" : "Output: waiting"),
-                UI.Button("Reconnect MIDI", () =>
-                {
-                    _midiInput?.RequestReconnect();
-                    _midiOutput?.RequestReconnect();
-                }),
+                UI.Label(() => _midiOutput != null && _midiOutput.IsConnected ? "Output: connected" : "Output: waiting"),
                 UI.Label(() => $"Parameters: {_parameterRegistry?.Parameters.Count ?? 0}"),
                 UI.Label(() => $"Page: {_apcController?.CurrentPage ?? 0}"),
-                UI.Button("Rebuild Mapping", () => _apcController?.Rebuild()),
                 UI.Label(() => _profileStore != null && _profileStore.IsDirty ? "Profile: unsaved" : "Profile: saved"),
-                UI.Button("Revert MIDI", () => _profileStore?.Revert()),
-                UI.Button("Reset Mapping", () => _profileStore?.ResetMapping()),
-                UI.Button("Reset Values", () => _profileStore?.ResetValues())
-                , UI.Fold("MIDI Mapping", _bindingUi?.CreateElement() ?? UI.Label("MIDI is not initialized.")).Open()
-            );
+                UI.Button("Reconnect MIDI", ReconnectMidi));
+        }
+
+        private Element CreateBindingsElement()
+        {
+            return _bindingUi?.CreateBindingsElement() ?? UI.Label("MIDI is not initialized.");
+        }
+
+        private Element CreateMappingElement()
+        {
+            return UI.Column(
+                UI.Label(() => _profileStore != null && _profileStore.IsDirty ? "Profile: unsaved" : "Profile: saved"),
+                UI.Fold("Mapping",
+                    UI.Button("Rebuild Mapping", () => _apcController?.Rebuild()),
+                    _bindingUi?.CreateFaderButtonFunctionsElement() ?? UI.Label("MIDI is not initialized.")).Open(),
+                UI.Fold("Maintenance",
+                    UI.Button("Revert MIDI", () => _profileStore?.Revert()),
+                    UI.Button("Reset Mapping", () => _profileStore?.ResetMapping()),
+                    UI.Button("Reset Values", () => _profileStore?.ResetValues())).Open());
+        }
+
+        private void ReconnectMidi()
+        {
+            _midiInput?.RequestReconnect();
+            _midiOutput?.RequestReconnect();
         }
 
         [Inject]

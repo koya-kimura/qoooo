@@ -149,7 +149,7 @@ Type:
 
 ## ISSUE-001: Grid DesignによるPoster Layoutの再設計
 
-**Status:** verify  
+**Status:** verify
 **Priority:** P0  
 **Type:** VISUAL
 
@@ -1023,7 +1023,7 @@ Cinemachineを活かして、
 
 ## ISSUE-008: RosettaUIを操作用途ごとに整理したい
 
-**Status:** inbox  
+**Status:** verify
 **Priority:** P2  
 **Type:** CONTROL
 
@@ -1053,6 +1053,13 @@ Visual / Texture / Parameter UI:
 
 MIDIではプリセット的な選択肢だけを操作し、
 UIではより細かい値まで編集できる構造にしたい。
+
+### Verification
+
+- root UIを`LIVE CONTROLS`、`AUTHORING TOOLS`、`SETUP / DEBUG`へ分類した。
+- Live windowはownerが持つTyped Parameterを直接操作する。
+- Poster Composerは`PosterLibrary`をsource of truthとするAuthoring Toolとして分離した。
+- MIDI MappingからParameter値の直接操作を除き、assignment専用にした。
 
 ---
 

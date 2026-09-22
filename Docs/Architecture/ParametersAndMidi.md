@@ -134,13 +134,21 @@ Shiftの前回値を保持して差分だけ送る。output connection generatio
 
 ## RosettaUI
 
-`MidiSystemController`は`IUiTarget`として接続状態、page、profile操作、Mapping UIを公開する。
-`MidiBindingUi`はRegistryの型からUIを決める。
+`UiBuilder`はownerが公開するParameterを用途別のLive windowへ直接表示する。MIDI UIとLive UIは
+同じParameter instanceを参照し、UI専用の値は持たない。
 
-- Toggle/Oneshot/Momentary/State: 値操作、単一PadのListen/Clear
-- Radio: optionごとの値選択、Listen/Clear
-- Sequence: stepごとのON/OFF、Listen/Clear
-- Float: slider、Fader Listen/Clear
+`MidiSystemController`は`IUiTarget`として接続状態、page、profile操作、Mapping UIを公開する。
+`MidiBindingUi`はRegistryの型からassignment UIを決め、Parameter値の直接操作は行わない。
+
+`MIDI Setup`は接続概要とReconnectのhubである。詳細は標準RosettaUI child windowへ分ける。
+
+- `MIDI Bindings`: Listen状態、Cancel、scrollableなParameter Bindings
+- `MIDI Mapping`: profile状態、Rebuild、Fader button function、Revert、Reset
+
+- Toggle/Oneshot/Momentary/State: 単一PadのListen/Clear
+- Radio: optionごとのListen/Clear
+- Sequence: stepごとのListen/Clear
+- Float: Fader Listen/Clear
 - Fader button: Mute/Random functionとRandom division
 
 ## Prefs

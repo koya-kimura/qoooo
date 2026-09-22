@@ -11,19 +11,21 @@ namespace qoooo.Midi.Runtime
     /// <summary>型ごとの必要なslotだけを表示するMIDI Mapping UI。</summary>
     public sealed class MidiBindingUi
     {
+        private const float BindingsListMaxHeight = 640f;
         private readonly ApcMiniMk2ParameterController _controller;
         private readonly MidiParameterRegistry _registry;
         public MidiBindingUi(ApcMiniMk2ParameterController controller, MidiParameterRegistry registry) { _controller=controller; _registry=registry; }
-        public Element CreateElement()
+        public Element CreateBindingsElement()
         {
             return UI.Column(
                 UI.Label(() => _controller.IsListening ? $"Listening: {_controller.ListeningParameterId}" : "Listen: idle"),
                 UI.Button("Cancel Listen", _controller.CancelListen),
-                UI.Fold("Parameter Bindings", CreateBindings()).Open(),
-                UI.Fold("Fader Button Functions", CreateFaderFunctions()).Open()
+                UI.ScrollViewVertical(BindingsListMaxHeight,
+                    UI.Fold("Parameter Bindings", CreateBindings()).Open())
             );
         }
-        private Element CreateFaderFunctions()
+
+        public Element CreateFaderButtonFunctionsElement()
         {
             var rows=new List<Element>();
             var options=new[] { "Mute", "Random" };
@@ -62,7 +64,6 @@ namespace qoooo.Midi.Runtime
         {
             return UI.Row(
                 UI.Label(parameter.DisplayName),
-                CreateDirectControl(parameter),
                 UI.Label(() => SlotLabel(parameter.Id, parameter.Kind, 0)),
                 UI.Button("Listen Pad", () => _controller.BeginButtonListen(parameter.Id, parameter.Kind, 0)),
                 UI.Button("Clear", () => _controller.ClearButtonBinding(parameter.Id, parameter.Kind, 0)));
@@ -74,7 +75,7 @@ namespace qoooo.Midi.Runtime
             {
                 var captured=index;
                 rows.Add(UI.Row(
-                    UI.Label(label(captured)), CreateSlotControl(parameter, captured), UI.Label(() => SlotLabel(parameter.Id, parameter.Kind, captured)),
+                    UI.Label(label(captured)), UI.Label(() => SlotLabel(parameter.Id, parameter.Kind, captured)),
                     UI.Button("Listen Pad", () => _controller.BeginButtonListen(parameter.Id, parameter.Kind, captured)),
                     UI.Button("Clear", () => _controller.ClearButtonBinding(parameter.Id, parameter.Kind, captured))));
             }
@@ -82,33 +83,11 @@ namespace qoooo.Midi.Runtime
         }
         private Element CreateFader(IMidiBindableParameter parameter)
         {
-            var value = parameter as FloatParameter;
             return UI.Row(
                 UI.Label(parameter.DisplayName),
-                UI.Slider("Value", () => value.Value, next => value.TrySetValue(next), value.Min, value.Max),
                 UI.Label(() => _controller.TryGetFaderIndex(parameter.Id, out var index) ? $"Fader {index + 1}" : "Unassigned"),
                 UI.Button("Listen Fader", () => _controller.BeginFaderListen(parameter.Id)),
                 UI.Button("Clear", () => _controller.ClearFaderBinding(parameter.Id)));
-        }
-        private static Element CreateDirectControl(IMidiBindableParameter parameter)
-        {
-            return parameter switch
-            {
-                BoolParameter value => UI.Button(UI.Label(() => value.Value ? "ON" : "OFF"), () => value.TrySetValue(!value.Value)),
-                OneshotParameter value => UI.Button("Fire", value.Trigger),
-                MomentaryParameter value => UI.Button("Trigger", value.Trigger),
-                StateParameter value => UI.Button(UI.Label(() => $"State {value.Value + 1}/{value.StateCount}"), () => value.Next()),
-                _ => UI.Label("-")
-            };
-        }
-        private static Element CreateSlotControl(IMidiBindableParameter parameter, int index)
-        {
-            return parameter switch
-            {
-                RadioParameter value => UI.Button(UI.Label(() => value.Value == index ? "Selected" : "Select"), () => value.TrySetValue(index)),
-                SequenceParameter value => UI.Button(UI.Label(() => value.Steps[index] ? "ON" : "OFF"), () => value.ToggleStep(index)),
-                _ => UI.Label("-")
-            };
         }
         private string SlotLabel(string parameterId, MidiParameterKind kind, int index)
         {
