@@ -4,6 +4,7 @@ using PrefsGUI;
 using qoooo.Parameters.Model;
 using qoooo.Parameters.Runtime;
 using qoooo.Presentation.Contracts;
+using qoooo.Rendering.Models;
 using RosettaUI;
 using UnityEngine;
 using UnitySimpleContainer;
@@ -51,8 +52,7 @@ namespace qoooo.Presentation.Runtime
         {
             var liveLaunchers = new List<Element>
             {
-                CreateParameterWindow("Model", "model.source", "model.active", "model.motion", "model.scale",
-                    "model.reset-transform"),
+                CreateModelWindow(),
                 CreateParameterWindow("Camera", "model.camera-pose"),
                 CreateParameterWindow("Poster", "poster.layout", "poster.main-text"),
                 CreateParameterWindow("Background / Palette", "background.pattern", "visual.palette"),
@@ -94,6 +94,23 @@ namespace qoooo.Presentation.Runtime
             return UI.WindowLauncher(UI.Window(title, UI.Column(controls)));
         }
 
+        private Element CreateModelWindow()
+        {
+            var controls = new List<Element>
+            {
+                CreateParameterControl(FindParameter("model.source")),
+                CreateParameterControl(FindParameter("model.active")),
+                CreateParameterControl(FindParameter("model.motion")),
+                CreateParameterControl(FindParameter("model.scale")),
+                CreateParameterControl(FindParameter("model.reset-transform"))
+            };
+            controls.RemoveAll(control => control == null);
+
+            var arrangement = (_targets ?? new List<IUiTarget>()).OfType<ModelArrangementController>().FirstOrDefault();
+            if (arrangement != null) controls.Add(arrangement.CreateElement());
+            return UI.WindowLauncher(UI.Window("Model", UI.Column(controls)));
+        }
+
         private IMidiBindableParameter FindParameter(string id)
         {
             return (_parameters ?? new List<IMidiBindableParameter>())
@@ -102,6 +119,7 @@ namespace qoooo.Presentation.Runtime
 
         private static Element CreateParameterControl(IMidiBindableParameter parameter)
         {
+            if (parameter == null) return null;
             var label = ParameterLabel(parameter);
             return parameter switch
             {

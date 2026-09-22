@@ -214,7 +214,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d56bf423f64d4e7e8ca88e95613a8849, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Rendering.Composition.ProcessedTextureSource
   _sourceComponent: {fileID: 1601494012}
   _effect: {fileID: 78356559}
@@ -3313,6 +3313,7 @@ GameObject:
   - component: {fileID: 1510833906}
   - component: {fileID: 1510833905}
   - component: {fileID: 1510833907}
+  - component: {fileID: 1510833908}
   m_Layer: 0
   m_Name: ModelManager
   m_TagString: Untagged
@@ -3440,6 +3441,22 @@ MonoBehaviour:
   _spinBeatsPerRotation: 16
   _pulseCycleBeats: 4
   _pulseEaseBeats: 2
+--- !u!114 &1510833908
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1510833904}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f91f99386604c3f8718caafb33cf286, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Rendering.Models.ModelArrangementController
+  _mode: 0
+  _count: 1
+  _columns: 3
+  _spacing: 2
 --- !u!1 &1591138848
 GameObject:
   m_ObjectHideFlags: 0

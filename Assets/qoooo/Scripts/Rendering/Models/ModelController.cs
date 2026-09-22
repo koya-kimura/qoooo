@@ -27,29 +27,38 @@ namespace qoooo.Rendering.Models
         [SerializeField, Min(0.01f)] private float _pulseEaseBeats = 2f;
 
         private ModelManager _modelManager;
+        private ModelArrangementController _arrangement;
         private IBpmSource _bpmSource;
-        private GameObject _currentModel;
-        private Renderer[] _renderers = System.Array.Empty<Renderer>();
+        private readonly List<GameObject> _activeSlots = new();
+        private readonly List<Renderer> _renderers = new();
         private readonly Dictionary<GameObject, Vector3> _initialScales = new();
+        private readonly Dictionary<GameObject, Quaternion> _initialRotations = new();
 
         private void Awake()
         {
             _modelManager = GetComponent<ModelManager>();
+            _arrangement = GetComponent<ModelArrangementController>();
             if (_modelManager != null)
             {
                 var models = _modelManager.Models;
                 if (models != null)
                     foreach (var model in models)
-                        if (model != null)
-                            _initialScales[model] = model.transform.localScale;
+                        RegisterInitialTransform(model);
 
-                _modelManager.CurrentModelChanged += SetCurrentModel;
+                if (_arrangement == null)
+                    _modelManager.CurrentModelChanged += SetSingleModel;
             }
+
+            if (_arrangement != null)
+                _arrangement.ActiveSlotsChanged += SetActiveSlots;
         }
 
         private void Start()
         {
-            SetCurrentModel(_modelManager?.CurrentModel);
+            if (_arrangement != null)
+                SetActiveSlots(_arrangement.ActiveSlots);
+            else
+                SetSingleModel(_modelManager?.CurrentModel);
         }
 
         [Inject]
@@ -61,34 +70,43 @@ namespace qoooo.Rendering.Models
         private void OnDestroy()
         {
             if (_modelManager != null)
-                _modelManager.CurrentModelChanged -= SetCurrentModel;
+                _modelManager.CurrentModelChanged -= SetSingleModel;
+            if (_arrangement != null)
+                _arrangement.ActiveSlotsChanged -= SetActiveSlots;
         }
 
         private void Update()
         {
-            if (_currentModel == null) return;
-            if (_resetTransform.Value) _currentModel.transform.localRotation = Quaternion.identity;
+            if (_activeSlots.Count == 0) return;
             var scale = _scale.Value;
             // ここでModel timeを蓄積しない。共有beatをRhythmでvisual valueへ変換する。
             var beat = (float)(_bpmSource?.Beat ?? 0d);
             var rhythmIndex = Rhythm.GetIndex(beat, _pulseCycleBeats);
             var rhythmPhase = Rhythm.GetPhase(beat, _pulseCycleBeats, _pulseEaseBeats);
-            switch (_motion.Value)
+            foreach (var slot in _activeSlots)
             {
-                case 1:
-                    _currentModel.transform.localRotation = Quaternion.Euler(
-                        0f,
-                        beat * 360f / _spinBeatsPerRotation,
-                        0f);
-                    break;
-                case 2:
-                    var localRhythmPhase = Mathf.Clamp01(rhythmPhase - rhythmIndex * 2f);
-                    var pulse = Mathf.Sin(localRhythmPhase * Mathf.PI);
-                    scale *= 1f + 0.2f * pulse;
-                    break;
-            }
+                if (slot == null) continue;
+                var slotScale = scale;
+                var rotation = _initialRotations.TryGetValue(slot, out var initialRotation)
+                    ? initialRotation
+                    : slot.transform.localRotation;
+                if (!_resetTransform.Value)
+                {
+                    switch (_motion.Value)
+                    {
+                        case 1:
+                            rotation *= Quaternion.Euler(0f, beat * 360f / _spinBeatsPerRotation, 0f);
+                            break;
+                        case 2:
+                            var localRhythmPhase = Mathf.Clamp01(rhythmPhase - rhythmIndex * 2f);
+                            slotScale *= 1f + 0.2f * Mathf.Sin(localRhythmPhase * Mathf.PI);
+                            break;
+                    }
+                }
 
-            ApplyScale(scale);
+                slot.transform.localRotation = rotation;
+                ApplyScale(slot, slotScale);
+            }
             SetRendererVisibility(_active.Value);
         }
 
@@ -110,20 +128,37 @@ namespace qoooo.Rendering.Models
                     renderer.enabled = visible;
         }
 
-        private void SetCurrentModel(GameObject model)
+        private void SetSingleModel(GameObject model)
         {
-            _currentModel = model;
-            _renderers = _currentModel == null
-                ? System.Array.Empty<Renderer>()
-                : _currentModel.GetComponentsInChildren<Renderer>(true);
-            ApplyScale(_scale.Value);
+            SetActiveSlots(model == null ? System.Array.Empty<GameObject>() : new[] { model });
+        }
+
+        private void SetActiveSlots(IReadOnlyList<GameObject> slots)
+        {
+            _activeSlots.Clear();
+            _renderers.Clear();
+            foreach (var slot in slots)
+            {
+                if (slot == null) continue;
+                RegisterInitialTransform(slot);
+                _activeSlots.Add(slot);
+                _renderers.AddRange(slot.GetComponentsInChildren<Renderer>(true));
+            }
+
             SetRendererVisibility(_active.Value);
         }
 
-        private void ApplyScale(float multiplier)
+        private void RegisterInitialTransform(GameObject model)
         {
-            if (_currentModel != null && _initialScales.TryGetValue(_currentModel, out var initialScale))
-                _currentModel.transform.localScale = initialScale * multiplier;
+            if (model == null) return;
+            _initialScales.TryAdd(model, model.transform.localScale);
+            _initialRotations.TryAdd(model, model.transform.localRotation);
+        }
+
+        private void ApplyScale(GameObject slot, float multiplier)
+        {
+            if (slot != null && _initialScales.TryGetValue(slot, out var initialScale))
+                slot.transform.localScale = initialScale * multiplier;
         }
     }
 }
