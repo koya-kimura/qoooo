@@ -35,7 +35,9 @@ namespace qoooo.Rendering.Composition
                 UI.Field("Mosaic Size", () => source.EffectParams.MosaicSize, value => SetMosaicSize(source, value)),
                 UI.Field("Tiling", () => source.EffectParams.IsTiling, value => SetTiling(source, value)),
                 UI.Field("Tiling Scale", () => source.EffectParams.TileNum, value => SetTilingScale(source, value)),
-                UI.Field("Tiling Offset", () => source.EffectParams.Offset, value => SetTilingOffset(source, value))
+                UI.Field("Tiling Offset", () => source.EffectParams.Offset, value => SetTilingOffset(source, value)),
+                UI.Field("Posterize", () => source.EffectParams.IsPosterize, value => SetPosterize(source, value)),
+                UI.Field("Posterize Levels", () => source.EffectParams.PosterizeLevels, value => SetPosterizeLevels(source, value))
             ).Open();
         }
 
@@ -85,6 +87,20 @@ namespace qoooo.Rendering.Composition
         {
             var effectParams = source.EffectParams;
             effectParams.Offset = value;
+            source.SetEffectParams(effectParams);
+        }
+
+        private static void SetPosterize(ProcessedTextureSource source, bool value)
+        {
+            var effectParams = source.EffectParams;
+            effectParams.IsPosterize = value;
+            source.SetEffectParams(effectParams);
+        }
+
+        private static void SetPosterizeLevels(ProcessedTextureSource source, float value)
+        {
+            var effectParams = source.EffectParams;
+            effectParams.PosterizeLevels = value;
             source.SetEffectParams(effectParams);
         }
     }

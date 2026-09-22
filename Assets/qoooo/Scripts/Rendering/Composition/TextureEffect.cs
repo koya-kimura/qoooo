@@ -14,10 +14,13 @@ namespace qoooo.Rendering.Composition
 
         public Vector2 TileNum;
         public Vector2 Offset;
+        public bool IsPosterize;
+        public float PosterizeLevels;
 
         public bool HasEnabledEffect => IsInvert
                                         || IsMosaic
-                                        || IsTiling;
+                        || IsTiling
+                        || IsPosterize;
     }
 
     // Layer共通の処理を適用し、同じ解像度の一時RenderTextureを所有する。
@@ -58,6 +61,8 @@ namespace qoooo.Rendering.Composition
                 Mathf.Max(1f, effectParams.TileNum.x),
                 Mathf.Max(1f, effectParams.TileNum.y)));
             _material.SetVector("_Offset", effectParams.Offset);
+            _material.SetInt("_IsPosterize", effectParams.IsPosterize ? 1 : 0);
+            _material.SetFloat("_PosterizeLevels", Mathf.Max(2f, effectParams.PosterizeLevels));
             _material.SetVector("_TextureSize", new Vector4(
                 _effectTexture.width,
                 _effectTexture.height,

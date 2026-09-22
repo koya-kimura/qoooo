@@ -44,6 +44,8 @@ Shader "Custom/TextureEffect"
             int _IsTiling;
             float2 _TileNum;
             float2 _Offset;
+            int _IsPosterize;
+            float _PosterizeLevels;
             float4 _TextureSize;
 
             Varyings vert(Attributes IN)
@@ -64,6 +66,7 @@ Shader "Custom/TextureEffect"
                 half4 color = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv);
 
                 if (_IsInvert != 0) Invert(color);
+                if (_IsPosterize != 0) Posterize(color, _PosterizeLevels);
 
                 return color;
             }

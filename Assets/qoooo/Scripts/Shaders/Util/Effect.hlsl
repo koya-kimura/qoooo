@@ -7,6 +7,12 @@ void Invert(inout half4 color)
     color = half4(half3(1.0, 1.0, 1.0) - color.rgb, color.a);
 }
 
+void Posterize(inout half4 color, float levels)
+{
+    float quantizedLevels = max(levels, 2.0);
+    color.rgb = floor(saturate(color.rgb) * quantizedLevels) / max(quantizedLevels - 1.0, 1.0);
+}
+
 void Unpremultiply(inout half4 color)
 {
     color.rgb = color.a > 0.00001h

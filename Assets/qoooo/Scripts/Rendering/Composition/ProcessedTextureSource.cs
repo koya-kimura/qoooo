@@ -9,6 +9,8 @@ namespace qoooo.Rendering.Composition
     // FLOW / 値の流れ: 1 frameに1回だけraw textureを加工し、同じprocessed textureを全consumerへ返す。
     public sealed class ProcessedTextureSource : MonoBehaviour, ITextureContainer, IMidiParameterContainer
     {
+        private const float DefaultPosterizeLevels = 4f;
+
         [SerializeField] private MonoBehaviour _sourceComponent;
         [SerializeField] private TextureEffect _effect;
         [SerializeField] private TextureEffectParams _effectParams;
@@ -34,6 +36,9 @@ namespace qoooo.Rendering.Composition
         private void OnValidate()
         {
             _effectParams.MosaicSize = Mathf.Max(1f, _effectParams.MosaicSize);
+            _effectParams.PosterizeLevels = _effectParams.PosterizeLevels <= 0f
+                ? DefaultPosterizeLevels
+                : Mathf.Max(2f, _effectParams.PosterizeLevels);
 
             if (_sourceComponent != null && _sourceComponent is not ITextureContainer)
                 Debug.LogError("Source Component must implement ITextureContainer.", this);
@@ -57,6 +62,7 @@ namespace qoooo.Rendering.Composition
             effectParams.TileNum = new Vector2(
                 Mathf.Max(1f, effectParams.TileNum.x),
                 Mathf.Max(1f, effectParams.TileNum.y));
+            effectParams.PosterizeLevels = Mathf.Max(2f, effectParams.PosterizeLevels);
             _effectParams = effectParams;
             _renderedFrame = -1;
         }
