@@ -35,6 +35,9 @@ Assets/qoooo/
 Docs/               現行architectureと履歴計画
 ```
 
+creative workは[CreativeCoding.md](../CreativeCoding.md)を入口にし、そこで示すownerと境界を確認してから
+詳細architectureを読む。
+
 ## Build and validation
 
 通常のcompile確認:
@@ -89,10 +92,13 @@ Parameter ID変更はPrefs stateとmappingの互換性を切る。renameが必�
 
 ## Text layoutを追加する
 
+この手順はTrip26でinactiveなLegacy Text subsystemを再利用する場合にだけ適用する。現在のPoster内Textは
+`PosterDocument`のText elementとして編集する。
+
 1. `ITextPattern`を実装するMonoBehaviourを`Text/Layouts`へ追加する。
 2. `TextPattern.Entries`のsamplerとしてSceneへ設定する。
 3. `TextPattern.Name`を一意に保つ。
-4. layout listの順序変更は`text.layout`の保存indexへ影響するため、既存Prefsとの互換を確認する。
+4. subsystemを再びlive Parameter化する場合、layout listの順序変更と保存indexの互換を確認する。
 5. motionはlayout samplerへ混ぜず、`TextGlyphMotion`としてentryへ追加する。
 
 ## Sceneとassetの変更

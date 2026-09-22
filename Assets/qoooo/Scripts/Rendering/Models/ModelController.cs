@@ -21,7 +21,7 @@ namespace qoooo.Rendering.Models
         [SerializeField]
         private BoolParameter _active = new("model.active", "Model Active", true);
 
-        // Tune these visual responses freely; musical time always comes from BpmManager through IBpmSource.
+        // CREATIVE AREA: tune beat-to-motion response here. BpmManager remains the only clock owner.
         [SerializeField, Min(0.01f)] private float _spinBeatsPerRotation = 16f;
         [SerializeField, Min(0.01f)] private float _pulseCycleBeats = 4f;
         [SerializeField, Min(0.01f)] private float _pulseEaseBeats = 2f;

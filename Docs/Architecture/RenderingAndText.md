@@ -86,9 +86,9 @@ HLSL dispatcherの対応に依存する。言語間contractを自動検証する
 Stillは静止を維持し、Spinは`IBpmSource.Beat`をrotation時間軸に使う。Pulseは同じBeatから
 `Rhythm.GetIndex`と`Rhythm.GetPhase`を求め、既存のscale amplitudeでpulseする。
 
-## Text model
+## Text subsystem（Trip26ではinactive）
 
-Legacy Text system（`TextController` / Text Camera / TextLayer）はTrip26最終compositionに含まれない。
+Legacy Text system（`TextController` / Text Camera / TextLayer）は参照実装として残るが、Trip26最終compositionに含まれない。
 SceneではTextControllerとText Cameraをinactiveにし、`text.*` Parameterはlive MIDI pathへ公開しない。
 
 Textはlayoutとmotionを別の責務として扱う。
@@ -111,7 +111,7 @@ Textはlayoutとmotionを別の責務として扱う。
 
 実装済みmotionは`TextRotateMotion`である。
 
-## Legacy Text update flow
+## Legacy Text update flow（Trip26では実行されない）
 
 1. `text.layout`と内部`_patternIndex`を同期する。
 2. `text.rebuild`がtriggerされた場合はbase meshを再構築する。

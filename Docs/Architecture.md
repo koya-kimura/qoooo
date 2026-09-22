@@ -3,6 +3,9 @@
 この文書は qoooo の現行アーキテクチャの入口である。実装の詳細は
 [Architecture/](Architecture/) 配下を参照する。
 
+見た目を変更する入口は[CreativeCoding.md](CreativeCoding.md)である。creative workではコード内の
+`CREATIVE AREA`、Creative Coding Guide、この文書、詳細文書の順に確認する。
+
 ## システム概要
 
 qoooo は、複数の映像sourceを合成し、RosettaUIとAPC mini mk2から操作し、
@@ -81,7 +84,7 @@ flowchart TD
 | APC mapping                          | `ApcMiniMk2ParameterController`                 | Scene値がdefault、Prefsで上書き    |
 | MIDI profile snapshot/dirty          | `MidiProfileStore`                              | mappingと保存対象Parameter値       |
 | 描画buffer                           | 各source/cameraと`TextureCompositor`            | 解像度変更時に再生成               |
-| Text layout定義                      | `TextController`内の`TextPattern` list          | sampler componentを参照            |
+| Text layout定義                      | `TextController`内の`TextPattern` list          | Trip26ではinactive                  |
 
 ## 主要フロー
 
@@ -114,13 +117,14 @@ procedural backgroundも同じ`IBpmSource.Beat`をshaderの`_Beat`へ渡す。
   `Trip26` Sceneには配置されていない。
 - 現行profileはmapping/stateの2レコードである。connection settingsのPrefs保存、
   独立したSurface/Listen service、orphan state保持は未実装である。
-- Textのlayout選択はParameter化済みだが、glyph motionとtransform animationは現在
+- Legacy Text subsystemはTrip26でinactiveである。内部のglyph motionとtransform animationは
   `Time.time`を使用し、BPM同期ではない。
 - EditMode test sourceは2クラスあるが専用asmdefはない。テスト発見可否はUnity Editorで
   確認する必要がある。
 
 ## 詳細文書
 
+- [CreativeCoding.md](CreativeCoding.md)
 - [Runtime.md](Architecture/Runtime.md)
 - [ParametersAndMidi.md](Architecture/ParametersAndMidi.md)
 - [RenderingAndText.md](Architecture/RenderingAndText.md)

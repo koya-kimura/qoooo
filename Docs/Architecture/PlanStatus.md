@@ -49,6 +49,11 @@
 - PosterDocument / Poster Composerによる最終Poster compositionとLegacy Text runtimeのTrip26停止
 - `PosterLibrary.Documents`による可変PosterDocument管理とv1 Prefs migration
 
+Creative handoff:
+
+- 現行runtime architectureをfreezeし、creative entry pointを`Docs/CreativeCoding.md`へ集約した。
+- runtimeの見た目やParameter/MIDI/Prefs contractは変更していない。
+
 未完了または追加検証が必要:
 
 - C# enum、Radio option、HLSL IDを照合するcontract test

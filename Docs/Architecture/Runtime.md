@@ -105,6 +105,9 @@ Live UIはTyped Parameterを直接操作し、Poster Composerは`PosterLibrary`�
 hubは接続状態とReconnectだけを扱い、標準`WindowLauncher`で`MIDI Bindings`（APC assignment）と
 `MIDI Mapping`（profile、rebuild、reset）を子Windowとして開く。Saveはroot windowに残る。
 
+Saveは明示操作であり、Play停止時には自動実行されない。`UiBuilder`が全`IPrefsSaveParticipant`の
+`PrepareSave`、`Prefs.Save`、`CommitSave`を順に実行し、例外時は`AbortSave`を呼ぶ。
+
 ## Enable / Disable
 
 - `MinisMidiInput`はenable時にInput System device changeを購読し、disable時に解除する。

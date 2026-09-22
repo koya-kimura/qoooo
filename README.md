@@ -43,6 +43,7 @@ MIDI機器が未接続でも、RosettaUI、描画、Parameterの操作は動作�
 
 アーキテクチャの入口は [Docs/README.md](Docs/README.md) です。
 
+- [Creative Coding Guide](Docs/CreativeCoding.md)
 - [全体構成](Docs/Architecture.md)
 - [Scene構成とlifecycle](Docs/Architecture/Runtime.md)
 - [ParameterとMIDI](Docs/Architecture/ParametersAndMidi.md)
