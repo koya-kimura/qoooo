@@ -34,8 +34,8 @@ namespace qoooo.Rendering.Sources
     // source of truthはPosterLibrary.Documentsで、list indexはposter.layoutと一致する。
     public partial class PosterCanvas : MonoBehaviour, IMidiParameterContainer
     {
-        [SerializeField] private TextureLayer _modelTextureLayer;
-        [SerializeField] private MonoBehaviour _backgroundTextureSource;
+        [SerializeField] private ProcessedTextureSource _modelTextureSource;
+        [SerializeField] private ProcessedTextureSource _backgroundTextureSource;
         [SerializeField] private TMP_FontAsset _posterFont;
         [SerializeField] private PosterLibrary _library = new();
         [SerializeField]
@@ -103,8 +103,8 @@ namespace qoooo.Rendering.Sources
 
         private void Update()
         {
-            var modelTexture = _modelTextureLayer?.Render();
-            var backgroundTexture = (_backgroundTextureSource as ITextureContainer)?.Texture;
+            var modelTexture = _modelTextureSource?.Texture;
+            var backgroundTexture = _backgroundTextureSource?.Texture;
             var document = _library?.GetDocument(_layout.Value);
             var mainText = _mainText.Value;
             var paletteMain = PaletteMain;

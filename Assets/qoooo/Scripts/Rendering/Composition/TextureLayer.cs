@@ -12,7 +12,7 @@ namespace qoooo.Rendering.Composition
     {
         [SerializeField] private MonoBehaviour _sourceComponent;
         [SerializeField] private TextureEffect _effect;
-        [SerializeField] private EffectParams _effectParams;
+        [SerializeField] private TextureEffectParams _effectParams;
 
         public string DisplayName => gameObject.name;
         public bool IsVisible => gameObject.activeSelf;

@@ -146,7 +146,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0713105401494992afdce67c4f4ba76c, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Rendering.Composition.PaletteProvider
   _palette:
     _id: visual.palette
@@ -180,6 +180,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 78356557}
+  - component: {fileID: 78356559}
   - component: {fileID: 78356558}
   m_Layer: 0
   m_Name: BackgroundLayer
@@ -212,11 +213,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 78356556}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3c21051a2f0241e3b29a0541c03922b7, type: 3}
+  m_Script: {fileID: 11500000, guid: d56bf423f64d4e7e8ca88e95613a8849, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Textures.TextureLayer
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Rendering.Composition.ProcessedTextureSource
   _sourceComponent: {fileID: 1601494012}
-  _effect: {fileID: 0}
+  _effect: {fileID: 78356559}
   _effectParams:
     IsInvert: 0
     IsMosaic: 0
@@ -224,6 +225,19 @@ MonoBehaviour:
     IsTiling: 0
     TileNum: {x: 0, y: 0}
     Offset: {x: 0, y: 0}
+--- !u!114 &78356559
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 78356556}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3faf11b35496468e946e1af97a1de18c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Rendering.Composition.TextureEffect
+  _material: {fileID: 2100000, guid: 30fb421f942db4f26a3979155f57ed4a, type: 2}
 --- !u!1001 &94611696
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -415,8 +429,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2de7df30d2b9f43fb99f55d2f84b0d3c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Rendering.Sources.PosterCanvas
-  _modelTextureLayer: {fileID: 734515094}
-  _backgroundTextureSource: {fileID: 1601494012}
+  _modelTextureSource: {fileID: 734515094}
+  _backgroundTextureSource: {fileID: 78356558}
   _posterFont: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   _library:
     Documents: []
@@ -747,9 +761,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 280421024}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3c21051a2f0241e3b29a0541c03922b7, type: 3}
+  m_Script: {fileID: 11500000, guid: d56bf423f64d4e7e8ca88e95613a8849, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Textures.TextureLayer
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Rendering.Composition.ProcessedTextureSource
   _sourceComponent: {fileID: 291929309}
   _effect: {fileID: 280421026}
   _effectParams:
@@ -2341,9 +2355,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 734515090}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3c21051a2f0241e3b29a0541c03922b7, type: 3}
+  m_Script: {fileID: 11500000, guid: d56bf423f64d4e7e8ca88e95613a8849, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Textures.TextureLayer
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Rendering.Composition.ProcessedTextureSource
   _sourceComponent: {fileID: 1591138853}
   _effect: {fileID: 734515093}
   _effectParams:

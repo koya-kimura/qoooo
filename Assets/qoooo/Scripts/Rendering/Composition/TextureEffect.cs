@@ -4,8 +4,8 @@ using UnityEngine;
 namespace qoooo.Rendering.Composition
 {
     [Serializable]
-    // 1つのLayer内Texture処理passを編集する設定。
-    public struct EffectParams
+    // OWNER / 値の所有者: source単位のTexture処理設定。実行側とは独立してserializeされる。
+    public struct TextureEffectParams
     {
         public bool IsInvert;
         public bool IsMosaic;
@@ -35,7 +35,7 @@ namespace qoooo.Rendering.Composition
 
         public Texture ApplyTexture(
             Texture texture,
-            EffectParams effectParams)
+            TextureEffectParams effectParams)
         {
             if (texture == null) return null;
             if (_material == null) return texture;
@@ -47,7 +47,7 @@ namespace qoooo.Rendering.Composition
             return _effectTexture;
         }
 
-        private void SetUniforms(EffectParams effectParams)
+        private void SetUniforms(TextureEffectParams effectParams)
         {
             _material.SetInt("_IsInvert", effectParams.IsInvert ? 1 : 0);
             _material.SetInt("_IsMosaic", effectParams.IsMosaic ? 1 : 0);
