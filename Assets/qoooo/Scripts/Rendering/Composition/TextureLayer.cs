@@ -6,8 +6,7 @@ using UnityEngine;
 
 namespace qoooo.Rendering.Composition
 {
-    // Adapts one ITextureContainer source through an optional per-layer TextureEffect for composition.
-    // It forwards the source's existing Parameters and does not own duplicate values.
+    // Compositorの最終output layer。effect機能はLegacy互換として保持する。
     public class TextureLayer : MonoBehaviour, IParameterContainer, IMidiParameterContainer
     {
         [SerializeField] private MonoBehaviour _sourceComponent;
@@ -50,14 +49,7 @@ namespace qoooo.Rendering.Composition
                 UI.Fold("Layer",
                     UI.Field("Name", () => DisplayName, SetDisplayName),
                     UI.Field("Visible", () => IsVisible, SetVisible),
-                    UI.Field("Source", () => _sourceComponent, SetSourceComponent)
-                ).Open(),
-                UI.Fold("Effects",
-                    UI.Field("Invert", () => _effectParams.IsInvert),
-                    UI.Field("Mosaic", () => _effectParams.IsMosaic),
-                    UI.Field("Mosaic Size", () => _effectParams.MosaicSize),
-                    UI.Field("Tiling", () => _effectParams.IsTiling),
-                    UI.Field("Tiling Offset", () => _effectParams.Offset)
+                    UI.Label(() => $"Source: {SourceDisplayName}")
                 ).Open()
             );
         }

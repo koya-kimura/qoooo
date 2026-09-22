@@ -223,7 +223,7 @@ MonoBehaviour:
     IsMosaic: 0
     MosaicSize: 8
     IsTiling: 0
-    TileNum: {x: 0, y: 0}
+    TileNum: {x: 1, y: 1}
     Offset: {x: 0, y: 0}
 --- !u!114 &78356559
 MonoBehaviour:
@@ -771,7 +771,7 @@ MonoBehaviour:
     IsMosaic: 0
     MosaicSize: 8
     IsTiling: 0
-    TileNum: {x: 0, y: 0}
+    TileNum: {x: 1, y: 1}
     Offset: {x: 0, y: 0}
 --- !u!1 &291929304
 GameObject:
@@ -4727,6 +4727,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2134837973}
   - component: {fileID: 2134837972}
+  - component: {fileID: 2134837974}
   m_Layer: 0
   m_Name: TextureCompositor
   m_TagString: Untagged
@@ -4749,6 +4750,20 @@ MonoBehaviour:
   _layers:
   - {fileID: 1993703950}
   _compositeMaterial: {fileID: 2100000, guid: 93372f86947814460ac6375475852c96, type: 2}
+--- !u!114 &2134837974
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2134837971}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6294c6bd2c149f98e5f2e0b052bdc31, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Rendering.Composition.TextureProcessingUi
+  _modelSource: {fileID: 734515094}
+  _backgroundSource: {fileID: 78356558}
 --- !u!4 &2134837973
 Transform:
   m_ObjectHideFlags: 0

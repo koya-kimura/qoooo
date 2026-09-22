@@ -58,10 +58,10 @@ namespace qoooo.Presentation.Runtime
                 CreateParameterWindow("Background / Palette", "background.pattern", "visual.palette"),
                 CreateParameterWindow("Rhythm", "rhythm.bpm", "rhythm.tap", "rhythm.sync-beat", "rhythm.sync-bar")
             };
-            liveLaunchers.AddRange(CreateTargetLaunchers("TextureCompositor"));
+            liveLaunchers.InsertRange(4, CreateTargetLaunchers("TextureProcessingUi"));
 
             var authoringLaunchers = CreateTargetLaunchers("PosterComposer");
-            var setupLaunchers = CreateTargetLaunchers("OutputSettings", "MidiSystemController");
+            var setupLaunchers = CreateTargetLaunchers("OutputSettings", "TextureCompositor", "MidiSystemController");
 
             return UI.Window("Qoooo",
                 UI.Column(
@@ -140,7 +140,8 @@ namespace qoooo.Presentation.Runtime
         {
             return target.GetType().Name switch
             {
-                "TextureCompositor" => "Effects",
+                "TextureProcessingUi" => "Texture",
+                "TextureCompositor" => "Layers",
                 "PosterComposer" => "Poster Composer",
                 "OutputSettings" => "Output Setup",
                 "MidiSystemController" => "MIDI Setup",

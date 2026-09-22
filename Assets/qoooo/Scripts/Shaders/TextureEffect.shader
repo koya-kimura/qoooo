@@ -42,9 +42,8 @@ Shader "Custom/TextureEffect"
             int _IsMosaic;
             float _MosaicSize;
             int _IsTiling;
-            int _TileNum;
-            float4 _Tiling;
-            float4 _Offset;
+            float2 _TileNum;
+            float2 _Offset;
             float4 _TextureSize;
 
             Varyings vert(Attributes IN)
@@ -59,7 +58,7 @@ Shader "Custom/TextureEffect"
             {
                 float2 uv = IN.uv;
 
-                if (_IsTiling != 0) uv = Tiling(uv, _TileNum);
+                if (_IsTiling != 0) uv = Tiling(uv, _TileNum, _Offset);
                 if (_IsMosaic != 0) uv = Mosaic(uv, _TextureSize.xy, _MosaicSize);
 
                 half4 color = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv);

@@ -14,9 +14,10 @@ void Unpremultiply(inout half4 color)
                     : half3(0.0h, 0.0h, 0.0h);
 }
 
-float2 Tiling(float2 uv, float2 grid)
+// TilingはPoster上の複数配置ではなく、1枚のsource texture内でUVを繰り返す処理。
+float2 Tiling(float2 uv, float2 scale, float2 offset)
 {
-    return frac(uv * grid);
+    return frac(uv * scale + offset);
 }
 
 float2 Mosaic(float2 uv, float2 res, float grid)

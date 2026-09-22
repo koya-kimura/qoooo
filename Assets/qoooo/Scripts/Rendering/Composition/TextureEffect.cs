@@ -53,7 +53,11 @@ namespace qoooo.Rendering.Composition
             _material.SetInt("_IsMosaic", effectParams.IsMosaic ? 1 : 0);
             _material.SetFloat("_MosaicSize", Mathf.Max(1f, effectParams.MosaicSize));
             _material.SetInt("_IsTiling", effectParams.IsTiling ? 1 : 0);
-            _material.SetVector("_TileNum", effectParams.TileNum);
+            // TileNumはserialized互換の名前で保持し、UIではTiling Scaleとして扱う。
+            _material.SetVector("_TileNum", new Vector2(
+                Mathf.Max(1f, effectParams.TileNum.x),
+                Mathf.Max(1f, effectParams.TileNum.y)));
+            _material.SetVector("_Offset", effectParams.Offset);
             _material.SetVector("_TextureSize", new Vector4(
                 _effectTexture.width,
                 _effectTexture.height,

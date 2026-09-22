@@ -17,6 +17,7 @@ namespace qoooo.Rendering.Composition
         private Texture _processedTexture;
 
         public Texture Texture => Render();
+        public TextureEffectParams EffectParams => _effectParams;
 
         // WHY / この分離の理由: wrapperはParameterを作らず、raw sourceの同一instanceをdiscoveryへ中継する。
         public IEnumerable<IMidiBindableParameter> MidiParameters
@@ -48,6 +49,16 @@ namespace qoooo.Rendering.Composition
                 ? _effect.ApplyTexture(sourceTexture, _effectParams)
                 : sourceTexture;
             return _processedTexture;
+        }
+
+        public void SetEffectParams(TextureEffectParams effectParams)
+        {
+            effectParams.MosaicSize = Mathf.Max(1f, effectParams.MosaicSize);
+            effectParams.TileNum = new Vector2(
+                Mathf.Max(1f, effectParams.TileNum.x),
+                Mathf.Max(1f, effectParams.TileNum.y));
+            _effectParams = effectParams;
+            _renderedFrame = -1;
         }
     }
 }

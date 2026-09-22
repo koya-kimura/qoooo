@@ -9,7 +9,7 @@ using UnitySimpleContainer;
 namespace qoooo.Rendering.Composition
 {
     // Composites enabled layers bottom-to-top and owns the two ping-pong output buffers.
-    // Its output feeds Preview and Syphon; per-layer and Model effects run before this boundary.
+    // Its output feeds Preview and Syphon; source processing runs before this boundary.
     public class TextureCompositor : MonoBehaviour, ITextureContainer, IUiTarget
     {
         [SerializeField] private List<TextureLayer> _layers = new();
@@ -103,7 +103,7 @@ namespace qoooo.Rendering.Composition
         private Element CreateSelectedLayerElement()
         {
             return _selectedLayer == null
-                ? UI.HelpBox("Select a layer to edit its source and effects.")
+                ? UI.HelpBox("Select a layer to inspect its output source.")
                 : UI.Column(
                     _selectedLayer.CreateParameterElement(),
                     UI.DynamicElementOnStatusChanged(
