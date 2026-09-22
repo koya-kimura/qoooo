@@ -80,7 +80,7 @@ done
 ```md
 ## ISSUE-001: 短いタイトル
 
-**Status:** inbox  
+**Status:** inbox
 **Priority:** P1  
 **Type:** VISUAL
 
@@ -452,7 +452,7 @@ Layout図中の`HAPILABO` / `DJ RØKI`は構成例であり、
 Hero slotには`poster.main-text`を使用し、
 Event / Artist textはSecondary / Meta / Supporting Typographyとして配置する。
 
-既存のComposition軸は維持する。
+既存のComposition、軸は維持する。
 
 ```text
 Editorial
@@ -863,7 +863,7 @@ Grid Layout側が渡すrotation値を、
 
 ## ISSUE-002: Rhythm / Motionの設計が不足している
 
-**Status:** inbox  
+**Status:** verify
 **Priority:** P0  
 **Type:** VISUAL
 
@@ -887,11 +887,17 @@ Grid Layout側が渡すrotation値を、
 
 どのParameter / Visual要素をどの時間構造で動かすかを整理してから実装したい。
 
+### Verification
+
+- `BpmClock`をraw timing source、`Rhythm`をvisual utilityとして維持した。
+- ModelのStill / Spin / Pulseを`IBpmSource.Beat`へ接続した。
+- Camera、Background、TextureEffect、Posterのrhythm consumerは未実装である。
+
 ---
 
 ## ISSUE-003: Tap Tempoがない
 
-**Status:** inbox  
+**Status:** verify
 **Priority:** P0  
 **Type:** CONTROL
 
@@ -906,6 +912,11 @@ Tap Tempo操作がない。
 現在のBPMを素早く合わせられるようにしたい。
 
 Rhythm系Visualの基準として使用したい。
+
+### Verification
+
+- `rhythm.bpm`、Tap、Sync Beat、Sync BarをRosettaUIとTyped Parameterへ追加した。
+- Space、B、Shift+BとAPC Page 0 / Row 0 / Column 4からTapを操作できる。
 
 ---
 

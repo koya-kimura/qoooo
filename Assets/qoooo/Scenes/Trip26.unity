@@ -3419,6 +3419,9 @@ MonoBehaviour:
     _id: model.active
     _displayName: Model Active
     _defaultValue: 1
+  _spinBeatsPerRotation: 16
+  _pulseCycleBeats: 4
+  _pulseEaseBeats: 2
 --- !u!1 &1591138848
 GameObject:
   m_ObjectHideFlags: 0
@@ -3871,6 +3874,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Timing.BpmManager
   _initialBpm: 120
+  _bpm:
+    _id: rhythm.bpm
+    _displayName: Rhythm BPM
+    _defaultValue: 120
+    _min: 1
+    _max: 1000
+  _tap:
+    _id: rhythm.tap
+    _displayName: Rhythm Tap
+  _syncBeat:
+    _id: rhythm.sync-beat
+    _displayName: Rhythm Sync Beat
+  _syncBar:
+    _id: rhythm.sync-bar
+    _displayName: Rhythm Sync Bar
 --- !u!114 &1862739135
 MonoBehaviour:
   m_ObjectHideFlags: 0

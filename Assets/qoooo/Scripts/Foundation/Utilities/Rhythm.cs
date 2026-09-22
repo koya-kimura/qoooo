@@ -2,12 +2,20 @@ using UnityEngine;
 
 namespace qoooo.Foundation.Utilities
 {
+    public delegate float EasingFn(float x);
+
     public static class Rhythm
     {
+        public static int GetIndex(float t, float interval)
+        {
+            return Mathf.FloorToInt(Mathf.Max(0f, t) / Mathf.Max(1f, interval));
+        }
+
         public static float GetPhase(
             float t,
             float cycleLength,
-            float easeDuration)
+            float easeDuration,
+            EasingFn easingFn = null)
         {
             var currentCycle = Mathf.Floor(t / cycleLength);
             var nextCycle = currentCycle + 1f;
@@ -18,12 +26,13 @@ namespace qoooo.Foundation.Utilities
             var easeProgress = Mathf.Clamp01(
                 (localTime - easeStartTime) / easeDuration
             );
+            var easing = easingFn ?? Easing.EaseInOutSine;
 
             return currentCycle +
                    Mathf.Lerp(
                        currentCycle,
                        nextCycle,
-                       Easing.EaseInOutSine(easeProgress)
+                       easing(easeProgress)
                    );
         }
 
@@ -31,7 +40,8 @@ namespace qoooo.Foundation.Utilities
             float t,
             float cycleLength,
             float easeDuration,
-            uint seed = 0)
+            uint seed = 0,
+            EasingFn easingFn = null)
         {
             var currentCycle = Mathf.Floor(t / cycleLength);
             var nextCycle = currentCycle + 1f;
@@ -42,6 +52,7 @@ namespace qoooo.Foundation.Utilities
             var easeProgress = Mathf.Clamp01(
                 (localTime - easeStartTime) / easeDuration
             );
+            var easing = easingFn ?? Easing.EaseInOutSine;
 
             var currentNoise = Pcg.Pcg01(
                 new Vector2(seed, currentCycle)
@@ -54,7 +65,7 @@ namespace qoooo.Foundation.Utilities
             return Mathf.Lerp(
                 currentNoise,
                 nextNoise,
-                Easing.EaseInOutSine(easeProgress)
+                easing(easeProgress)
             );
         }
 
@@ -62,7 +73,8 @@ namespace qoooo.Foundation.Utilities
             float t,
             float cycleLength,
             float easeDuration,
-            uint seed = 0)
+            uint seed = 0,
+            EasingFn easingFn = null)
         {
             var newSeed = Pcg.Hash4D(
                 new UInt4(seed, seed, seed, seed)
@@ -77,19 +89,22 @@ namespace qoooo.Foundation.Utilities
                     time,
                     cycleLength,
                     easeDuration,
-                    newSeed.X
+                    newSeed.X,
+                    easingFn
                 ) * 2f - 1f,
                 GetLerpNoise(
                     time,
                     cycleLength,
                     easeDuration,
-                    newSeed.Y
+                    newSeed.Y,
+                    easingFn
                 ) * 2f - 1f,
                 GetLerpNoise(
                     time,
                     cycleLength,
                     easeDuration,
-                    newSeed.Z
+                    newSeed.Z,
+                    easingFn
                 ) * 2f - 1f
             );
         }

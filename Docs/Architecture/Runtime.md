@@ -32,13 +32,15 @@
 UnitySimpleContainerはScene componentが実装するinterfaceを収集し、`[Inject]` methodへ渡す。
 主な注入は次の通りである。
 
-| Consumer                | 注入されるcontract                                             |
-| ----------------------- | -------------------------------------------------------------- |
-| `MidiSystemController`  | `IBpmSource`、`IEnumerable<IMidiParameterContainer>`           |
-| `UiBuilder`             | `IEnumerable<IUiTarget>`、`IEnumerable<IPrefsSaveParticipant>` |
-| `MaterialTextureSource` | `IResolutionContainer`、`IBpmSource`                           |
-| `TextureCompositor`     | `IResolutionContainer`                                         |
-| `CameraController`      | `IResolutionContainer`                                         |
+| Consumer                      | 注入されるcontract                                             |
+| ----------------------------- | -------------------------------------------------------------- |
+| `MidiSystemController`        | `IBpmSource`、`IEnumerable<IMidiParameterContainer>`           |
+| `UiBuilder`                   | `IEnumerable<IUiTarget>`、`IEnumerable<IPrefsSaveParticipant>` |
+| `MaterialTextureSource`       | `IResolutionContainer`、`IBpmSource`                           |
+| `TextureCompositor`           | `IResolutionContainer`                                         |
+| `CameraController`            | `IResolutionContainer`                                         |
+| `ModelController`             | `IBpmSource`                                                   |
+| `KeyboardParameterController` | `MidiParameterRegistry`（serialized reference）                |
 
 MIDI内部componentはconcrete typeをDI解決せず、`MidiSystemController`のserialized referenceで
 明示的に接続する。このためScene上の参照がMIDI subsystemの構成定義になる。
@@ -81,11 +83,15 @@ Parameter owner、Rendering、Text自体はMIDI接続の有無に依存しない
 |       -100 | `MinisMidiInput`                | device scan、queued raw event dispatch                 |
 |       -100 | `MaterialTextureSource`         | uniform設定とprocedural texture生成                    |
 |        -90 | `ApcMiniMk2ParameterController` | fader Randomのbeat境界更新                             |
+|        -80 | `KeyboardParameterController`   | UI focus外のkeyboard shortcutをOneshotへ変換           |
 |          0 | Rendering / Model / Text        | Parameterを読み、frameの見た目を更新                   |
 | LateUpdate | `ApcMiniMk2LedRenderer`         | 15Hzを上限にLED差分送信                                |
 
 `MinisMidiInput`のeventはdispatch時に同期的にAPC controllerへ届くため、通常orderのconsumerは
 同じframeで更新済みParameterを読む。
+
+`BpmManager`は`BpmClock`を`Time.unscaledDeltaTime`で更新する唯一のownerである。
+`Rhythm`はbeatをvisual phase/index/noiseへ変換するutilityであり、clock stateを持たない。
 
 ## Enable / Disable
 

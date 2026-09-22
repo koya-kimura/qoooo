@@ -39,10 +39,10 @@ Element typeは`Text`、`Rect`、`Line`、`Texture(Model / Background)`である
 
 `poster.layout`はActive PosterDocumentを選択する。
 
-| ID                 | Options                              | 責務                          |
-| ------------------ | ------------------------------------ | ----------------------------- |
-| `poster.layout`    | PosterDocument名の動的list            | Active PosterDocumentの選択   |
-| `poster.main-text` | QOOOO / TRIP26 / LIVE VISUAL         | Typography Layout内の主役Text |
+| ID                 | Options                      | 責務                          |
+| ------------------ | ---------------------------- | ----------------------------- |
+| `poster.layout`    | PosterDocument名の動的list   | Active PosterDocumentの選択   |
+| `poster.main-text` | QOOOO / TRIP26 / LIVE VISUAL | Typography Layout内の主役Text |
 
 初期Editorial / Split / Modular / Customは`PosterDocumentFactory`が`Documents`の先頭4件として生成するが、
 runtimeで特別なslotとして扱わない。Documentまたは
@@ -83,6 +83,8 @@ HLSL dispatcherの対応に依存する。言語間contractを自動検証する
 
 `CameraPoseController`はcamera poseの操作を担当する。Modelの見た目は
 `ModelController`が`model.scale`、`model.motion`、`model.reset-transform`から更新する。
+Stillは静止を維持し、Spinは`IBpmSource.Beat`をrotation時間軸に使う。Pulseは同じBeatから
+`Rhythm.GetIndex`と`Rhythm.GetPhase`を求め、既存のscale amplitudeでpulseする。
 
 ## Text model
 

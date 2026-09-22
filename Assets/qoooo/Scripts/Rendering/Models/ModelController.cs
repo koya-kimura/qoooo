@@ -1,7 +1,10 @@
 ﻿using System.Collections.Generic;
+using qoooo.Foundation.Timing;
+using qoooo.Foundation.Utilities;
 using qoooo.Parameters.Model;
 using qoooo.Parameters.Runtime;
 using UnityEngine;
+using UnitySimpleContainer;
 
 namespace qoooo.Rendering.Models
 {
@@ -18,7 +21,13 @@ namespace qoooo.Rendering.Models
         [SerializeField]
         private BoolParameter _active = new("model.active", "Model Active", true);
 
+        // Tune these visual responses freely; musical time always comes from BpmManager through IBpmSource.
+        [SerializeField, Min(0.01f)] private float _spinBeatsPerRotation = 16f;
+        [SerializeField, Min(0.01f)] private float _pulseCycleBeats = 4f;
+        [SerializeField, Min(0.01f)] private float _pulseEaseBeats = 2f;
+
         private ModelManager _modelManager;
+        private IBpmSource _bpmSource;
         private GameObject _currentModel;
         private Renderer[] _renderers = System.Array.Empty<Renderer>();
         private readonly Dictionary<GameObject, Vector3> _initialScales = new();
@@ -43,6 +52,12 @@ namespace qoooo.Rendering.Models
             SetCurrentModel(_modelManager?.CurrentModel);
         }
 
+        [Inject]
+        public void Construct(IBpmSource bpmSource)
+        {
+            _bpmSource = bpmSource;
+        }
+
         private void OnDestroy()
         {
             if (_modelManager != null)
@@ -54,10 +69,23 @@ namespace qoooo.Rendering.Models
             if (_currentModel == null) return;
             if (_resetTransform.Value) _currentModel.transform.localRotation = Quaternion.identity;
             var scale = _scale.Value;
+            // Do not accumulate model time here. Convert the shared beat into visual values with Rhythm.
+            var beat = (float)(_bpmSource?.Beat ?? 0d);
+            var rhythmIndex = Rhythm.GetIndex(beat, _pulseCycleBeats);
+            var rhythmPhase = Rhythm.GetPhase(beat, _pulseCycleBeats, _pulseEaseBeats);
             switch (_motion.Value)
             {
-                case 1: _currentModel.transform.localRotation = Quaternion.Euler(0f, Time.time * 45f, 0f); break;
-                case 2: scale *= 1f + 0.2f * Mathf.Sin(Time.time * 2f); break;
+                case 1:
+                    _currentModel.transform.localRotation = Quaternion.Euler(
+                        0f,
+                        beat * 360f / _spinBeatsPerRotation,
+                        0f);
+                    break;
+                case 2:
+                    var localRhythmPhase = Mathf.Clamp01(rhythmPhase - rhythmIndex * 2f);
+                    var pulse = Mathf.Sin(localRhythmPhase * Mathf.PI);
+                    scale *= 1f + 0.2f * pulse;
+                    break;
             }
 
             ApplyScale(scale);

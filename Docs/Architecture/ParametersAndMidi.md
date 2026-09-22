@@ -51,6 +51,7 @@ Parameterの公開経路は2つある。
 | procedural background source | `background.pattern`                                                   |
 | model                        | `model.scale`、`model.motion`、`model.reset-transform`、`model.active` |
 | poster                       | `poster.layout`、`poster.main-text`                                    |
+| rhythm                       | `rhythm.bpm`、`rhythm.tap`、`rhythm.sync-beat`、`rhythm.sync-bar`      |
 
 Legacy `TextController`の`text.*` Parameterと`poster.model-layout`、`poster.typography-layout`は
 Trip26のlive Parameter / MIDI pathからretire済みである。保存済みmappingの該当IDだけはload時に除外し、
@@ -58,6 +59,12 @@ Trip26のlive Parameter / MIDI pathからretire済みである。保存済みmap
 
 `poster.layout`のoptionは`PosterLibrary.Documents`の`Name`から起動時とDocument CRUD時に同期する。
 option indexとDocument indexは同一で、既存のRadio MIDI mapping形式は変更しない。
+
+`BpmManager`がrhythm Parameterを所有する。`rhythm.bpm`はpending BPMを設定し、実BPMが次beat境界で
+変わった時だけ表示値へ同期する。Tap / SyncはOneshot経由で既存`BpmClock`へ渡す。
+
+`KeyboardParameterController`はParameter RegistryからOneshotを解決する。標準mappingはSpace = Tap、
+B = Sync Beat、Shift+B = Sync Barであり、UI Toolkitのtext inputがfocus中はkeyboard shortcutを発火しない。
 
 ## MIDI input
 
@@ -98,6 +105,8 @@ sequenceDiagram
 
 Grid Padだけが通常Binding対象である。Scene Launch 1-8はpage、Track 1-8はFader 1-8 mode、
 ShiftはMaster Fader modeに予約される。FaderはCC 48-56を使用する。
+
+Trip26のPage 0 / Row 0 / Column 4は`rhythm.tap`に割り当てる。`rhythm.bpm`はFaderへ割り当てない。
 
 BindingはParameter kindごとのclassに分かれる。Radioはoptionごと、Sequenceはstepごとに
 `ApcButtonSlot`を持つ。Floatは0-8のFader indexを持つ。
