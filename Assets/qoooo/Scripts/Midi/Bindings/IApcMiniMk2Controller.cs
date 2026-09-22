@@ -1,5 +1,6 @@
 namespace qoooo.Midi.Bindings
 {
+    // Legacy controller boundary。Trip26以外でstring-key pathを使うcallerのために残す。
     public interface IApcMiniMk2Controller
     {
         void ProcessNoteOn(int noteNumber, float velocity);

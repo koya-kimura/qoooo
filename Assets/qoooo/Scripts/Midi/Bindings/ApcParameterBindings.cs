@@ -6,6 +6,7 @@ using UnityEngine;
 namespace qoooo.Midi.Bindings
 {
     [Serializable]
+    // Serializable APC address shared by typed Parameter binding records.
     public struct ApcButtonSlot
     {
         public bool Assigned;

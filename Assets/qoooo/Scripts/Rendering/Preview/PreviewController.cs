@@ -4,6 +4,7 @@ using UnityEngine.UI;
 
 namespace qoooo.Rendering.Preview
 {
+    // Textureを所有せず、TextureCompositorの出力をGame Viewに表示する。
     public class PreviewController : MonoBehaviour
     {
         [SerializeField] private TextureCompositor _compositor;

@@ -17,6 +17,8 @@ namespace qoooo.Midi.Runtime
 {
     /// <summary>Trip26 の MIDI composition root。MIDI未接続でもParameterの初期化は必ず行う。</summary>
     [DefaultExecutionOrder(-9000)]
+    // Composition root that wires MIDI transport, typed Parameter adapters, profile, and LED output.
+    // State remains with each subsystem owner rather than this orchestration boundary.
     public sealed class MidiSystemController : MonoBehaviour, IUiTarget
     {
         private IBpmSource _bpmSource;

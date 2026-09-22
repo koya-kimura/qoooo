@@ -6,21 +6,21 @@
 
 ## やりたいことから探す
 
-| やりたいこと | 最初に見る場所 | 守る境界 |
-| --- | --- | --- |
-| Modelの動きや反応を変える | `Rendering/Models/ModelController.cs` | 時間は`IBpmSource.Beat`から読む |
-| Modelを追加・選択する | `Rendering/Models/ModelManager.cs` | `model.source`のindex互換を確認する |
-| Posterの構成を作る | RosettaUI `Poster Composer`、`Rendering/Sources/PosterDocument.cs` | `PosterDocument = Layout = Preset` |
-| Posterの描画方法を変える | `Rendering/Sources/PosterCanvas.cs` | element list先頭が見た目の前面 |
-| Poster内の文字を変える | `PosterDocument`のText element、`poster.main-text` | activeな文字表現はPoster側 |
-| 独立したText表現を研究する | `Text/` | Legacy TextはTrip26でinactive |
-| Rhythm表現を作る | `Foundation/Utilities/Rhythm.cs` | clock stateを持たせない |
-| Background patternを作る | `Rendering/Sources/MaterialTextureSource.cs`とshader | enum、Radio options、HLSL IDを揃える |
-| Layer effectを変える | `Rendering/Composition/TextureEffect.cs` | effectは各`TextureLayer`に属する |
-| 操作値を追加する | 値を消費するcomponent | ownerがtyped Parameterを持つ |
-| Keyboard入力を追加する | `Parameters/Runtime/KeyboardParameterController.cs` | Parameterをtriggerし、consumerを直接操作しない |
-| MIDI割当を変える | RosettaUI `MIDI Bindings` / `MIDI Mapping` | Parameter IDとAPC semanticsを維持する |
-| Live UIを変える | `Presentation/Runtime/UiBuilder.cs` | ownerと同じParameter instanceを表示する |
+| やりたいこと               | 最初に見る場所                                                     | 守る境界                                       |
+| -------------------------- | ------------------------------------------------------------------ | ---------------------------------------------- |
+| Modelの動きや反応を変える  | `Rendering/Models/ModelController.cs`                              | 時間は`IBpmSource.Beat`から読む                |
+| Modelを追加・選択する      | `Rendering/Models/ModelManager.cs`                                 | `model.source`のindex互換を確認する            |
+| Posterの構成を作る         | RosettaUI `Poster Composer`、`Rendering/Sources/PosterDocument.cs` | `PosterDocument = Layout = Preset`             |
+| Posterの描画方法を変える   | `Rendering/Sources/PosterCanvas.cs`                                | element list先頭が見た目の前面                 |
+| Poster内の文字を変える     | `PosterDocument`のText element、`poster.main-text`                 | activeな文字表現はPoster側                     |
+| 独立したText表現を研究する | `Text/`                                                            | Legacy TextはTrip26でinactive                  |
+| Rhythm表現を作る           | `Foundation/Utilities/Rhythm.cs`                                   | clock stateを持たせない                        |
+| Background patternを作る   | `Rendering/Sources/MaterialTextureSource.cs`とshader               | enum、Radio options、HLSL IDを揃える           |
+| Layer effectを変える       | `Rendering/Composition/TextureEffect.cs`                           | effectは各`TextureLayer`に属する               |
+| 操作値を追加する           | 値を消費するcomponent                                              | ownerがtyped Parameterを持つ                   |
+| Keyboard入力を追加する     | `Parameters/Runtime/KeyboardParameterController.cs`                | Parameterをtriggerし、consumerを直接操作しない |
+| MIDI割当を変える           | RosettaUI `MIDI Bindings` / `MIDI Mapping`                         | Parameter IDとAPC semanticsを維持する          |
+| Live UIを変える            | `Presentation/Runtime/UiBuilder.cs`                                | ownerと同じParameter instanceを表示する        |
 
 表中のパスはすべて`Assets/qoooo/Scripts/`からの相対パスである。
 

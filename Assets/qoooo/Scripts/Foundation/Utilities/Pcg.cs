@@ -45,6 +45,7 @@ namespace qoooo.Foundation.Utilities
         }
     }
 
+    // Deterministic PCG helpers shared by creative systems; callers own seeds and resulting state.
     public static class Pcg
     {
         private const float UIntMax = 4294967295f;

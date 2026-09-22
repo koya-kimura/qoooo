@@ -5,12 +5,15 @@ using UnityEngine;
 
 namespace qoooo.Rendering.Composition
 {
+    // Read-only access to the shared palette selected by the provider's typed Parameter.
     public interface IPaletteProvider
     {
         Color Main { get; }
         Color Sub { get; }
     }
 
+    // Owns the shared palette Parameter and exposes resolved colors to visual consumers.
+    // DO NOT DUPLICATE palette state in individual layers.
     public class PaletteProvider : MonoBehaviour, IPaletteProvider, IMidiParameterContainer
     {
         [SerializeField]

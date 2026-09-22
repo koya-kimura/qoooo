@@ -4,6 +4,8 @@ namespace qoooo.Foundation.Utilities
 {
     public delegate float EasingFn(float x);
 
+    // Maps caller-supplied timing into visual indices, phases, and noise values.
+    // It owns no clock state and never advances musical time.
     public static class Rhythm
     {
         public static int GetIndex(float t, float interval)

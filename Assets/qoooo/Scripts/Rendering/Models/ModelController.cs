@@ -21,7 +21,7 @@ namespace qoooo.Rendering.Models
         [SerializeField]
         private BoolParameter _active = new("model.active", "Model Active", true);
 
-        // CREATIVE AREA: tune beat-to-motion response here. BpmManager remains the only clock owner.
+        // CREATIVE AREA / 創作領域: beatからmotionへの反応をここで調整する。clockの所有者はBpmManagerだけ。
         [SerializeField, Min(0.01f)] private float _spinBeatsPerRotation = 16f;
         [SerializeField, Min(0.01f)] private float _pulseCycleBeats = 4f;
         [SerializeField, Min(0.01f)] private float _pulseEaseBeats = 2f;
@@ -69,7 +69,7 @@ namespace qoooo.Rendering.Models
             if (_currentModel == null) return;
             if (_resetTransform.Value) _currentModel.transform.localRotation = Quaternion.identity;
             var scale = _scale.Value;
-            // Do not accumulate model time here. Convert the shared beat into visual values with Rhythm.
+            // ここでModel timeを蓄積しない。共有beatをRhythmでvisual valueへ変換する。
             var beat = (float)(_bpmSource?.Beat ?? 0d);
             var rhythmIndex = Rhythm.GetIndex(beat, _pulseCycleBeats);
             var rhythmPhase = Rhythm.GetPhase(beat, _pulseCycleBeats, _pulseEaseBeats);

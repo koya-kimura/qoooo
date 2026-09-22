@@ -7,6 +7,8 @@ using UnityEngine;
 
 namespace qoooo.Foundation.Timing
 {
+    // Unity lifecycleとRhythm Parameterを所有し、共有BpmClockを1つだけ進める。
+    // ConsumerはIBpmSource経由で時刻を読み、application clockを複製しない。
     [DefaultExecutionOrder(-120)]
     public sealed class BpmManager : MonoBehaviour, IBpmSource, IMidiParameterContainer, IUiTarget
     {

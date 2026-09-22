@@ -10,6 +10,7 @@ namespace qoooo.Midi.Transport
 {
     /// <summary>Minis callbackをmain-thread Updateで確定したraw MIDI eventへ変換する。</summary>
     [DefaultExecutionOrder(-100)]
+    // Queues Minis callbacks and dispatches normalized raw MIDI events on Unity's main thread.
     public sealed class MinisMidiInput : MonoBehaviour, IMidiInput
     {
         private enum EventType { NoteOn, NoteOff, ControlChange }

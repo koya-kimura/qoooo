@@ -12,6 +12,7 @@ using UnitySimpleContainer;
 namespace qoooo.Midi.Runtime
 {
     [DefaultExecutionOrder(-90)]
+    // Legacy direct APC input retained outside the active Trip26 Minis transport path.
     public sealed class ApcMiniMk2MidiInput : MonoBehaviour
     {
         private enum PendingMidiEventType { NoteOn, NoteOff, ControlChange }

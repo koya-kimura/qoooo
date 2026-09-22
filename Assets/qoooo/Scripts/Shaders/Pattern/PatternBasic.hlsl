@@ -1,3 +1,5 @@
+// CREATIVE AREA / 創作領域: 各procedural Background patternはUVとPatternContextを受け取る。
+// 各functionはPatternDispatcherが選んだstraight RGB colorを返す。
 #ifndef QOOOO_PATTERN_BASIC_INCLUDED
 #define QOOOO_PATTERN_BASIC_INCLUDED
 

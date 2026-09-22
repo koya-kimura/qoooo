@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace qoooo.Rendering.Sources
 {
+    // 初期編集可能documentを作る。runtimeでは他のPosterLibrary documentと同じように扱う。
     internal static class PosterDocumentFactory
     {
         public static PosterLibrary CreateDefaultLibrary()

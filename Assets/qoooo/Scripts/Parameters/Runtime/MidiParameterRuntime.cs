@@ -5,6 +5,7 @@ using UnityEngine;
 namespace qoooo.Parameters.Runtime
 {
     [DefaultExecutionOrder(-110)]
+    // 値を所有せず、共有beatからframe単位のParameter behaviorを進める。
     public sealed class MidiParameterRuntime : MonoBehaviour
     {
         [SerializeField] private MidiParameterRegistry _registry;

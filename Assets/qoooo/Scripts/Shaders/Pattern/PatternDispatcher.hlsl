@@ -1,3 +1,5 @@
+// MaterialTextureSourceのnumeric pattern IDを1つのcreative pattern実装へ割り当てる。
+// IDはProceduralPatternTypeと揃え、出力はstraight RGBにする。
 #ifndef QOOOO_PATTERN_DISPATCHER_INCLUDED
 #define QOOOO_PATTERN_DISPATCHER_INCLUDED
 

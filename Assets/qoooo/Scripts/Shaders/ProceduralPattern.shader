@@ -1,3 +1,5 @@
+// MaterialTextureSourceのuniformからBackground textureを生成する。
+// CREATIVE AREA / 創作領域: pattern evaluationはstraight RGBを返し、出力alphaに_Opacityを使う。
 Shader "Custom/ProceduralPattern"
 {
     Properties

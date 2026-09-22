@@ -4,6 +4,7 @@ using UnityEngine;
 namespace qoooo.Parameters.Model
 {
     [Serializable]
+    // input adapterがconsumerを直接呼ばずに使う、owner組み込みpress/release trigger。
     public sealed class OneshotParameter : IValue<bool>, IMidiBindableParameter, ISerializationCallbackReceiver
     {
         [SerializeField] private string _id;

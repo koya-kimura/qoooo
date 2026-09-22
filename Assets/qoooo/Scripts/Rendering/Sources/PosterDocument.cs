@@ -50,6 +50,7 @@ namespace qoooo.Rendering.Sources
     }
 
     [Serializable]
+    // authored posterのsource of truth。poster.layoutはこのordered Documents listをindexする。
     public sealed class PosterLibrary
     {
         public List<PosterDocument> Documents = new();
@@ -62,6 +63,7 @@ namespace qoooo.Rendering.Sources
     }
 
     [Serializable]
+    // 1つのauthored poster。このsystemではDocument、Layout、Presetは同じ概念。
     public sealed class PosterDocument
     {
         public string Name;
@@ -69,6 +71,7 @@ namespace qoooo.Rendering.Sources
     }
 
     [Serializable]
+    // Document内のprimitive layer。list orderはfront-to-backで、先頭elementが最上面。
     public sealed class PosterElement
     {
         public string Name;
@@ -84,6 +87,7 @@ namespace qoooo.Rendering.Sources
     }
 
     [Serializable]
+    // grid座標またはtop-left基準の自由座標でprimitiveを配置するserializable設定。
     public sealed class PosterPlacement
     {
         public PosterPlacementMode Mode;
@@ -100,6 +104,7 @@ namespace qoooo.Rendering.Sources
     }
 
     [Serializable]
+    // active Poster Textのserializable設定。inactive Legacy Text subsystemの設定ではない。
     public sealed class PosterTextSettings
     {
         public PosterTextSource Source;
@@ -111,6 +116,7 @@ namespace qoooo.Rendering.Sources
     }
 
     [Serializable]
+    // poster primitiveに既存のModelまたはBackground textureを選択する。
     public sealed class PosterTextureSettings
     {
         public PosterTextureSource Source;
@@ -118,6 +124,7 @@ namespace qoooo.Rendering.Sources
     }
 
     [Serializable]
+    // poster line primitiveのserializableな端点とthickness。
     public sealed class PosterLineSettings
     {
         public bool UsePlacementBounds = true;

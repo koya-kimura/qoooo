@@ -4,6 +4,7 @@ using UnityEngine;
 namespace qoooo.Rendering.Composition
 {
     [Serializable]
+    // 1つのLayer内Texture処理passを編集する設定。
     public struct EffectParams
     {
         public bool IsInvert;
@@ -19,6 +20,8 @@ namespace qoooo.Rendering.Composition
                                         || IsTiling;
     }
 
+    // Layer共通の処理を適用し、同じ解像度の一時RenderTextureを所有する。
+    // DO NOT DUPLICATE / 重複禁止: Model処理をここで複製しない。Posterは処理済みModel Layerの結果を使う。
     public class TextureEffect : MonoBehaviour
     {
         [SerializeField] private Material _material;

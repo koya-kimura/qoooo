@@ -30,6 +30,8 @@ namespace qoooo.Rendering.Sources
     }
 
     [DefaultExecutionOrder(-9200)]
+    // 選択したPosterLibrary documentをCanvas primitiveへ渡すruntime bridge。
+    // source of truthはPosterLibrary.Documentsで、list indexはposter.layoutと一致する。
     public partial class PosterCanvas : MonoBehaviour, IMidiParameterContainer
     {
         [SerializeField] private TextureLayer _modelTextureLayer;
@@ -185,7 +187,7 @@ namespace qoooo.Rendering.Sources
             ClearLayout();
             _dynamicTexts.Clear();
 
-            // The list is front-to-back for the future Composer UI. Canvas siblings created later render in front.
+            // listは将来のComposer UI向けにfront-to-back。後から作ったCanvas siblingが前面に描画される。
             for (var index = document.Elements.Count - 1; index >= 0; index--)
             {
                 var element = document.Elements[index];

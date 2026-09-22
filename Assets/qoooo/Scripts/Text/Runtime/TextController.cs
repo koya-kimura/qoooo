@@ -10,6 +10,8 @@ using UnityEngine;
 namespace qoooo.Text.Runtime
 {
     [RequireComponent(typeof(TMP_Text))]
+    // Legacy Textのsample、motion、TMP mesh updateを担うruntime owner。
+    // Trip26のfinal compositionではinactive。active Poster TextはPosterCanvasが構築する。
     public class TextController : MonoBehaviour
     {
         [SerializeField] private TMP_Text _textMesh;

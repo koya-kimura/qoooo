@@ -6,6 +6,8 @@ using Object = UnityEngine.Object;
 
 namespace qoooo.Parameters.Runtime
 {
+    // ownerが保持するParameter instanceを検証し、adapterとUI向けにindex化する。
+    // DO NOT DUPLICATE / 重複禁止: 値の所有者はapplication componentのまま。
     public sealed class MidiParameterRegistry : MonoBehaviour
     {
         private readonly Dictionary<string, IMidiBindableParameter> _byId = new(StringComparer.Ordinal);

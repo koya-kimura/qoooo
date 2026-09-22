@@ -3,6 +3,8 @@ using UnityEngine;
 
 namespace qoooo.Text.Motions
 {
+    // CREATIVE AREA / 創作領域: sampleしたLegacy Text glyphへtime-based rotationを適用する。
+    // この経路はTrip26のfinal compositionではinactive。
     public class TextRotateMotion : TextGlyphMotion
     {
         [SerializeField] private Vector3 _axis = Vector3.forward;

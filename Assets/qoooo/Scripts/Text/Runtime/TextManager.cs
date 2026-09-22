@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace qoooo.Text.Runtime
 {
+    // Legacy Text root selector; inactive in Trip26 final composition and separate from Poster Text.
     public class TextManager : MonoBehaviour
     {
         [SerializeField] private List<TextController> _texts = new();

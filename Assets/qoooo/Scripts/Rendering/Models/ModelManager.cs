@@ -7,6 +7,8 @@ using UnityEngine;
 
 namespace qoooo.Rendering.Models
 {
+    // Owns model-source selection and activates exactly the selected model root.
+    // Visual motion and shared texture processing belong to ModelController and TextureEffect.
     public class ModelManager : MonoBehaviour, IMidiParameterContainer
     {
         [SerializeField] private List<GameObject> _models = new();

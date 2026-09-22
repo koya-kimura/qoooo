@@ -1,3 +1,4 @@
+// Layer-effect helpers transform UVs or straight-alpha sampled color for TextureEffect.shader.
 #ifndef INCLUDE_HLSL_EFFECT
 #define INCLUDE_HLSL_EFFECT
 

@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 namespace qoooo.Editor
 {
     [InitializeOnLoad]
+    // Editor-only bootstrap that keeps project-wide Input Actions initialized outside runtime ownership.
     internal static class ProjectWideInputActionsInitializer
     {
         private const string AssetPath = "Assets/InputSystem_Actions.inputactions";

@@ -1,3 +1,5 @@
+// 下のtextureとoverlay textureをstraight-alphaのsource-over出力として合成する。
+// TextureCompositorが所有する出力bufferをping-pongしながら、このpassを呼び出す。
 Shader "Custom/TextureComposite"
 {
     Properties

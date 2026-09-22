@@ -10,6 +10,8 @@ using UnitySimpleContainer;
 
 namespace qoooo.Presentation.Runtime
 {
+    // Composes LIVE, AUTHORING, and SETUP RosettaUI from existing targets.
+    // It owns no application values and coordinates only explicit Qoooo Save transactions.
     public class UiBuilder : MonoBehaviour
     {
         private List<IUiTarget> _targets;

@@ -7,6 +7,7 @@ using UnityEngine;
 namespace qoooo.Rendering.Cameras
 {
     [RequireComponent(typeof(Camera))]
+    // Owns the camera-pose Parameter and applies selected poses independently of model animation.
     public class CameraPoseController : MonoBehaviour, IMidiParameterContainer
     {
         [SerializeField]

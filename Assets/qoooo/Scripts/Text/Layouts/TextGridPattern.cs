@@ -5,6 +5,8 @@ using UnityEngine;
 
 namespace qoooo.Text.Layouts
 {
+    // Legacy Text grid sampler; inactive in Trip26 final composition and unrelated to Poster Text.
+    // CREATIVE AREA: maps source glyphs into a grid when this subsystem is used.
     public class TextGridPattern : MonoBehaviour, ITextPattern
     {
         [SerializeField] [Min(1)] private int _columns = 10;

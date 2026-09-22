@@ -2,6 +2,7 @@ using UnityEngine;
 
 namespace qoooo.Text.Model
 {
+    // One sampled Legacy Text glyph transform; inactive in Trip26 final composition.
     public struct GlyphSample
     {
         public int SourceCharacterIndex;

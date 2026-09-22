@@ -1,3 +1,4 @@
+// Deterministic PCG helpers for creative shader noise; callers supply coordinates and seeds.
 #ifndef HLSL_INCLUDE_PCG
 #define HLSL_INCLUDE_PCG
 

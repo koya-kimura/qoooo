@@ -1,3 +1,5 @@
+// 最終合成前に、各Layer内の _MainTex へ1回だけTextureEffectを適用する。
+// CREATIVE AREA / 創作領域: flagsとsizing uniformでUV処理を選び、出力はstraight-alpha colorのまま保つ。
 Shader "Custom/TextureEffect"
 {
     Properties

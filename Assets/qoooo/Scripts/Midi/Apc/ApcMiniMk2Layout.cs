@@ -1,5 +1,6 @@
 namespace qoooo.Midi.Apc
 {
+    // Converts APC hardware coordinates without owning bindings or Parameter values.
     public static class ApcMiniMk2Layout
     {
         public static bool TryGetGridPosition(int note, out int row, out int col)

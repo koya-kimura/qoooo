@@ -46,15 +46,15 @@ Parameterの公開経路は2つある。
 
 ## 現在のParameter owner
 
-| Owner                         | Parameter ID                                                           |
-| ----------------------------- | ---------------------------------------------------------------------- |
-| procedural background source  | `background.pattern`                                                   |
-| model controller              | `model.scale`、`model.motion`、`model.reset-transform`、`model.active` |
-| model manager                 | `model.source`                                                         |
-| camera pose controller        | `model.camera-pose`                                                    |
-| palette provider              | `visual.palette`                                                       |
-| poster                        | `poster.layout`、`poster.main-text`                                    |
-| rhythm                        | `rhythm.bpm`、`rhythm.tap`、`rhythm.sync-beat`、`rhythm.sync-bar`      |
+| Owner                        | Parameter ID                                                           |
+| ---------------------------- | ---------------------------------------------------------------------- |
+| procedural background source | `background.pattern`                                                   |
+| model controller             | `model.scale`、`model.motion`、`model.reset-transform`、`model.active` |
+| model manager                | `model.source`                                                         |
+| camera pose controller       | `model.camera-pose`                                                    |
+| palette provider             | `visual.palette`                                                       |
+| poster                       | `poster.layout`、`poster.main-text`                                    |
+| rhythm                       | `rhythm.bpm`、`rhythm.tap`、`rhythm.sync-beat`、`rhythm.sync-bar`      |
 
 live Parameterは合計14件である。
 

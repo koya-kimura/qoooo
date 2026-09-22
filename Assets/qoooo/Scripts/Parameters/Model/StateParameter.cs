@@ -4,6 +4,7 @@ using UnityEngine;
 namespace qoooo.Parameters.Model
 {
     [Serializable]
+    // input adapterが進める、owner組み込みのcyclic integer state。
     public sealed class StateParameter : IValue<int>, IMidiBindableParameter, ISerializationCallbackReceiver
     {
         [SerializeField] private string _id;

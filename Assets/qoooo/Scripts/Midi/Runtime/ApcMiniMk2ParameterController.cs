@@ -14,6 +14,8 @@ namespace qoooo.Midi.Runtime
 {
     /// <summary>APC mini mk2 の物理eventを型付きParameterへ適用する。値の所有はしない。</summary>
     [DefaultExecutionOrder(-90)]
+    // Owns APC page, typed bindings, Listen, pickup, held notes, and fader-mode runtime state.
+    // It adapts hardware events into owner-held Parameters and never calls consumers directly.
     public sealed class ApcMiniMk2ParameterController : MonoBehaviour
     {
         [SerializeField] private MinisMidiInput _input;

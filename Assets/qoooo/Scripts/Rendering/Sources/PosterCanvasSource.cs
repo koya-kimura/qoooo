@@ -4,6 +4,8 @@ using UnitySimpleContainer;
 
 namespace qoooo.Rendering.Sources
 {
+    // Owns the Poster Camera target RenderTexture exposed to TextureCompositor.
+    // It captures the already-built Poster Canvas and does not create Model or Background sources.
     public class PosterCanvasSource : MonoBehaviour, ITextureContainer
     {
         [SerializeField] private Camera _camera;

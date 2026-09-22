@@ -4,11 +4,13 @@ using UnityEngine;
 
 namespace qoooo.Midi.Bindings
 {
+    // active Trip26 typed-Parameter pathの外側に残すLegacy string-key binding model。
     public enum ApcMiniMk2BindingType { Toggle, Radio, Oneshot, Momentary, State, Sequence, Random }
     public enum FaderButtonFunction { Mute, Random }
     public enum FaderButtonMode { Normal, Mute, Random }
 
     [Serializable]
+    // retired binding registryが使っていたLegacy APC grid address。
     public struct ApcMiniMk2CellPosition
     {
         [Range(0, 7)] public int Page;
@@ -17,6 +19,7 @@ namespace qoooo.Midi.Bindings
     }
 
     [Serializable]
+    // Legacy binding DTO。active Trip26 mappingはApcParameterBindingsのtyped recordを使う。
     public class ApcMiniMk2Binding
     {
         [SerializeField] private string _key;

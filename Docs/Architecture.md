@@ -84,7 +84,7 @@ flowchart TD
 | APC mapping                          | `ApcMiniMk2ParameterController`                 | Scene値がdefault、Prefsで上書き    |
 | MIDI profile snapshot/dirty          | `MidiProfileStore`                              | mappingと保存対象Parameter値       |
 | 描画buffer                           | 各source/cameraと`TextureCompositor`            | 解像度変更時に再生成               |
-| Text layout定義                      | `TextController`内の`TextPattern` list          | Trip26ではinactive                  |
+| Text layout定義                      | `TextController`内の`TextPattern` list          | Trip26ではinactive                 |
 
 ## 主要フロー
 

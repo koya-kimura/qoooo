@@ -6,6 +6,7 @@ using UnityEngine;
 namespace qoooo.Text.Model
 {
     [Serializable]
+    // Serialized Legacy Text layout definition; inactive in Trip26 final composition.
     public class TextPattern
     {
         [SerializeField] private string _name = "Pattern";
@@ -31,6 +32,7 @@ namespace qoooo.Text.Model
     }
 
     [Serializable]
+    // Combines one Legacy Text sampler with local transform and post-sample motions.
     public class TextSamplerEntry
     {
         [SerializeField] private bool _enabled = true;

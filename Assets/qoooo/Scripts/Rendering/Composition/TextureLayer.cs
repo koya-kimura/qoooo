@@ -6,6 +6,8 @@ using UnityEngine;
 
 namespace qoooo.Rendering.Composition
 {
+    // Adapts one ITextureContainer source through an optional per-layer TextureEffect for composition.
+    // It forwards the source's existing Parameters and does not own duplicate values.
     public class TextureLayer : MonoBehaviour, IParameterContainer, IMidiParameterContainer
     {
         [SerializeField] private MonoBehaviour _sourceComponent;

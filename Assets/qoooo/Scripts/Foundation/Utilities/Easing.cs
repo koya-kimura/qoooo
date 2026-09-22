@@ -2,6 +2,7 @@ using UnityEngine;
 
 namespace qoooo.Foundation.Utilities
 {
+    // Pure easing functions for callers that own the animated value and timing.
     public static class Easing
     {
         public static float EaseInSine(float x)

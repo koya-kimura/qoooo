@@ -4,6 +4,8 @@ using UnityEngine;
 
 namespace qoooo.Text.Layouts
 {
+    // Legacy Text circle sampler; inactive in Trip26 final composition and unrelated to Poster Text.
+    // CREATIVE AREA: maps source glyphs around a circular layout when this subsystem is used.
     public class TextCirclePattern : MonoBehaviour, ITextPattern
     {
         [SerializeField]

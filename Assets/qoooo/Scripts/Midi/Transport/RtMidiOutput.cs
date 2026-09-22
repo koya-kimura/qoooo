@@ -7,6 +7,7 @@ using UnityEngine;
 namespace qoooo.Midi.Transport
 {
     /// <summary>RtMidiへのnative送信を専用threadへ隔離する。Unity APIはUpdateだけで使用する。</summary>
+    // Owns the RtMidi background worker, bounded message queue, reconnect loop, and diagnostics bridge.
     public sealed class RtMidiOutput : MonoBehaviour, IMidiOutput
     {
         [SerializeField] private string _productName = "APC mini mk2";

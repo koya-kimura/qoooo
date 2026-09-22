@@ -5,6 +5,8 @@ using UnityEngine;
 
 namespace qoooo.Text.Layouts
 {
+    // Legacy Text perimeter sampler; inactive in Trip26 final composition and unrelated to Poster Text.
+    // CREATIVE AREA: maps source glyphs around a rectangle when this subsystem is used.
     public class TextRectangleLoopPattern : MonoBehaviour, ITextPattern
     {
         [SerializeField] private Vector2 _size = new(10f, 6f);

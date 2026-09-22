@@ -1,6 +1,6 @@
 namespace qoooo.Foundation.Timing
 {
-    /// <summary>Read-only beat and tempo access for components that do not own the clock.</summary>
+    /// <summary>clockを所有しないcomponent向けのread-only beatとtempo access。</summary>
     public interface IBpmSource
     {
         double Bpm { get; }

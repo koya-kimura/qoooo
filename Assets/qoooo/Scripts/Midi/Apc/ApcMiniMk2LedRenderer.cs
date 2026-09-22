@@ -9,6 +9,8 @@ using UnityEngine;
 namespace qoooo.Midi.Apc
 {
     /// <summary>現在PageのgridとScene page buttonをParameter状態から描画する。</summary>
+    // Renders Parameter and APC runtime state to hardware LEDs and caches the last sent frame.
+    // Output is derived state; Parameter values remain owned by application components.
     public sealed class ApcMiniMk2LedRenderer : MonoBehaviour
     {
         private const byte Off=0;

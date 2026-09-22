@@ -5,6 +5,8 @@ using UnitySimpleContainer;
 namespace qoooo.Rendering.Cameras
 {
     [RequireComponent(typeof(Camera))]
+    // Owns a Camera target RenderTexture at output resolution and exposes it as a texture source.
+    // Camera pose is controlled separately from model motion and texture processing.
     public class CameraController : MonoBehaviour, ITextureContainer
     {
         private Camera _camera;

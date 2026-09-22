@@ -5,8 +5,10 @@ using UnityEngine;
 
 namespace qoooo.Parameters.Model
 {
+    // 共有beatがsequence stepを選ぶときに使うmusical subdivision。
     public enum SequenceDivision { Quarter, Eighth, Sixteenth }
     [Serializable]
+    // owner組み込みstep pattern。保存済みpattern stateとruntime active-step stateは分離する。
     public sealed class SequenceParameter : IMidiBindableParameter, ISerializationCallbackReceiver
     {
         [SerializeField] private string _id;

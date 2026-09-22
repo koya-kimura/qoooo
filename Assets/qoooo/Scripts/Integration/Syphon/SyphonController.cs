@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace qoooo.Integration.Syphon
 {
+    // TextureCompositorの出力をSyphonへ公開する。composition stateは変更も所有もしない。
     public class SyphonController : MonoBehaviour
     {
         [SerializeField] private SyphonServer _syphonServer;

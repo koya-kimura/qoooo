@@ -9,6 +9,7 @@ using RosettaUI;
 namespace qoooo.Midi.Runtime
 {
     /// <summary>型ごとの必要なslotだけを表示するMIDI Mapping UI。</summary>
+    // Edits APC assignments around registry Parameters; it owns neither values nor mapping persistence.
     public sealed class MidiBindingUi
     {
         private const float BindingsListMaxHeight = 640f;

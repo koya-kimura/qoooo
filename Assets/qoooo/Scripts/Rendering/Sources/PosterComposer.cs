@@ -9,6 +9,8 @@ using UnityEngine;
 namespace qoooo.Rendering.Sources
 {
     [DefaultExecutionOrder(-9100)]
+    // PosterLibrary.Documentsを編集するauthoring UIと、明示的なQoooo Save participant。
+    // Prepareでauthored documentをstageし、Commitで受け入れ、Abortで失敗したSaveを処理する。autosaveはしない。
     public sealed class PosterComposer : MonoBehaviour, IUiTarget, IPrefsSaveParticipant
     {
         private const string PrefsKey = "qoooo.poster.library.v2";

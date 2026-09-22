@@ -3,6 +3,7 @@ using qoooo.Midi.Apc;
 
 namespace qoooo.Midi.Bindings
 {
+    // Legacy string-key binding index。active Trip26のParameter registryではない。
     public sealed class ApcMiniMk2BindingRegistry
     {
         public IReadOnlyDictionary<int, ApcMiniMk2RegisteredCell> Cells => _cells;

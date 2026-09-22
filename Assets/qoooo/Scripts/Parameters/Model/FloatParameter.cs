@@ -4,6 +4,7 @@ using UnityEngine;
 namespace qoooo.Parameters.Model
 {
     [Serializable]
+    // serialized defaultとclamp済みruntime valueを持つ、owner組み込みのbounded float。
     public sealed class FloatParameter : IValue<float>, IMidiBindableParameter, ISerializationCallbackReceiver
     {
         [SerializeField] private string _id;

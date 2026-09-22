@@ -1,3 +1,4 @@
+// 各pattern function用にshader uniformから組み立てる共有procedural pattern入力。
 #ifndef QOOOO_PATTERN_COMMON_INCLUDED
 #define QOOOO_PATTERN_COMMON_INCLUDED
 

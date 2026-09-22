@@ -4,9 +4,10 @@ using qoooo.Parameters.Model;
 namespace qoooo.Parameters.Runtime
 {
     /// <summary>
-    /// A nested component's MIDI parameters. The owning IMidiParameterContainer is responsible
-    /// for exposing these to the registry, preventing duplicate registration by DI.
+    /// nested componentのMIDI Parameter。所有者であるIMidiParameterContainerがregistryへ公開し、
+    /// DIによる重複登録を防ぐ。
     /// </summary>
+    // nested sourceのParameterを公開し、包含するLayerが同じinstanceをforwardできるようにする。
     public interface IMidiParameterSource
     {
         IEnumerable<IMidiBindableParameter> MidiParameters { get; }

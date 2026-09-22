@@ -10,6 +10,8 @@ using UnityEngine;
 namespace qoooo.Midi.Profiles
 {
     /// <summary>Trip26のAPC mappingと保存対象ParameterをPrefsへ保存する。</summary>
+    // mappingとParameter stateのprofile snapshot、dirty state、Prefs recordを所有する。
+    // Prepare/Commit/Abortは明示的なQoooo Saveだけに参加し、autosaveではない。
     public sealed class MidiProfileStore : MonoBehaviour, IPrefsSaveParticipant
     {
         private const string MappingKey = "qoooo.midi.trip26.mapping.v2";

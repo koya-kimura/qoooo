@@ -8,6 +8,8 @@ using UnitySimpleContainer;
 
 namespace qoooo.Rendering.Composition
 {
+    // Composites enabled layers bottom-to-top and owns the two ping-pong output buffers.
+    // Its output feeds Preview and Syphon; per-layer and Model effects run before this boundary.
     public class TextureCompositor : MonoBehaviour, ITextureContainer, IUiTarget
     {
         [SerializeField] private List<TextureLayer> _layers = new();

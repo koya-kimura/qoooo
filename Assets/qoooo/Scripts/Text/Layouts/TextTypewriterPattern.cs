@@ -4,6 +4,8 @@ using UnityEngine;
 
 namespace qoooo.Text.Layouts
 {
+    // Legacy Text typewriter sampler; inactive in Trip26 final composition and unrelated to Poster Text.
+    // CREATIVE AREA: controls sequential glyph reveal when this subsystem is used.
     public class TextTypewriterPattern :
         MonoBehaviour,
         ITextPattern

@@ -5,6 +5,7 @@ using qoooo.Midi.Apc;
 
 namespace qoooo.Midi.Bindings
 {
+    // Legacy binding dispatcher retained outside the active Trip26 typed-Parameter flow.
     public sealed class ApcMiniMk2Controller : IApcMiniMk2Controller
     {
         private readonly ApcMiniMk2BindingRegistry _registry;

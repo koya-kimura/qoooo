@@ -2,6 +2,8 @@ using UnityEngine;
 
 namespace qoooo.Rendering.Sources
 {
+    // Builds active Poster Text and graphic primitives; this is distinct from inactive Legacy Text.
+    // Document elements are listed front-to-back and created in reverse so index zero stays on top.
     public partial class PosterCanvas
     {
         // Layout code uses zero-based columns throughout: 0..11.

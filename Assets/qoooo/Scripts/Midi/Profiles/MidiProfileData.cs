@@ -5,6 +5,7 @@ using qoooo.Midi.Bindings;
 namespace qoooo.Midi.Profiles
 {
     [Serializable]
+    // 保存するAPC mapping snapshot。runtimeのpage、pickup、Listen stateは意図的に含めない。
     public sealed class ApcMidiMappingData
     {
         public int SchemaVersion = 1;
@@ -22,6 +23,7 @@ namespace qoooo.Midi.Profiles
     }
 
     [Serializable]
+    // 明示的なQoooo Saveのために保存するowner Parameter valueのcollection。
     public sealed class MidiParameterStateData
     {
         public int SchemaVersion = 1;
@@ -31,6 +33,7 @@ namespace qoooo.Midi.Profiles
     }
 
     [Serializable]
+    // 1つのstable Parameter IDとkind固有のvalue fieldを持つserialization DTO。
     public sealed class MidiParameterValueData
     {
         public string Id;

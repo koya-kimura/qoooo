@@ -4,6 +4,7 @@ using UnityEngine;
 namespace qoooo.Parameters.Model
 {
     [Serializable]
+    // owner組み込みのframe pulse。runtimeはconsumerが観測した後に蓄積triggerをclearする。
     public sealed class MomentaryParameter : IMidiBindableParameter, ISerializationCallbackReceiver
     {
         [SerializeField] private string _id;

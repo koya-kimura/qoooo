@@ -1,6 +1,7 @@
 namespace qoooo.Midi.Apc
 {
     /// <summary>APC mini mk2 Communication Protocol v1.0 に基づく input 定数。</summary>
+    // Single hardware-number contract for APC notes, controls, pages, and LED values.
     public static class ApcMiniMk2Constants
     {
         public const int MidiPort = 0;

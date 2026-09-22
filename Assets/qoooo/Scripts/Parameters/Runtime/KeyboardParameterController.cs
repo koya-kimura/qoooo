@@ -6,6 +6,8 @@ using UnityEngine.UIElements;
 namespace qoooo.Parameters.Runtime
 {
     [DefaultExecutionOrder(-80)]
+    // Adapts keyboard shortcuts into owner-held OneshotParameters resolved from the registry.
+    // It never calls visual consumers directly or owns duplicate Parameter state.
     public sealed class KeyboardParameterController : MonoBehaviour
     {
         [SerializeField] private UIDocument _uiDocument;

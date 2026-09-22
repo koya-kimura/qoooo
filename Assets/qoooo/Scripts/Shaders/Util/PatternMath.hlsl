@@ -1,3 +1,4 @@
+// creative procedural patternで共有するpure math helper。uniformやtextureの所有権はここに置かない。
 #ifndef QOOOO_PATTERN_MATH_INCLUDED
 #define QOOOO_PATTERN_MATH_INCLUDED
 

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 
 namespace qoooo.Foundation.Timing
 {
+    // Unityに依存せず、共有musical clockのstateと計算を所有する。
+    // BpmManagerがこのclockを進め、visual systemはIBpmSource経由でread-onlyの時刻を使う。
     public sealed class BpmClock
     {
         public const double MinBpm = 1d;

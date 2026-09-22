@@ -4,6 +4,7 @@ using UnityEngine;
 namespace qoooo.Parameters.Model
 {
     [Serializable]
+    // serialized defaultとruntime valueを持つ、owner組み込みのtoggle value。
     public sealed class BoolParameter : IValue<bool>, IMidiBindableParameter, ISerializationCallbackReceiver
     {
         [SerializeField] private string _id;

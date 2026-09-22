@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace qoooo.Rendering.Composition
 {
+    // Owns the shared output resolution consumed by camera, source, and compositor buffer owners.
     public class OutputSettings : MonoBehaviour, IResolutionContainer, IUiTarget
     {
         [SerializeField] private Vector2Int _resolution = new(1920, 1080);

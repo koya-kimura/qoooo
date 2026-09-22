@@ -9,6 +9,7 @@ using UnitySimpleContainer;
 
 namespace qoooo.Rendering.Sources
 {
+    // Numeric order is the C# side of the ProceduralPattern shader dispatcher contract.
     public enum ProceduralPatternType
     {
         NoiseTexture = 0,
@@ -24,6 +25,8 @@ namespace qoooo.Rendering.Sources
     }
 
     [DefaultExecutionOrder(-100)]
+    // Owns procedural-background Parameters and its output RenderTexture.
+    // CREATIVE AREA: pattern colors, UV controls, and shared beat become shader uniforms here.
     public class MaterialTextureSource : MonoBehaviour, ITextureContainer, IParameterContainer, IMidiParameterSource
     {
         [SerializeField] private Material _material;

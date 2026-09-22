@@ -5,6 +5,7 @@ using UnityEngine;
 namespace qoooo.Parameters.Model
 {
     [Serializable]
+    // option orderがmapping contractの一部である、owner組み込みindexed choice。
     public sealed class RadioParameter : IValue<int>, IMidiBindableParameter, ISerializationCallbackReceiver
     {
         [SerializeField] private string _id;

@@ -4,6 +4,8 @@ using UnityEngine;
 
 namespace qoooo.Text.Layouts
 {
+    // Legacy Text corner sampler; inactive in Trip26 final composition and unrelated to Poster Text.
+    // CREATIVE AREA: controls corner placement and rotation when this subsystem is used.
     public class TextCornerRotatePattern : MonoBehaviour, ITextPattern
     {
         [SerializeField] private Vector2 _size = new(10f, 6f);
