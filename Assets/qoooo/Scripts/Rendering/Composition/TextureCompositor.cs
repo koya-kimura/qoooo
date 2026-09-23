@@ -11,6 +11,7 @@ namespace qoooo.Rendering.Composition
 {
     // Composites enabled layers bottom-to-top and owns the two ping-pong output buffers.
     // Its output feeds Preview and Syphon; source processing runs before this boundary.
+    // SceneのModel → Poster → Previewというcamera順を前提に、Poster描画後の同一frameで合成する。
     public class TextureCompositor : MonoBehaviour, ITextureContainer, IUiTarget
     {
         [SerializeField] private List<TextureLayer> _layers = new();
@@ -39,6 +40,8 @@ namespace qoooo.Rendering.Composition
 
         private void OnEndCameraRendering(ScriptableRenderContext context, Camera camera)
         {
+            // UpdateではPosterCamera前のRTを読むため、Poster描画完了後だけを合成の起点にする。
+            // frame guardは同一frameのcallbackによる二重Compositeを防ぐ。
             if (camera != _posterCamera || _compositedFrame == Time.frameCount) return;
 
             _compositedFrame = Time.frameCount;

@@ -66,6 +66,7 @@ namespace qoooo.Rendering.Models
 
         private void Start()
         {
+            // ModelManager.Awakeで確定したsourceを起点に、slot構成を初期化する。
             SetSource(_modelManager?.CurrentModel);
             PrewarmCurrentSource();
         }
@@ -141,6 +142,7 @@ namespace qoooo.Rendering.Models
             }
 
             _activeSlots.Clear();
+            // slot 0はScene上のoriginal、slot 1以降はCacheが所有するruntime clone。
             _prototype.SetActive(true);
             _activeSlots.Add(_prototype);
             var slotCount = SlotCount;
@@ -167,6 +169,7 @@ namespace qoooo.Rendering.Models
 
         private GameObject ResolveSlotSource(int slotIndex)
         {
+            // source解決はArrangementの責務。cloneの生成・再利用・破棄はCacheへ委譲する。
             if (_sourceMode == ModelSourceMode.Same || _modelManager == null || _modelManager.SourceCount == 0)
                 return _prototype;
 

@@ -8,6 +8,7 @@ using UnitySimpleContainer;
 
 namespace qoooo.Rendering.Models
 {
+    // Arrangementが公開したactive slot群へ、scale・motion・Renderer visibilityをbroadcastする。
     public class ModelController : MonoBehaviour, IMidiParameterContainer
     {
         [SerializeField] private FloatParameter _scale = new("model.scale", "Model Scale", 0.25f, 1.75f, 1f);

@@ -24,6 +24,7 @@ namespace qoooo.Rendering.Models
 
         public GameObject GetOrCreate(int slotIndex, GameObject source)
         {
+            // Cacheは渡されたsourceのinstance lifecycleだけを扱い、sourceの選択は行わない。
             while (_slots.Count <= slotIndex) _slots.Add(new CacheSlot());
 
             var slot = _slots[slotIndex];
@@ -46,7 +47,7 @@ namespace qoooo.Rendering.Models
 
         public void SetActiveCount(int count)
         {
-            // 通常時のclone表示状態はここだけで決める。
+            // 通常時のclone表示状態はここだけで決める。teardown時の非表示はDestroyInstanceが担う。
             for (var index = 0; index < _slots.Count; index++)
             {
                 var instance = _slots[index].Instance;

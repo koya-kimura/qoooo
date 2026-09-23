@@ -41,6 +41,7 @@ namespace qoooo.Rendering.Models
 
         private void Awake()
         {
+            // Arrangement.Startより前に初期sourceを確定し、CurrentModelを安全に公開する。
             SynchronizeSourceOptions();
             ApplySource(_source.Value);
         }
