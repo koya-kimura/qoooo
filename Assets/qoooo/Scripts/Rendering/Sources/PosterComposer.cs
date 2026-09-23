@@ -30,6 +30,14 @@ namespace qoooo.Rendering.Sources
         private static readonly string[] RotationNames = { "0", "90", "180", "270" };
         private static readonly string[] ColorNames = { "Palette Main", "Palette Sub", "White", "Black", "Custom" };
         private static readonly string[] TextSourceNames = { "Literal", "Main Text", "Current Date", "Current Time" };
+        private static readonly string[] TextMotionNames = { "None", "Move X", "Move Y" };
+        private static readonly string[] MotionPatternNames = { "Ping Pong", "Traverse" };
+        private static readonly string[] MotionTimingNames = { "Seconds", "Beat Cycle", "Beat Leap" };
+        private static readonly string[] MoveEasingNames =
+        {
+            "Linear", "Smooth Step", "Ease In Sine", "Ease Out Sine", "Ease In Out Sine",
+            "Ease In Quad", "Ease Out Quad", "Ease In Out Quad"
+        };
         private static readonly string[] HorizontalAlignNames = { "Left", "Center", "Right" };
         private static readonly string[] VerticalAlignNames = { "Top", "Center", "Bottom" };
         private static readonly string[] TextureSourceNames = { "Model", "Background" };
@@ -309,9 +317,9 @@ namespace qoooo.Rendering.Sources
             var grid = ActiveDocument?.Grid ?? new PosterGridDefinition();
             return UI.Column(
                 UI.Field("Grid Point X", () => placement.GridPointX,
-                    value => Set(element, _ => placement.GridPointX = Mathf.Clamp(value, 0, Mathf.Max(0, grid.Columns - 1)))),
+                    value => Set(element, _ => placement.GridPointX = Mathf.Clamp(value, 0, Mathf.Max(1, grid.Columns)))),
                 UI.Field("Grid Point Y", () => placement.GridPointY,
-                    value => Set(element, _ => placement.GridPointY = Mathf.Clamp(value, 0, Mathf.Max(0, grid.Rows - 1)))),
+                    value => Set(element, _ => placement.GridPointY = Mathf.Clamp(value, 0, Mathf.Max(1, grid.Rows)))),
                 UI.Field("Grid Width (units)", () => placement.Width,
                     value => Set(element, _ => placement.Width = Mathf.Max(0.001f, value))),
                 UI.Field("Grid Height (units)", () => placement.Height,
@@ -377,7 +385,69 @@ namespace qoooo.Rendering.Sources
                 UI.Dropdown("Horizontal Align", () => (int)settings.HorizontalAlign,
                     value => Set(element, _ => settings.HorizontalAlign = (PosterHorizontalAlign)value), HorizontalAlignNames),
                 UI.Dropdown("Vertical Align", () => (int)settings.VerticalAlign,
-                    value => Set(element, _ => settings.VerticalAlign = (PosterVerticalAlign)value), VerticalAlignNames));
+                    value => Set(element, _ => settings.VerticalAlign = (PosterVerticalAlign)value), VerticalAlignNames),
+                UI.Fold("Animation", CreateTextAnimationInspector(element, settings)).Open());
+        }
+
+        private Element CreateTextAnimationInspector(PosterElement element, PosterTextSettings settings)
+        {
+            var animation = settings.Animation;
+            return UI.Column(
+                UI.Label("Motion"),
+                UI.Dropdown("Axis", () => (int)animation.Motion,
+                    value => Set(element, _ => animation.Motion = (PosterTextMotion)value), TextMotionNames),
+                UI.DynamicElementIf(
+                    () => animation.Motion != PosterTextMotion.None,
+                    () => CreateTextMotionInspector(element, animation)),
+                UI.Label("Typewriter"),
+                UI.Field("Enabled", () => animation.TypewriterEnabled,
+                    value => Set(element, _ => animation.TypewriterEnabled = value)),
+                UI.DynamicElementIf(
+                    () => animation.TypewriterEnabled,
+                    () => UI.Column(
+                        UI.Field("Characters / Sec", () => animation.CharactersPerSecond,
+                            value => Set(element, _ => animation.CharactersPerSecond = Mathf.Max(0f, value))),
+                        UI.Field("Typewriter Loop", () => animation.TypewriterLoop,
+                            value => Set(element, _ => animation.TypewriterLoop = value)))));
+        }
+
+        private Element CreateTextMotionInspector(
+            PosterElement element,
+            PosterTextAnimationSettings animation)
+        {
+            return UI.Column(
+                UI.Dropdown("Pattern", () => (int)animation.Pattern,
+                    value => Set(element, _ => animation.Pattern = (PosterMotionPattern)value), MotionPatternNames),
+                UI.Field("Amount (normalized)", () => animation.MoveAmount,
+                    value => Set(element, _ => animation.MoveAmount = value)),
+                UI.Dropdown("Timing", () => (int)animation.Timing,
+                    value => Set(element, _ => animation.Timing = (PosterMotionTiming)value), MotionTimingNames),
+                UI.DynamicElementOnStatusChanged(
+                    () => animation.Timing,
+                    timing => CreateMotionTimingInspector(element, animation, timing)),
+                UI.Dropdown("Easing", () => (int)animation.MoveEasing,
+                    value => Set(element, _ => animation.MoveEasing = (PosterMoveEasing)value), MoveEasingNames),
+                UI.Field("Move Loop", () => animation.MoveLoop,
+                    value => Set(element, _ => animation.MoveLoop = value)));
+        }
+
+        private Element CreateMotionTimingInspector(
+            PosterElement element,
+            PosterTextAnimationSettings animation,
+            PosterMotionTiming timing)
+        {
+            return timing switch
+            {
+                PosterMotionTiming.BeatCycle => UI.Field("Beats Per Cycle", () => animation.BeatsPerCycle,
+                    value => Set(element, _ => animation.BeatsPerCycle = Mathf.Max(0.001f, value))),
+                PosterMotionTiming.BeatLeap => UI.Column(
+                    UI.Field("Interval Beats", () => animation.IntervalBeats,
+                        value => Set(element, _ => animation.IntervalBeats = Mathf.Max(0.001f, value))),
+                    UI.Field("Move Beats", () => animation.MoveBeats,
+                        value => Set(element, _ => animation.MoveBeats = Mathf.Max(0.001f, value)))),
+                _ => UI.Field("Speed (cycles / sec)", () => animation.MoveSpeed,
+                    value => Set(element, _ => animation.MoveSpeed = Mathf.Max(0f, value)))
+            };
         }
 
         private Element CreateFontInspector(PosterElement element, PosterTextSettings settings)
@@ -787,6 +857,7 @@ namespace qoooo.Rendering.Sources
         {
             element.Placement ??= new PosterPlacement();
             element.Text ??= new PosterTextSettings();
+            element.Text.Animation ??= new PosterTextAnimationSettings();
             element.Texture ??= new PosterTextureSettings();
             element.Line ??= new PosterLineSettings();
         }

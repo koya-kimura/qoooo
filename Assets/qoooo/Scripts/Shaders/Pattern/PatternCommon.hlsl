@@ -15,16 +15,9 @@ struct PatternContext
 };
 
 
-float3 PatternColor(
-    PatternContext context,
-    float selector
-)
+float3 PatternColor(PatternContext context, float selector)
 {
-    return lerp(
-        context.subColor,
-        context.mainColor,
-        selector
-    );
+    return lerp(context.subColor, context.mainColor, selector);
 }
 
 #endif

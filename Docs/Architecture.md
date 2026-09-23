@@ -34,7 +34,8 @@ Preview / Syphon
 
 `TextureCompositor` は PosterCamera の描画完了後に同じ frame の合成を開始する。PosterCamera より前に RenderTexture を読むと、前 frame の Poster を合成するため、この順序を崩さない。
 
-Texture effect は任意順の stack ではなく、次の固定 pipeline で処理する。
+Texture effect は任意順の stack ではなく、次の固定 pipeline で処理する。各 stage 内では
+複数の enabled effect を定義順に適用できる。
 
 ```text
 UV → Sampling → Color → Alpha

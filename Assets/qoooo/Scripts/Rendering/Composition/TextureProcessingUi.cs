@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace qoooo.Rendering.Composition
 {
-    // Effect値はsourceが所有し、このUIはRackと単一Inspectorのnavigation stateだけを持つ。
+    // Effect values remain on their source; Edit opens an independent inspector window for that source and effect.
     public sealed class TextureProcessingUi : MonoBehaviour, IUiTarget
     {
         private static readonly string[] TargetNames = { "Model", "Background" };
@@ -16,10 +16,6 @@ namespace qoooo.Rendering.Composition
 
         // TargetはTexture処理の値ではなく、このWindow内だけのnavigation state。
         private int _selectedTarget;
-        private int _inspectorTarget;
-        private TextureEffectStage _inspectorStage;
-        private int _inspectorEffect;
-        private bool _inspectorOpen;
 
         public Element CreateElement()
         {
@@ -27,10 +23,7 @@ namespace qoooo.Rendering.Composition
                 UI.Dropdown("Target", () => _selectedTarget, SetSelectedTarget, TargetNames),
                 UI.DynamicElementOnStatusChanged(
                     () => _selectedTarget,
-                    _ => CreateEffectsElement()),
-                UI.DynamicElementOnStatusChanged(
-                    InspectorStatus,
-                    _ => CreateInspectorElement()));
+                    _ => CreateEffectsElement()));
         }
 
         private Element CreateEffectsElement()
@@ -41,53 +34,47 @@ namespace qoooo.Rendering.Composition
 
             return UI.Column(
                 UI.Fold("Active Pipeline",
-                    UI.Label(() => $"1. UV        {ActiveEffectName(TextureEffectStage.Uv, parameters.UvMode.Value)}"),
-                    UI.Label(() => $"2. Sampling  {ActiveEffectName(TextureEffectStage.Sampling, parameters.SamplingMode.Value)}"),
-                    UI.Label(() => $"3. Color     {ActiveEffectName(TextureEffectStage.Color, parameters.ColorMode.Value)}"),
-                    UI.Label(() => $"4. Alpha     {ActiveEffectName(TextureEffectStage.Alpha, parameters.AlphaMode.Value)}")
+                    UI.Label(() => $"1. UV        {ActiveEffectNames(TextureEffectStage.Uv, parameters)}"),
+                    UI.Label(() => $"2. Sampling  {ActiveEffectNames(TextureEffectStage.Sampling, parameters)}"),
+                    UI.Label(() => $"3. Color     {ActiveEffectNames(TextureEffectStage.Color, parameters)}"),
+                    UI.Label(() => $"4. Alpha     {ActiveEffectNames(TextureEffectStage.Alpha, parameters)}")
                 ).Open(),
                 UI.Fold("Effects",
-                    CreateStageRack("UV", TextureEffectStage.Uv, parameters.UvMode),
-                    CreateStageRack("Sampling", TextureEffectStage.Sampling, parameters.SamplingMode),
-                    CreateStageRack("Color", TextureEffectStage.Color, parameters.ColorMode),
-                    CreateStageRack("Alpha", TextureEffectStage.Alpha, parameters.AlphaMode)
+                    CreateStageRack("UV", TextureEffectStage.Uv, source),
+                    CreateStageRack("Sampling", TextureEffectStage.Sampling, source),
+                    CreateStageRack("Color", TextureEffectStage.Color, source),
+                    CreateStageRack("Alpha", TextureEffectStage.Alpha, source)
                 ).Open());
         }
 
-        private Element CreateStageRack(string label, TextureEffectStage stage, RadioParameter parameter)
+        private Element CreateStageRack(string label, TextureEffectStage stage, ProcessedTextureSource source)
         {
             var rows = new List<Element>();
+            var targetName = TargetNames[_selectedTarget];
             foreach (var definition in TextureEffectUiMetadata.ForStage(stage))
             {
                 var selected = definition;
                 rows.Add(UI.Row(
                     UI.Field(null,
-                        () => parameter.Value == selected.Value,
-                        active => SetEffectActive(parameter, selected.Value, active)),
-                    UI.Button(selected.Label, () => OpenInspector(selected)),
-                    UI.Button("Edit", () => OpenInspector(selected))));
+                        () => source.EffectParameters.IsEffectEnabled(stage, selected.Value),
+                        active => source.EffectParameters.SetEffectEnabled(stage, selected.Value, active)),
+                    UI.Label(selected.Label),
+                    UI.Button("Edit", () => OpenInspector(targetName, source, selected))));
             }
 
             return UI.Fold(label, UI.Column(rows));
         }
 
-        private Element CreateInspectorElement()
+        private static void OpenInspector(
+            string targetName,
+            ProcessedTextureSource source,
+            TextureEffectUiDefinition definition)
         {
-            if (!_inspectorOpen)
-                return UI.Fold("Effect Inspector", UI.HelpBox("Choose an effect's Edit button."));
-
-            var source = SourceForTarget(_inspectorTarget);
-            var definition = TextureEffectUiMetadata.Find(_inspectorStage, _inspectorEffect);
-            if (source == null || !definition.HasValue)
-                return UI.Fold("Effect Inspector", UI.HelpBox("The selected effect is unavailable."));
-
-            var selected = definition.Value;
-            var controls = CreateInspectorControls(source, selected.Parameters);
-            controls.Insert(0, UI.Label($"Target: {TargetNames[_inspectorTarget]}"));
-            controls.Insert(1, UI.Label($"Stage: {StageLabel(selected.Stage)}"));
-            controls.Insert(2, UI.Label($"Effect: {selected.Label}"));
-            controls.Add(UI.Button("Close", CloseInspector));
-            return UI.Fold("Effect Inspector", UI.Column(controls)).Open();
+            var controls = CreateInspectorControls(source, definition.Parameters);
+            controls.Insert(0, UI.Label($"Target: {targetName}"));
+            controls.Insert(1, UI.Label($"Stage: {StageLabel(definition.Stage)}"));
+            controls.Insert(2, UI.Label($"Effect: {definition.Label}"));
+            UI.Window($"Effect Inspector - {definition.Label}", UI.Column(controls)).Open();
         }
 
         private static List<Element> CreateInspectorControls(
@@ -141,34 +128,12 @@ namespace qoooo.Rendering.Composition
                 parameter.Min, parameter.Max);
         }
 
-        private static void SetEffectActive(RadioParameter parameter, int value, bool active)
+        private static string ActiveEffectNames(TextureEffectStage stage, TextureEffectParameters parameters)
         {
-            if (active) parameter.TrySetValue(value);
-            else if (parameter.Value == value) parameter.TrySetValue(0);
-        }
-
-        private void OpenInspector(TextureEffectUiDefinition definition)
-        {
-            _inspectorTarget = _selectedTarget;
-            _inspectorStage = definition.Stage;
-            _inspectorEffect = definition.Value;
-            _inspectorOpen = true;
-        }
-
-        private void CloseInspector()
-        {
-            _inspectorOpen = false;
-        }
-
-        private string InspectorStatus()
-        {
-            return $"{_inspectorOpen}:{_inspectorTarget}:{(int)_inspectorStage}:{_inspectorEffect}";
-        }
-
-        private static string ActiveEffectName(TextureEffectStage stage, int value)
-        {
-            if (value == 0) return "—";
-            return TextureEffectUiMetadata.Find(stage, value)?.Label ?? "Unknown";
+            var names = new List<string>();
+            foreach (var definition in TextureEffectUiMetadata.ForStage(stage))
+                if (parameters.IsEffectEnabled(stage, definition.Value)) names.Add(definition.Label);
+            return names.Count == 0 ? "—" : string.Join(", ", names);
         }
 
         private static string StageLabel(TextureEffectStage stage)
@@ -184,15 +149,9 @@ namespace qoooo.Rendering.Composition
 
         private ProcessedTextureSource SelectedSource => _selectedTarget == 0 ? _modelSource : _backgroundSource;
 
-        private ProcessedTextureSource SourceForTarget(int target)
-        {
-            return target == 0 ? _modelSource : _backgroundSource;
-        }
-
         private void SetSelectedTarget(int target)
         {
             _selectedTarget = Mathf.Clamp(target, 0, TargetNames.Length - 1);
-            if (_inspectorOpen) _inspectorTarget = _selectedTarget;
         }
 
         private static void SetDirection(ProcessedTextureSource source, Vector2 value)

@@ -56,6 +56,38 @@ namespace qoooo.Rendering.Sources
         CurrentTime
     }
 
+    public enum PosterTextMotion
+    {
+        None,
+        MoveX,
+        MoveY
+    }
+
+    public enum PosterMoveEasing
+    {
+        Linear,
+        SmoothStep,
+        EaseInSine,
+        EaseOutSine,
+        EaseInOutSine,
+        EaseInQuad,
+        EaseOutQuad,
+        EaseInOutQuad
+    }
+
+    public enum PosterMotionPattern
+    {
+        PingPong,
+        Traverse
+    }
+
+    public enum PosterMotionTiming
+    {
+        Seconds,
+        BeatCycle,
+        BeatLeap
+    }
+
     public enum PosterTextureSource
     {
         Model,
@@ -132,6 +164,29 @@ namespace qoooo.Rendering.Sources
         public float FontSize = 0.04f;
         public PosterHorizontalAlign HorizontalAlign;
         public PosterVerticalAlign VerticalAlign;
+        public PosterTextAnimationSettings Animation = new();
+    }
+
+    [Serializable]
+    public sealed class PosterTextAnimationSettings
+    {
+        public bool Enabled;
+        public PosterTextMotion Motion;
+        public PosterMotionPattern Pattern;
+        public float MoveAmount = 0.1f;
+        public float MoveSpeed = 1f;
+        public PosterMoveEasing MoveEasing = PosterMoveEasing.SmoothStep;
+        public bool MoveLoop = true;
+        public PosterMotionTiming Timing;
+        public float BeatsPerCycle = 1f;
+        public float IntervalBeats = 4f;
+        public float MoveBeats = 1f;
+        public bool LeapEnabled;
+        [Range(0f, 1f)] public float LeapProbability = 0.25f;
+        public uint LeapSeed;
+        public bool TypewriterEnabled;
+        public float CharactersPerSecond = 12f;
+        public bool TypewriterLoop;
     }
 
     [Serializable]

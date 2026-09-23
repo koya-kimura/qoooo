@@ -88,6 +88,10 @@ namespace qoooo.Rendering.Composition
         public TextureSamplingEffect SamplingEffect;
         public TextureColorEffect ColorEffect;
         public TextureAlphaEffect AlphaEffect;
+        public int UvEffects;
+        public int SamplingEffects;
+        public int ColorEffects;
+        public int AlphaEffects;
         public float Amount;
         public float Scale;
         public float Threshold;
@@ -109,7 +113,11 @@ namespace qoooo.Rendering.Composition
                                         || UvEffect != TextureUvEffect.None
                                         || SamplingEffect != TextureSamplingEffect.None
                                         || ColorEffect != TextureColorEffect.None
-                                        || AlphaEffect != TextureAlphaEffect.None;
+                                        || AlphaEffect != TextureAlphaEffect.None
+                                        || UvEffects != 0
+                                        || SamplingEffects != 0
+                                        || ColorEffects != 0
+                                        || AlphaEffects != 0;
     }
 
     [Serializable]
@@ -130,6 +138,11 @@ namespace qoooo.Rendering.Composition
         [SerializeField] private FloatParameter _strength;
         [SerializeField] private FloatParameter _probability;
         [SerializeField] private FloatParameter _seed;
+
+        private BoolParameter[] _uvEffects;
+        private BoolParameter[] _samplingEffects;
+        private BoolParameter[] _colorEffects;
+        private BoolParameter[] _alphaEffects;
 
         public RadioParameter UvMode => _uvMode;
         public RadioParameter SamplingMode => _samplingMode;
@@ -156,6 +169,10 @@ namespace qoooo.Rendering.Composition
                 yield return _strength;
                 yield return _probability;
                 yield return _seed;
+                foreach (var parameter in _uvEffects) yield return parameter;
+                foreach (var parameter in _samplingEffects) yield return parameter;
+                foreach (var parameter in _colorEffects) yield return parameter;
+                foreach (var parameter in _alphaEffects) yield return parameter;
             }
         }
 
@@ -172,7 +189,11 @@ namespace qoooo.Rendering.Composition
                 _threshold = new FloatParameter($"{idPrefix}.threshold", "Effect Threshold", 0f, 1f, defaults.Threshold > 0f ? defaults.Threshold : 0.5f),
                 _strength = new FloatParameter($"{idPrefix}.strength", "Effect Strength", 0f, 2f, defaults.Strength > 0f ? defaults.Strength : 1f),
                 _probability = new FloatParameter($"{idPrefix}.probability", "Effect Probability", 0f, 1f, defaults.Probability > 0f ? defaults.Probability : 0.5f),
-                _seed = new FloatParameter($"{idPrefix}.seed", "Effect Seed", 0f, 1024f, defaults.Seed)
+                _seed = new FloatParameter($"{idPrefix}.seed", "Effect Seed", 0f, 1024f, defaults.Seed),
+                _uvEffects = CreateEffectParameters(idPrefix, "uv", UvOptions),
+                _samplingEffects = CreateEffectParameters(idPrefix, "sampling", SamplingOptions),
+                _colorEffects = CreateEffectParameters(idPrefix, "color", ColorOptions),
+                _alphaEffects = CreateEffectParameters(idPrefix, "alpha", AlphaOptions)
             };
         }
 
@@ -188,6 +209,69 @@ namespace qoooo.Rendering.Composition
             effectParams.Strength = _strength.Value;
             effectParams.Probability = _probability.Value;
             effectParams.Seed = (uint)Mathf.RoundToInt(_seed.Value);
+            effectParams.UvEffects = EnabledMask(_uvEffects);
+            effectParams.SamplingEffects = EnabledMask(_samplingEffects);
+            effectParams.ColorEffects = EnabledMask(_colorEffects);
+            effectParams.AlphaEffects = EnabledMask(_alphaEffects);
+        }
+
+        internal bool IsEffectEnabled(TextureEffectStage stage, int value)
+        {
+            return GetEffectParameter(stage, value)?.Value == true || LegacyModeValue(stage) == value;
+        }
+
+        internal void SetEffectEnabled(TextureEffectStage stage, int value, bool enabled)
+        {
+            var parameter = GetEffectParameter(stage, value);
+            if (parameter == null) return;
+
+            parameter.TrySetValue(enabled);
+            if (!enabled && LegacyModeValue(stage) == value) GetLegacyMode(stage).TrySetValue(0);
+        }
+
+        private static BoolParameter[] CreateEffectParameters(string idPrefix, string stage, IReadOnlyList<string> options)
+        {
+            var parameters = new BoolParameter[options.Count];
+            for (var index = 1; index < options.Count; index++)
+                parameters[index] = new BoolParameter($"{idPrefix}.{stage}.{options[index].ToLowerInvariant()}",
+                    $"{stage} {options[index]}");
+            return parameters;
+        }
+
+        private static int EnabledMask(IReadOnlyList<BoolParameter> parameters)
+        {
+            var mask = 0;
+            for (var index = 1; index < parameters.Count; index++)
+                if (parameters[index].Value) mask |= 1 << (index - 1);
+            return mask;
+        }
+
+        private BoolParameter GetEffectParameter(TextureEffectStage stage, int value)
+        {
+            var parameters = stage switch
+            {
+                TextureEffectStage.Uv => _uvEffects,
+                TextureEffectStage.Sampling => _samplingEffects,
+                TextureEffectStage.Color => _colorEffects,
+                _ => _alphaEffects
+            };
+            return value > 0 && value < parameters.Length ? parameters[value] : null;
+        }
+
+        private int LegacyModeValue(TextureEffectStage stage)
+        {
+            return GetLegacyMode(stage).Value;
+        }
+
+        private RadioParameter GetLegacyMode(TextureEffectStage stage)
+        {
+            return stage switch
+            {
+                TextureEffectStage.Uv => _uvMode,
+                TextureEffectStage.Sampling => _samplingMode,
+                TextureEffectStage.Color => _colorMode,
+                _ => _alphaMode
+            };
         }
     }
 
@@ -198,6 +282,7 @@ namespace qoooo.Rendering.Composition
         [SerializeField] private Material _material;
 
         private RenderTexture _effectTexture;
+        private RenderTexture _scratchTexture;
 
         public void OnDestroy()
         {
@@ -213,28 +298,105 @@ namespace qoooo.Rendering.Composition
             if (!effectParams.HasEnabledEffect) return texture;
 
             EnsureTexture(texture.width, texture.height);
-            SetUniforms(effectParams);
-            Graphics.Blit(texture, _effectTexture, _material);
-            return _effectTexture;
+            var read = texture;
+            var write = _effectTexture;
+
+            if (effectParams.IsTiling || effectParams.IsMosaic)
+                Apply(ref read, ref write, effectParams, TextureUvEffect.None,
+                    TextureSamplingEffect.None, TextureColorEffect.None, TextureAlphaEffect.None, true);
+
+            ApplyStage(ref read, ref write, effectParams, TextureEffectStage.Uv);
+            ApplyStage(ref read, ref write, effectParams, TextureEffectStage.Sampling);
+            ApplyStage(ref read, ref write, effectParams, TextureEffectStage.Color);
+
+            if (effectParams.IsInvert || effectParams.IsPosterize)
+                Apply(ref read, ref write, effectParams, TextureUvEffect.None,
+                    TextureSamplingEffect.None, TextureColorEffect.None, TextureAlphaEffect.None, true);
+
+            ApplyStage(ref read, ref write, effectParams, TextureEffectStage.Alpha);
+            return read;
         }
 
-        private void SetUniforms(TextureEffectParams effectParams)
+        private void ApplyStage(ref Texture read, ref RenderTexture write, TextureEffectParams effectParams, TextureEffectStage stage)
         {
-            _material.SetInt("_IsInvert", effectParams.IsInvert ? 1 : 0);
-            _material.SetInt("_IsMosaic", effectParams.IsMosaic ? 1 : 0);
+            var effectCount = stage switch
+            {
+                TextureEffectStage.Uv => Enum.GetValues(typeof(TextureUvEffect)).Length,
+                TextureEffectStage.Sampling => Enum.GetValues(typeof(TextureSamplingEffect)).Length,
+                TextureEffectStage.Color => Enum.GetValues(typeof(TextureColorEffect)).Length,
+                _ => Enum.GetValues(typeof(TextureAlphaEffect)).Length
+            };
+
+            for (var value = 1; value < effectCount; value++)
+            {
+                if (!IsEffectEnabled(effectParams, stage, value)) continue;
+                Apply(ref read, ref write, effectParams,
+                    stage == TextureEffectStage.Uv ? (TextureUvEffect)value : TextureUvEffect.None,
+                    stage == TextureEffectStage.Sampling ? (TextureSamplingEffect)value : TextureSamplingEffect.None,
+                    stage == TextureEffectStage.Color ? (TextureColorEffect)value : TextureColorEffect.None,
+                    stage == TextureEffectStage.Alpha ? (TextureAlphaEffect)value : TextureAlphaEffect.None,
+                    false);
+            }
+        }
+
+        private static bool IsEffectEnabled(TextureEffectParams effectParams, TextureEffectStage stage, int value)
+        {
+            var legacyValue = stage switch
+            {
+                TextureEffectStage.Uv => (int)effectParams.UvEffect,
+                TextureEffectStage.Sampling => (int)effectParams.SamplingEffect,
+                TextureEffectStage.Color => (int)effectParams.ColorEffect,
+                _ => (int)effectParams.AlphaEffect
+            };
+            var enabledMask = stage switch
+            {
+                TextureEffectStage.Uv => effectParams.UvEffects,
+                TextureEffectStage.Sampling => effectParams.SamplingEffects,
+                TextureEffectStage.Color => effectParams.ColorEffects,
+                _ => effectParams.AlphaEffects
+            };
+            return legacyValue == value || (enabledMask & (1 << (value - 1))) != 0;
+        }
+
+        private void Apply(
+            ref Texture read,
+            ref RenderTexture write,
+            TextureEffectParams effectParams,
+            TextureUvEffect uvEffect,
+            TextureSamplingEffect samplingEffect,
+            TextureColorEffect colorEffect,
+            TextureAlphaEffect alphaEffect,
+            bool includeLegacyEffects)
+        {
+            SetUniforms(effectParams, uvEffect, samplingEffect, colorEffect, alphaEffect, includeLegacyEffects);
+            Graphics.Blit(read, write, _material);
+            read = write;
+            write = write == _effectTexture ? _scratchTexture : _effectTexture;
+        }
+
+        private void SetUniforms(
+            TextureEffectParams effectParams,
+            TextureUvEffect uvEffect,
+            TextureSamplingEffect samplingEffect,
+            TextureColorEffect colorEffect,
+            TextureAlphaEffect alphaEffect,
+            bool includeLegacyEffects)
+        {
+            _material.SetInt("_IsInvert", includeLegacyEffects && effectParams.IsInvert ? 1 : 0);
+            _material.SetInt("_IsMosaic", includeLegacyEffects && effectParams.IsMosaic ? 1 : 0);
             _material.SetFloat("_MosaicSize", Mathf.Max(1f, effectParams.MosaicSize));
-            _material.SetInt("_IsTiling", effectParams.IsTiling ? 1 : 0);
+            _material.SetInt("_IsTiling", includeLegacyEffects && effectParams.IsTiling ? 1 : 0);
             // TileNumはserialized互換の名前で保持し、UIではTiling Scaleとして扱う。
             _material.SetVector("_TileNum", new Vector2(
                 Mathf.Max(1f, effectParams.TileNum.x),
                 Mathf.Max(1f, effectParams.TileNum.y)));
             _material.SetVector("_Offset", effectParams.Offset);
-            _material.SetInt("_IsPosterize", effectParams.IsPosterize ? 1 : 0);
+            _material.SetInt("_IsPosterize", includeLegacyEffects && effectParams.IsPosterize ? 1 : 0);
             _material.SetFloat("_PosterizeLevels", Mathf.Max(2f, effectParams.PosterizeLevels));
-            _material.SetInt("_UvEffect", (int)effectParams.UvEffect);
-            _material.SetInt("_SamplingEffect", (int)effectParams.SamplingEffect);
-            _material.SetInt("_ColorEffect", (int)effectParams.ColorEffect);
-            _material.SetInt("_AlphaEffect", (int)effectParams.AlphaEffect);
+            _material.SetInt("_UvEffect", (int)uvEffect);
+            _material.SetInt("_SamplingEffect", (int)samplingEffect);
+            _material.SetInt("_ColorEffect", (int)colorEffect);
+            _material.SetInt("_AlphaEffect", (int)alphaEffect);
             _material.SetFloat("_EffectAmount", Mathf.Max(0f, effectParams.Amount));
             _material.SetFloat("_EffectScale", Mathf.Max(1f, effectParams.Scale));
             _material.SetFloat("_EffectThreshold", Mathf.Clamp01(effectParams.Threshold));
@@ -274,6 +436,14 @@ namespace qoooo.Rendering.Composition
                 filterMode = FilterMode.Bilinear,
                 wrapMode = TextureWrapMode.Clamp
             };
+            _effectTexture.Create();
+            _scratchTexture = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32)
+            {
+                name = $"{name} Effect Scratch",
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp
+            };
+            _scratchTexture.Create();
         }
 
         private void ReleaseTexture()
@@ -283,6 +453,9 @@ namespace qoooo.Rendering.Composition
             _effectTexture.Release();
             Destroy(_effectTexture);
             _effectTexture = null;
+            _scratchTexture.Release();
+            Destroy(_scratchTexture);
+            _scratchTexture = null;
         }
     }
 }

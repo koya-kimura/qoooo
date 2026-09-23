@@ -27,6 +27,7 @@ namespace qoooo.Rendering.Sources
         public static PosterResolvedPlacement Resolve(
             PosterGridDefinition grid,
             PosterPlacement placement,
+            PosterRotation rotation,
             float canvasWidth,
             float canvasHeight)
         {
@@ -43,19 +44,26 @@ namespace qoooo.Rendering.Sources
                     Mathf.Max(0f, placement.Height) / Mathf.Max(1, grid.Rows))
                 : new Vector2(Mathf.Clamp01(placement.Width), Mathf.Clamp01(placement.Height));
             var size = Vector2.Scale(normalizedSize, new Vector2(canvasWidth, canvasHeight));
+            var visualSize = rotation is PosterRotation.Ninety or PosterRotation.TwoSeventy
+                ? new Vector2(size.y, size.x)
+                : size;
+            var visualAnchor = ResolvePivot(placement.Anchor);
+            var center = position + new Vector2(
+                (0.5f - visualAnchor.x) * visualSize.x,
+                (visualAnchor.y - 0.5f) * visualSize.y);
 
-            return new PosterResolvedPlacement(position, size, ResolvePivot(placement.Anchor));
+            return new PosterResolvedPlacement(center, size, new Vector2(0.5f, 0.5f));
         }
 
         private static Vector2 ResolveGridPoint(PosterGridDefinition grid, PosterPlacement placement)
         {
             var columns = Mathf.Max(1, grid.Columns);
             var rows = Mathf.Max(1, grid.Rows);
-            var pointX = Mathf.Clamp(placement.GridPointX, 0, columns - 1);
-            var pointY = Mathf.Clamp(placement.GridPointY, 0, rows - 1);
+            var pointX = Mathf.Clamp(placement.GridPointX, 0, columns);
+            var pointY = Mathf.Clamp(placement.GridPointY, 0, rows);
             return new Vector2(
-                columns == 1 ? 0f : pointX / (float)(columns - 1),
-                rows == 1 ? 0f : pointY / (float)(rows - 1));
+                pointX / (float)columns,
+                pointY / (float)rows);
         }
 
         internal static Vector2 ResolvePivot(PosterAnchor anchor)

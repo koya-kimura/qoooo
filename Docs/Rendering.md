@@ -18,7 +18,8 @@ Preview / Syphon
 
 `ITextureContainer` は texture source の contract である。`ProcessedTextureSource` は raw source と source-specific effect Parameter を所有し、1 frame 内では処理済み texture を再利用する。
 
-effect は次の固定順で処理する。stage を並べ替えたり、同一 stage へ複数 effect を重ねたりしない。
+effect は次の固定順で処理する。stage は並べ替えず、同一 stage で複数 effect が enabled の場合は
+定義順に適用する。
 
 ```text
 UV → Sampling → Color → Alpha

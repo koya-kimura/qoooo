@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using TMPro;
 using qoooo.Parameters.Model;
 using qoooo.Parameters.Runtime;
+using qoooo.Foundation.Timing;
+using qoooo.Foundation.Utilities;
 using qoooo.Rendering.Composition;
 using UnityEngine;
 using UnityEngine.UI;
@@ -53,6 +55,7 @@ namespace qoooo.Rendering.Sources
 
         private IResolutionContainer _resolutionContainer;
         private IPaletteProvider _palette;
+        private IBpmSource _bpmSource;
         private int _builtLayout = -1;
         private int _builtMainText = -1;
         private Vector2Int _builtResolution;
@@ -63,7 +66,7 @@ namespace qoooo.Rendering.Sources
         private bool _hasBuiltPalette;
         private bool _documentDirty = true;
         private TextMeshProUGUI _textMeasurer;
-        private readonly List<DynamicTextBinding> _dynamicTexts = new();
+        private readonly List<PosterTextRuntime> _textRuntimes = new();
 
         public float Width => _resolutionContainer?.Resolution.x ?? 1920f;
         public float Height => _resolutionContainer?.Resolution.y ?? 1080f;
@@ -97,10 +100,14 @@ namespace qoooo.Rendering.Sources
         }
 
         [Inject]
-        public void Construct(IResolutionContainer resolutionContainer, IPaletteProvider palette)
+        public void Construct(
+            IResolutionContainer resolutionContainer,
+            IPaletteProvider palette,
+            IBpmSource bpmSource)
         {
             _resolutionContainer = resolutionContainer;
             _palette = palette;
+            _bpmSource = bpmSource;
         }
 
         private void Update()
@@ -127,7 +134,7 @@ namespace qoooo.Rendering.Sources
                 RenderDocument(document, modelTexture, backgroundTexture);
             }
 
-            UpdateDynamicText();
+            UpdateTextRuntimes();
         }
 
         public void MarkDirty()
@@ -172,7 +179,12 @@ namespace qoooo.Rendering.Sources
                 document.Elements ??= new List<PosterElement>();
                 foreach (var element in document.Elements)
                 {
-                    if (element?.Text != null && string.IsNullOrWhiteSpace(element.Text.FontId))
+                    if (element == null) continue;
+                    element.Text ??= new PosterTextSettings();
+                    element.Text.Animation ??= new PosterTextAnimationSettings();
+                    if (element.Text.Animation.CharactersPerSecond <= 0f)
+                        element.Text.Animation.CharactersPerSecond = 12f;
+                    if (string.IsNullOrWhiteSpace(element.Text.FontId))
                         element.Text.FontId = _fontCatalog?.DefaultFontId;
                 }
                 document.Name = UniqueDocumentName(document.Name, usedNames);
@@ -193,7 +205,7 @@ namespace qoooo.Rendering.Sources
         {
             GetTextMeasurer();
             ClearLayout();
-            _dynamicTexts.Clear();
+            _textRuntimes.Clear();
 
             // listは将来のComposer UI向けにfront-to-back。後から作ったCanvas siblingが前面に描画される。
             for (var index = document.Elements.Count - 1; index >= 0; index--)
@@ -221,7 +233,12 @@ namespace qoooo.Rendering.Sources
             Texture modelTexture,
             Texture backgroundTexture)
         {
-            var placement = PosterPlacementResolver.Resolve(document.Grid, element.Placement, Width, Height);
+            var placement = PosterPlacementResolver.Resolve(
+                document.Grid,
+                element.Placement,
+                element.Rotation,
+                Width,
+                Height);
             var color = ResolveColor(element.Color, element.CustomColor);
             var rotation = (float)element.Rotation;
 
@@ -279,8 +296,13 @@ namespace qoooo.Rendering.Sources
             var font = _fontCatalog?.Resolve(settings.FontId, _posterFont) ?? _posterFont;
             var textMesh = Text(text, placement, settings.FontSize * SizeUnit, color,
                 settings.HorizontalAlign, settings.VerticalAlign, rotation, font);
-            if (textMesh != null && IsDynamicText(settings.Source))
-                _dynamicTexts.Add(new DynamicTextBinding(settings, textMesh));
+            if (textMesh != null)
+                _textRuntimes.Add(new PosterTextRuntime(
+                    settings,
+                    textMesh,
+                    text,
+                    Time.time,
+                    (float)(_bpmSource?.Beat ?? 0d)));
         }
 
         private Color ResolveColor(PosterColorRef color, Color customColor)
@@ -308,14 +330,153 @@ namespace qoooo.Rendering.Sources
             };
         }
 
-        private void UpdateDynamicText()
+        private void UpdateTextRuntimes()
         {
-            foreach (var binding in _dynamicTexts)
+            foreach (var runtime in _textRuntimes)
             {
-                if (binding.TextMesh == null) continue;
-                var text = ResolveText(binding.Settings);
-                if (binding.TextMesh.text != text) binding.TextMesh.text = text;
+                if (runtime.TextMesh == null) continue;
+
+                if (IsDynamicText(runtime.Settings.Source))
+                {
+                    var text = ResolveText(runtime.Settings);
+                    if (runtime.FullText != text)
+                    {
+                        runtime.FullText = text;
+                        runtime.TextMesh.text = text;
+                    }
+                }
+
+                var animation = runtime.Settings.Animation;
+                if (animation == null)
+                {
+                    runtime.RectTransform.anchoredPosition = runtime.BasePosition;
+                    runtime.TextMesh.maxVisibleCharacters = runtime.FullText.Length;
+                    continue;
+                }
+
+                var elapsed = Mathf.Max(0f, Time.time - runtime.StartTime);
+                runtime.RectTransform.anchoredPosition = runtime.BasePosition
+                                                         + ResolveMotionOffset(runtime, animation, elapsed);
+                runtime.TextMesh.maxVisibleCharacters = animation.TypewriterEnabled
+                    ? ResolveVisibleCharacterCount(runtime.FullText.Length, animation, elapsed)
+                    : runtime.FullText.Length;
             }
+        }
+
+        private Vector2 ResolveMotionOffset(
+            PosterTextRuntime runtime,
+            PosterTextAnimationSettings animation,
+            float elapsed)
+        {
+            if (animation.Motion == PosterTextMotion.None) return Vector2.zero;
+
+            var phase = ResolveMotionPhase(runtime, animation, elapsed, out var usePatternEasing);
+            var offset = EvaluateMove(animation, phase, usePatternEasing) * animation.MoveAmount;
+            return animation.Motion == PosterTextMotion.MoveX
+                ? new Vector2(offset * Width, 0f)
+                : new Vector2(0f, offset * Height);
+        }
+
+        private float ResolveMotionPhase(
+            PosterTextRuntime runtime,
+            PosterTextAnimationSettings animation,
+            float elapsed,
+            out bool usePatternEasing)
+        {
+            usePatternEasing = animation.Timing != PosterMotionTiming.BeatLeap;
+            switch (animation.Timing)
+            {
+                case PosterMotionTiming.BeatCycle:
+                    var beatCycle = Mathf.Max(0f, (float)(_bpmSource?.Beat ?? runtime.StartBeat) - runtime.StartBeat)
+                                    / Mathf.Max(0.001f, animation.BeatsPerCycle);
+                    return ResolveCyclePhase(beatCycle, animation.MoveLoop);
+
+                case PosterMotionTiming.BeatLeap:
+                    var beat = Mathf.Max(0f, (float)(_bpmSource?.Beat ?? runtime.StartBeat));
+                    var interval = Mathf.Max(0.001f, animation.IntervalBeats);
+                    var move = Mathf.Clamp(animation.MoveBeats, 0.001f, interval);
+                    var leapPhase = Mathf.Repeat(Rhythm.GetPhase(
+                        beat,
+                        interval,
+                        move,
+                        ResolveEasingFn(animation.MoveEasing)), 1f);
+                    if (!animation.MoveLoop && beat - runtime.StartBeat >= interval)
+                        return 1f;
+                    return leapPhase;
+
+                default:
+                    return ResolveCyclePhase(elapsed * Mathf.Max(0f, animation.MoveSpeed), animation.MoveLoop);
+            }
+        }
+
+        private static float ResolveCyclePhase(float cycle, bool loop)
+        {
+            if (cycle < 0f) return 0f;
+            return loop ? Mathf.Repeat(cycle, 1f) : Mathf.Clamp01(cycle);
+        }
+
+        private static float EvaluateMove(
+            PosterTextAnimationSettings animation,
+            float phase,
+            bool usePatternEasing)
+        {
+            if (!animation.MoveLoop && phase >= 1f)
+                return animation.Pattern == PosterMotionPattern.Traverse ? 1f : 0f;
+
+            var progress = Mathf.Clamp01(phase);
+            if (animation.Pattern == PosterMotionPattern.Traverse)
+                return usePatternEasing ? Ease(animation.MoveEasing, progress) : progress;
+
+            if (progress < 0.5f)
+                return usePatternEasing ? Ease(animation.MoveEasing, progress * 2f) : progress * 2f;
+            var returnProgress = (progress - 0.5f) * 2f;
+            return usePatternEasing ? 1f - Ease(animation.MoveEasing, returnProgress) : 1f - returnProgress;
+        }
+
+        private static EasingFn ResolveEasingFn(PosterMoveEasing easing)
+        {
+            return easing switch
+            {
+                PosterMoveEasing.SmoothStep => SmoothStep,
+                PosterMoveEasing.EaseInSine => Easing.EaseInSine,
+                PosterMoveEasing.EaseOutSine => Easing.EaseOutSine,
+                PosterMoveEasing.EaseInOutSine => Easing.EaseInOutSine,
+                PosterMoveEasing.EaseInQuad => Easing.EaseInQuad,
+                PosterMoveEasing.EaseOutQuad => Easing.EaseOutQuad,
+                PosterMoveEasing.EaseInOutQuad => Easing.EaseInOutQuad,
+                _ => Linear
+            };
+        }
+
+        private static float Linear(float value) => value;
+        private static float SmoothStep(float value) => Mathf.SmoothStep(0f, 1f, value);
+
+        private static float Ease(PosterMoveEasing easing, float progress)
+        {
+            return easing switch
+            {
+                PosterMoveEasing.SmoothStep => Mathf.SmoothStep(0f, 1f, progress),
+                PosterMoveEasing.EaseInSine => Easing.EaseInSine(progress),
+                PosterMoveEasing.EaseOutSine => Easing.EaseOutSine(progress),
+                PosterMoveEasing.EaseInOutSine => Easing.EaseInOutSine(progress),
+                PosterMoveEasing.EaseInQuad => Easing.EaseInQuad(progress),
+                PosterMoveEasing.EaseOutQuad => Easing.EaseOutQuad(progress),
+                PosterMoveEasing.EaseInOutQuad => Easing.EaseInOutQuad(progress),
+                _ => progress
+            };
+        }
+
+        private static int ResolveVisibleCharacterCount(
+            int characterCount,
+            PosterTextAnimationSettings animation,
+            float elapsed)
+        {
+            if (characterCount <= 0) return 0;
+
+            var visible = Mathf.FloorToInt(elapsed * Mathf.Max(0.01f, animation.CharactersPerSecond));
+            return animation.TypewriterLoop
+                ? visible % (characterCount + 1)
+                : Mathf.Min(visible, characterCount);
         }
 
         private static bool IsDynamicText(PosterTextSource source)
@@ -323,15 +484,30 @@ namespace qoooo.Rendering.Sources
             return source == PosterTextSource.CurrentDate || source == PosterTextSource.CurrentTime;
         }
 
-        private readonly struct DynamicTextBinding
+        private sealed class PosterTextRuntime
         {
             public readonly PosterTextSettings Settings;
             public readonly TextMeshProUGUI TextMesh;
+            public readonly RectTransform RectTransform;
+            public readonly Vector2 BasePosition;
+            public readonly float StartTime;
+            public readonly float StartBeat;
+            public string FullText;
 
-            public DynamicTextBinding(PosterTextSettings settings, TextMeshProUGUI textMesh)
+            public PosterTextRuntime(
+                PosterTextSettings settings,
+                TextMeshProUGUI textMesh,
+                string fullText,
+                float startTime,
+                float startBeat)
             {
                 Settings = settings;
                 TextMesh = textMesh;
+                RectTransform = textMesh.rectTransform;
+                BasePosition = RectTransform.anchoredPosition;
+                StartTime = startTime;
+                StartBeat = startBeat;
+                FullText = fullText ?? string.Empty;
             }
         }
 

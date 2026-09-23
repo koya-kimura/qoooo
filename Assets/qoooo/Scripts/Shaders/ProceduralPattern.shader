@@ -72,42 +72,29 @@ Shader "Custom/ProceduralPattern"
             CBUFFER_END
 
 
-            Varyings vert(
-                Attributes input
-            )
+            Varyings vert(Attributes input)
             {
                 Varyings output;
 
-                output.positionHCS =
-                    TransformObjectToHClip(
-                        input.positionOS.xyz
-                    );
+                output.positionHCS = TransformObjectToHClip(input.positionOS.xyz);
 
-                output.uv =
-                    input.uv;
+                output.uv = input.uv;
 
                 return output;
             }
 
 
-            half4 frag(
-                Varyings input
-            ) : SV_Target
+            half4 frag(Varyings input) : SV_Target
             {
                 // ----------------------------------
                 // Resolution
                 // ----------------------------------
 
-                float2 resolution =
-                    _Resolution.xy;
+                float2 resolution = _Resolution.xy;
 
-                if (
-                    resolution.x <= 0.0
-                    || resolution.y <= 0.0
-                )
+                if (resolution.x <= 0.0 || resolution.y <= 0.0)
                 {
-                    resolution =
-                        _ScreenParams.xy;
+                    resolution = _ScreenParams.xy;
                 }
 
 
@@ -115,33 +102,18 @@ Shader "Custom/ProceduralPattern"
                 // UV
                 // ----------------------------------
 
-                float2 uv =
-                    input.uv;
+                float2 uv = input.uv;
 
-                uv *=
-                    max(
-                        _Tiling.xy,
-                        float2(
-                            0.0001,
-                            0.0001
-                        )
-                    );
+                uv *= max(_Tiling.xy, float2(0.0001, 0.0001));
 
-                uv +=
-                    _Offset.xy;
+                uv += _Offset.xy;
 
-                uv +=
-                    _Speed.xy
-                    * _Time.y;
+                uv += _Speed.xy * _Time.y;
 
 
                 // 元GLSLと同じ
                 // アスペクト補正
-                uv =
-                    ApplyAspectCorrection(
-                        uv,
-                        resolution
-                    );
+                uv = ApplyAspectCorrection(uv, resolution);
 
 
                 // ----------------------------------
@@ -150,38 +122,25 @@ Shader "Custom/ProceduralPattern"
 
                 PatternContext context;
 
-                context.beat =
-                    _Beat;
+                context.beat = _Beat;
 
-                context.time =
-                    _Time.y;
+                context.time = _Time.y;
 
-                context.resolution =
-                    resolution;
+                context.resolution = resolution;
 
-                context.mainColor =
-                    _MainColor.rgb;
+                context.mainColor = _MainColor.rgb;
 
-                context.subColor =
-                    _SubColor.rgb;
+                context.subColor = _SubColor.rgb;
 
 
                 // ----------------------------------
                 // Evaluate
                 // ----------------------------------
 
-                float3 patternColor =
-                    EvaluateProceduralPattern(
-                        _PatternType,
-                        uv,
-                        context
-                    );
+                float3 patternColor = EvaluateProceduralPattern(_PatternType, uv, context);
 
 
-                return half4(
-                    patternColor,
-                    _Opacity
-                );
+                return half4(patternColor, _Opacity);
             }
             ENDHLSL
         }
