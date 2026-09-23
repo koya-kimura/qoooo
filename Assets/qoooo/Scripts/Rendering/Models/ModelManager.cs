@@ -29,7 +29,15 @@ namespace qoooo.Rendering.Models
 
         public GameObject CurrentModel { get; private set; }
         public IReadOnlyList<GameObject> Models => _models;
+        public int SourceCount => _models?.Count ?? 0;
+        public int CurrentSourceIndex => _activeSource;
         public event Action<GameObject> CurrentModelChanged;
+
+        public GameObject GetSource(int index)
+        {
+            if (_models == null || _models.Count == 0) return null;
+            return _models[Mathf.Clamp(index, 0, _models.Count - 1)];
+        }
 
         private void Awake()
         {

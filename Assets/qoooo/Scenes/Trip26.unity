@@ -3454,9 +3454,9 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Rendering.Models.ModelArrangementController
   _mode: 0
-  _count: 1
-  _columns: 3
-  _spacing: 2
+  _sideCount: 1
+  _spacing: 0.25
+  _sourceMode: 0
 --- !u!1 &1591138848
 GameObject:
   m_ObjectHideFlags: 0
