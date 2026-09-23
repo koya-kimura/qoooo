@@ -4,13 +4,15 @@ using qoooo.Foundation.Timing;
 using qoooo.Foundation.Utilities;
 using qoooo.Parameters.Model;
 using qoooo.Parameters.Runtime;
+using qoooo.Presentation.Contracts;
+using RosettaUI;
 using UnityEngine;
 using UnitySimpleContainer;
 
 namespace qoooo.Rendering.Models
 {
-    // Arrangementが公開したactive slot群へ、scale・motion・Renderer visibilityをbroadcastする。
-    public class ModelController : MonoBehaviour, IMidiParameterContainer
+    // Arrangementが公開したbase transformへ、scale・animation・Renderer visibilityをbroadcastする。
+    public class ModelController : MonoBehaviour, IMidiParameterContainer, IUiTarget
     {
         [SerializeField] private FloatParameter _scale = new("model.scale", "Model Scale", 0.25f, 1.75f, 1f);
 
@@ -25,12 +27,16 @@ namespace qoooo.Rendering.Models
         // CREATIVE AREA / 創作領域: beatからmotionへの反応をここで調整する。clockの所有者はBpmManagerだけ。
         [SerializeField] [Min(0.01f)] private float _pulseCycleBeats = 4f;
         [SerializeField] [Min(0.01f)] private float _pulseEaseBeats = 2f;
+        [SerializeField] private List<ModelAnimationEntry> _animations = new();
         private readonly List<GameObject> _activeSlots = new();
-        private readonly Dictionary<GameObject, Quaternion> _initialRotations = new();
-        private readonly Dictionary<GameObject, Vector3> _initialScales = new();
+        private readonly Dictionary<GameObject, Vector3> _basePositions = new();
+        private readonly Dictionary<GameObject, Quaternion> _baseRotations = new();
+        private readonly Dictionary<GameObject, Vector3> _baseScales = new();
         private readonly List<Renderer> _renderers = new();
+        private readonly Dictionary<string, bool> _animationFoldStates = new();
         private ModelArrangementController _arrangement;
         private IBpmSource _bpmSource;
+        private int _animationTypeToAdd;
 
         private ModelManager _modelManager;
 
@@ -40,11 +46,6 @@ namespace qoooo.Rendering.Models
             _arrangement = GetComponent<ModelArrangementController>();
             if (_modelManager != null)
             {
-                var models = _modelManager.Models;
-                if (models != null)
-                    foreach (var model in models)
-                        RegisterInitialTransform(model);
-
                 if (_arrangement == null)
                     _modelManager.CurrentModelChanged += SetSingleModel;
             }
@@ -69,16 +70,15 @@ namespace qoooo.Rendering.Models
             var beat = (float)(_bpmSource?.Beat ?? 0d);
             var rhythmIndex = Rhythm.GetIndex(beat, _pulseCycleBeats);
             var rhythmPhase = Rhythm.GetPhase(beat, _pulseCycleBeats, _pulseEaseBeats);
-            foreach (var slot in _activeSlots)
+            for (var slotIndex = 0; slotIndex < _activeSlots.Count; slotIndex++)
             {
+                var slot = _activeSlots[slotIndex];
                 if (slot == null) continue;
                 var slotScale = scale;
-                var rotation = _initialRotations.TryGetValue(slot, out var initialRotation)
-                    ? initialRotation
-                    : slot.transform.localRotation;
+                var positionOffset = Vector3.zero;
+                var rotationOffset = Vector3.zero;
                 if (!_resetTransform.Value)
-
-                    // important: モデルの動きを作成する、選択肢は_motionの宣言部の個数を調整すること->Enumに変更したほうがよさそうだ
+                {
                     switch (_motion.Value)
                     {
                         case 0:
@@ -92,8 +92,10 @@ namespace qoooo.Rendering.Models
                             break;
                     }
 
-                slot.transform.localRotation = rotation;
-                ApplyScale(slot, slotScale);
+                    AccumulateAnimations(slotIndex, beat, ref positionOffset, ref rotationOffset, ref slotScale);
+                }
+
+                ApplyTransform(slot, positionOffset, rotationOffset, slotScale);
             }
 
             SetRendererVisibility(_active.Value);
@@ -116,6 +118,19 @@ namespace qoooo.Rendering.Models
                 yield return _resetTransform;
                 yield return _active;
             }
+        }
+
+        public Element CreateElement()
+        {
+            return UI.Fold("Model Animations",
+                UI.Row(
+                    UI.Dropdown("Add", () => _animationTypeToAdd,
+                        value => _animationTypeToAdd = value, Enum.GetNames(typeof(ModelAnimationType))),
+                    UI.Button("+ Add Animation", AddAnimation)),
+                UI.DynamicElementOnStatusChanged(
+                    AnimationListStatus,
+                    _ => CreateAnimationList()))
+                .Open();
         }
 
         [Inject]
@@ -143,7 +158,7 @@ namespace qoooo.Rendering.Models
             foreach (var slot in slots)
             {
                 if (slot == null) continue;
-                RegisterInitialTransform(slot);
+                CaptureBaseTransform(slot);
                 _activeSlots.Add(slot);
                 _renderers.AddRange(slot.GetComponentsInChildren<Renderer>(true));
             }
@@ -151,17 +166,260 @@ namespace qoooo.Rendering.Models
             SetRendererVisibility(_active.Value);
         }
 
-        private void RegisterInitialTransform(GameObject model)
+        private void CaptureBaseTransform(GameObject model)
         {
             if (model == null) return;
-            _initialScales.TryAdd(model, model.transform.localScale);
-            _initialRotations.TryAdd(model, model.transform.localRotation);
+            _basePositions[model] = model.transform.localPosition;
+            _baseRotations[model] = model.transform.localRotation;
+            _baseScales[model] = model.transform.localScale;
         }
 
-        private void ApplyScale(GameObject slot, float multiplier)
+        private void AccumulateAnimations(
+            int slotIndex,
+            float beat,
+            ref Vector3 positionOffset,
+            ref Vector3 rotationOffset,
+            ref float scaleMultiplier)
         {
-            if (slot != null && _initialScales.TryGetValue(slot, out var initialScale))
-                slot.transform.localScale = initialScale * multiplier;
+            foreach (var animation in _animations)
+            {
+                if (animation == null || !animation.Enabled) continue;
+                var value = EvaluateAnimation(animation, slotIndex, beat);
+                switch (animation.Type)
+                {
+                    case ModelAnimationType.Translate:
+                        positionOffset += animation.Amount * value;
+                        break;
+                    case ModelAnimationType.Rotate:
+                        rotationOffset += animation.Amount * value;
+                        break;
+                    case ModelAnimationType.Scale:
+                        scaleMultiplier *= Mathf.LerpUnclamped(animation.FromScale, animation.ToScale, value);
+                        break;
+                }
+            }
+        }
+
+        private static float EvaluateAnimation(ModelAnimationEntry animation, int slotIndex, float beat)
+        {
+            var seconds = Time.time;
+            var duration = animation.Timing is ModelAnimationTiming.ContinuousBeats or ModelAnimationTiming.BeatCycle
+                ? Mathf.Max(0.01f, animation.BeatsPerCycle)
+                : Mathf.Max(0.01f, animation.SecondsPerCycle);
+            var time = animation.Timing is ModelAnimationTiming.ContinuousBeats or ModelAnimationTiming.BeatCycle
+                ? beat
+                : seconds;
+            var progress = time / duration;
+            progress += Pcg.Pcg01(new UInt2(animation.Seed, (uint)slotIndex)).x
+                        * Mathf.Clamp01(animation.RandomPhase);
+
+            if (animation.Timing is ModelAnimationTiming.SecondsCycle or ModelAnimationTiming.BeatCycle)
+                progress = animation.Loop ? Mathf.Repeat(progress, 1f) : Mathf.Clamp01(progress);
+
+            var value = animation.Pattern switch
+            {
+                ModelAnimationPattern.Traverse => EaseProgress(progress, animation.Easing),
+                ModelAnimationPattern.PingPong => ApplyEasing(Mathf.PingPong(progress, 1f), animation.Easing),
+                ModelAnimationPattern.Envelope => EvaluateEnvelope(animation.Envelope, progress, animation.Easing),
+                _ => progress
+            };
+            return value;
+        }
+
+        private static float EaseProgress(float progress, ModelAnimationEasing easing)
+        {
+            var cycle = Mathf.Floor(progress);
+            return cycle + ApplyEasing(progress - cycle, easing);
+        }
+
+        private static float EvaluateEnvelope(
+            ModelAnimationEnvelope envelope,
+            float progress,
+            ModelAnimationEasing easing)
+        {
+            envelope ??= new ModelAnimationEnvelope();
+            var rise = Mathf.Max(0f, envelope.Rise);
+            var highHold = Mathf.Max(0f, envelope.HighHold);
+            var fall = Mathf.Max(0f, envelope.Fall);
+            var lowHold = Mathf.Max(0f, envelope.LowHold);
+            var duration = Mathf.Max(0.01f, rise + highHold + fall + lowHold);
+            var time = Mathf.Repeat(progress, 1f) * duration;
+            if (time < rise)
+                return ApplyEasing(time / Mathf.Max(0.01f, rise), easing);
+            time -= rise;
+            if (time < highHold) return 1f;
+            time -= highHold;
+            if (time < fall)
+                return 1f - ApplyEasing(time / Mathf.Max(0.01f, fall), easing);
+            return 0f;
+        }
+
+        private static float ApplyEasing(float value, ModelAnimationEasing easing)
+        {
+            value = Mathf.Clamp01(value);
+            return easing switch
+            {
+                ModelAnimationEasing.Linear => value,
+                ModelAnimationEasing.SmoothStep => value * value * (3f - 2f * value),
+                ModelAnimationEasing.EaseInSine => Easing.EaseInSine(value),
+                ModelAnimationEasing.EaseOutSine => Easing.EaseOutSine(value),
+                ModelAnimationEasing.EaseInOutSine => Easing.EaseInOutSine(value),
+                ModelAnimationEasing.EaseInQuad => Easing.EaseInQuad(value),
+                ModelAnimationEasing.EaseOutQuad => Easing.EaseOutQuad(value),
+                ModelAnimationEasing.EaseInOutQuad => Easing.EaseInOutQuad(value),
+                _ => value
+            };
+        }
+
+        private void ApplyTransform(
+            GameObject slot,
+            Vector3 positionOffset,
+            Vector3 rotationOffset,
+            float scaleMultiplier)
+        {
+            if (!_basePositions.TryGetValue(slot, out var basePosition)
+                || !_baseRotations.TryGetValue(slot, out var baseRotation)
+                || !_baseScales.TryGetValue(slot, out var baseScale)) return;
+            slot.transform.localPosition = basePosition + positionOffset;
+            slot.transform.localRotation = baseRotation * Quaternion.Euler(rotationOffset);
+            slot.transform.localScale = baseScale * scaleMultiplier;
+        }
+
+        private Element CreateAnimationList()
+        {
+            if (_animations.Count == 0) return UI.HelpBox("No model animations.");
+            var elements = new Element[_animations.Count];
+            for (var index = 0; index < _animations.Count; index++)
+            {
+                var animation = _animations[index];
+                EnsureAnimation(animation);
+                var fold = UI.Fold($"{index + 1}. {animation.Type}", CreateAnimationInspector(animation));
+                fold.IsOpen = _animationFoldStates.TryGetValue(animation.Id, out var isOpen) && isOpen;
+                elements[index] = fold;
+            }
+            return UI.Column(elements);
+        }
+
+        private Element CreateAnimationInspector(ModelAnimationEntry animation)
+        {
+            return UI.Column(
+                UI.Field("Enabled", () => animation.Enabled, value => animation.Enabled = value),
+                UI.Dropdown("Type", () => (int)animation.Type,
+                    value => animation.Type = (ModelAnimationType)value, Enum.GetNames(typeof(ModelAnimationType))),
+                UI.Dropdown("Timing", () => (int)animation.Timing,
+                    value => animation.Timing = (ModelAnimationTiming)value, Enum.GetNames(typeof(ModelAnimationTiming))),
+                UI.Dropdown("Pattern", () => (int)animation.Pattern,
+                    value => animation.Pattern = (ModelAnimationPattern)value, Enum.GetNames(typeof(ModelAnimationPattern))),
+                UI.Dropdown("Easing", () => (int)animation.Easing,
+                    value => animation.Easing = (ModelAnimationEasing)value, Enum.GetNames(typeof(ModelAnimationEasing))),
+                UI.DynamicElementOnStatusChanged(
+                    () => animation.Type,
+                    _ => CreateAmountFields(animation)),
+                UI.DynamicElementOnStatusChanged(
+                    () => animation.Timing,
+                    _ => CreateTimingFields(animation)),
+                UI.DynamicElementOnStatusChanged(
+                    () => animation.Pattern,
+                    _ => CreatePatternFields(animation)),
+                UI.Field("Seed", () => animation.Seed, value => animation.Seed = value),
+                UI.Slider("Random Phase", () => animation.RandomPhase,
+                    value => animation.RandomPhase = value, 0f, 1f),
+                UI.Row(
+                    UI.Button("Duplicate", () => DuplicateAnimation(animation.Id)),
+                    UI.Button("Delete", () => DeleteAnimation(animation.Id))));
+        }
+
+        private static Element CreateAmountFields(ModelAnimationEntry animation)
+        {
+            return animation.Type == ModelAnimationType.Scale
+                ? UI.Column(
+                    UI.Field("From Scale", () => animation.FromScale, value => animation.FromScale = value),
+                    UI.Field("To Scale", () => animation.ToScale, value => animation.ToScale = value))
+                : UI.Field("Amount", () => animation.Amount, value => animation.Amount = value);
+        }
+
+        private static Element CreateTimingFields(ModelAnimationEntry animation)
+        {
+            return animation.Timing switch
+            {
+                ModelAnimationTiming.ContinuousSeconds =>
+                    UI.Field("Seconds Per Unit", () => animation.SecondsPerCycle,
+                        value => animation.SecondsPerCycle = Mathf.Max(0.01f, value)),
+                ModelAnimationTiming.ContinuousBeats =>
+                    UI.Field("Beats Per Unit", () => animation.BeatsPerCycle,
+                        value => animation.BeatsPerCycle = Mathf.Max(0.01f, value)),
+                ModelAnimationTiming.SecondsCycle => UI.Column(
+                    UI.Field("Seconds Per Cycle", () => animation.SecondsPerCycle,
+                        value => animation.SecondsPerCycle = Mathf.Max(0.01f, value)),
+                    UI.Field("Loop", () => animation.Loop, value => animation.Loop = value)),
+                ModelAnimationTiming.BeatCycle => UI.Column(
+                    UI.Field("Beats Per Cycle", () => animation.BeatsPerCycle,
+                        value => animation.BeatsPerCycle = Mathf.Max(0.01f, value)),
+                    UI.Field("Loop", () => animation.Loop, value => animation.Loop = value)),
+                _ => UI.Space()
+            };
+        }
+
+        private static Element CreatePatternFields(ModelAnimationEntry animation)
+        {
+            if (animation.Pattern != ModelAnimationPattern.Envelope) return UI.Space();
+            animation.Envelope ??= new ModelAnimationEnvelope();
+            return UI.Column(
+                UI.Field("Rise", () => animation.Envelope.Rise,
+                    value => animation.Envelope.Rise = Mathf.Max(0f, value)),
+                UI.Field("High Hold", () => animation.Envelope.HighHold,
+                    value => animation.Envelope.HighHold = Mathf.Max(0f, value)),
+                UI.Field("Fall", () => animation.Envelope.Fall,
+                    value => animation.Envelope.Fall = Mathf.Max(0f, value)),
+                UI.Field("Low Hold", () => animation.Envelope.LowHold,
+                    value => animation.Envelope.LowHold = Mathf.Max(0f, value)));
+        }
+
+        private void AddAnimation()
+        {
+            var animation = new ModelAnimationEntry
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Type = (ModelAnimationType)_animationTypeToAdd
+            };
+            _animations.Add(animation);
+            _animationFoldStates[animation.Id] = true;
+        }
+
+        private void DuplicateAnimation(string id)
+        {
+            var index = _animations.FindIndex(animation => animation?.Id == id);
+            if (index < 0) return;
+            var duplicate = JsonUtility.FromJson<ModelAnimationEntry>(
+                JsonUtility.ToJson(_animations[index]));
+            duplicate.Id = Guid.NewGuid().ToString("N");
+            _animations.Insert(index + 1, duplicate);
+            _animationFoldStates[duplicate.Id] = true;
+        }
+
+        private void DeleteAnimation(string id)
+        {
+            var index = _animations.FindIndex(animation => animation?.Id == id);
+            if (index < 0) return;
+            _animations.RemoveAt(index);
+            _animationFoldStates.Remove(id);
+        }
+
+        private int AnimationListStatus()
+        {
+            unchecked
+            {
+                var hash = _animations.Count;
+                foreach (var animation in _animations)
+                    hash = hash * 31 + (animation?.Id?.GetHashCode() ?? 0);
+                return hash;
+            }
+        }
+
+        private static void EnsureAnimation(ModelAnimationEntry animation)
+        {
+            if (string.IsNullOrEmpty(animation.Id)) animation.Id = Guid.NewGuid().ToString("N");
+            animation.Envelope ??= new ModelAnimationEnvelope();
         }
     }
 }

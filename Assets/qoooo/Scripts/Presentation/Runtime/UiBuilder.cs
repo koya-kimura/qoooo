@@ -137,6 +137,8 @@ namespace qoooo.Presentation.Runtime
             };
             controls.RemoveAll(control => control == null);
 
+            var model = (_targets ?? new List<IUiTarget>()).OfType<ModelController>().FirstOrDefault();
+            if (model != null) controls.Add(model.CreateElement());
             var arrangement = (_targets ?? new List<IUiTarget>()).OfType<ModelArrangementController>().FirstOrDefault();
             if (arrangement != null) controls.Add(arrangement.CreateElement());
             return UI.WindowLauncher(UI.Window("Model", UI.Column(controls)));
