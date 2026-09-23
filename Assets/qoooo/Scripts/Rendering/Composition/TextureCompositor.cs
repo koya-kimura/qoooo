@@ -4,6 +4,7 @@ using System.Linq;
 using qoooo.Presentation.Contracts;
 using RosettaUI;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnitySimpleContainer;
 
 namespace qoooo.Rendering.Composition
@@ -14,16 +15,37 @@ namespace qoooo.Rendering.Composition
     {
         [SerializeField] private List<TextureLayer> _layers = new();
         [SerializeField] private Material _compositeMaterial;
+        [SerializeField] private Camera _posterCamera;
 
         private readonly List<RenderedLayer> _renderedLayers = new();
         private RenderTexture _bufferA;
         private RenderTexture _bufferB;
         private IResolutionContainer _resolutionContainer;
         private TextureLayer _selectedLayer;
+        private int _compositedFrame = -1;
 
         private static readonly Color SelectedLayerBackgroundColor = new(0.05f, 0.55f, 0.55f, 0.2f);
 
-        private void Update()
+        private void OnEnable()
+        {
+            RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
+            RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
+        }
+
+        private void OnDisable()
+        {
+            RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
+        }
+
+        private void OnEndCameraRendering(ScriptableRenderContext context, Camera camera)
+        {
+            if (camera != _posterCamera || _compositedFrame == Time.frameCount) return;
+
+            _compositedFrame = Time.frameCount;
+            Composite();
+        }
+
+        private void Composite()
         {
             CollectLayers();
 

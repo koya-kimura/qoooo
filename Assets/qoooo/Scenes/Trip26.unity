@@ -3271,7 +3271,7 @@ Camera:
   field of view: 60
   orthographic: 0
   orthographic size: 5
-  m_Depth: 0
+  m_Depth: 1
   m_CullingMask:
     serializedVersion: 2
     m_Bits: 32
@@ -3558,7 +3558,7 @@ Camera:
   field of view: 40
   orthographic: 0
   orthographic size: 10
-  m_Depth: 0
+  m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
     m_Bits: 4294967263
@@ -4771,6 +4771,7 @@ MonoBehaviour:
   _layers:
   - {fileID: 1993703950}
   _compositeMaterial: {fileID: 2100000, guid: 93372f86947814460ac6375475852c96, type: 2}
+  _posterCamera: {fileID: 915433850}
 --- !u!114 &2134837974
 MonoBehaviour:
   m_ObjectHideFlags: 0
