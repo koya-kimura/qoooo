@@ -342,12 +342,17 @@ namespace qoooo.Rendering.Sources
                     {
                         runtime.FullText = text;
                         runtime.TextMesh.text = text;
+                        runtime.RefreshCenterOffset();
                     }
                 }
 
                 var elapsed = Mathf.Max(0f, Time.time - runtime.StartTime);
                 var currentBeat = (float)(_bpmSource?.Beat ?? runtime.StartBeat);
                 var positionOffset = Vector2.zero;
+                var rotationOffset = 0f;
+                var scaleMultiplier = 1f;
+                var alphaMultiplier = 1f;
+                var trackingOffset = 0f;
                 var visibleCharacters = runtime.FullText.Length;
 
                 foreach (var animation in runtime.Settings.Animations)
@@ -363,10 +368,44 @@ namespace qoooo.Rendering.Sources
                             visibleCharacters = ResolveVisibleCharacterCount(
                                 runtime.FullText.Length, runtime, animation, elapsed, currentBeat);
                             break;
+                        case PosterTextAnimationType.Fade:
+                            alphaMultiplier *= ResolveFadeMultiplier(runtime, animation, elapsed, currentBeat);
+                            break;
+                        case PosterTextAnimationType.Scale:
+                            scaleMultiplier *= ResolveScaleMultiplier(runtime, animation, elapsed, currentBeat);
+                            break;
+                        case PosterTextAnimationType.Rotate:
+                            rotationOffset += ResolveRotationOffset(runtime, animation, elapsed, currentBeat);
+                            break;
+                        case PosterTextAnimationType.Shake:
+                            ResolveShake(runtime, animation, elapsed, currentBeat,
+                                out var shakePosition, out var shakeRotation);
+                            positionOffset += shakePosition;
+                            rotationOffset += shakeRotation;
+                            break;
+                        case PosterTextAnimationType.Blink:
+                            alphaMultiplier *= ResolveBlinkMultiplier(runtime, animation, elapsed, currentBeat);
+                            break;
+                        case PosterTextAnimationType.Tracking:
+                            trackingOffset += ResolveTrackingOffset(runtime, animation, elapsed, currentBeat);
+                            break;
                     }
                 }
 
-                runtime.RectTransform.anchoredPosition = runtime.BasePosition + positionOffset;
+                var animatedRotation = runtime.BaseRotation * Quaternion.Euler(0f, 0f, -rotationOffset);
+                var animatedScale = runtime.BaseScale * scaleMultiplier;
+                var baseCenterOffset = runtime.BaseRotation
+                                       * Vector3.Scale(runtime.CenterOffset, runtime.BaseScale);
+                var animatedCenterOffset = animatedRotation
+                                           * Vector3.Scale(runtime.CenterOffset, animatedScale);
+                runtime.RectTransform.anchoredPosition = runtime.BasePosition + positionOffset
+                    + (Vector2)(baseCenterOffset - animatedCenterOffset);
+                runtime.RectTransform.localRotation = animatedRotation;
+                runtime.RectTransform.localScale = animatedScale;
+                var color = runtime.BaseColor;
+                color.a *= Mathf.Clamp01(alphaMultiplier);
+                runtime.TextMesh.color = color;
+                runtime.TextMesh.characterSpacing = runtime.BaseCharacterSpacing + trackingOffset;
                 runtime.TextMesh.maxVisibleCharacters = visibleCharacters;
             }
         }
@@ -388,7 +427,10 @@ namespace qoooo.Rendering.Sources
                 move.Speed,
                 move.Loop,
                 move.Easing);
-            var offset = EvaluateMove(move, timing) * move.Amount;
+            if (animation.Timing?.Mode == PosterMotionTiming.BeatLeap
+                && (!timing.IsActive || timing.IsCompleted))
+                return Vector2.zero;
+            var offset = EvaluateValuePattern(move.Pattern, move.Envelope, move.Easing, timing) * move.Amount;
             return move.Axis == PosterTextMotion.MoveX
                 ? new Vector2(offset * Width, 0f)
                 : new Vector2(0f, offset * Height);
@@ -410,7 +452,7 @@ namespace qoooo.Rendering.Sources
             {
                 case PosterMotionTiming.BeatCycle:
                     var beatCycle = elapsedBeat / Mathf.Max(0.001f, settings.BeatsPerCycle);
-                    return CreateCyclePhase(beatCycle, loop, false);
+                    return CreateCyclePhase(beatCycle, loop);
 
                 case PosterMotionTiming.BeatLeap:
                     var interval = Mathf.Max(0.001f, settings.IntervalBeats);
@@ -419,24 +461,24 @@ namespace qoooo.Rendering.Sources
                         beat,
                         interval,
                         active,
-                        ResolveEasingFn(easing)), 1f);
+                        Linear), 1f);
                     var localBeat = Mathf.Repeat(beat, interval);
                     var isActive = localBeat >= interval - active;
-                    if (!loop && elapsedBeat >= interval)
-                        return new AnimationPhase(1f, 0, false, true, true);
+                    var startCycle = Mathf.FloorToInt(Mathf.Max(0f, startBeat) / interval);
+                    if (!loop && beat >= (startCycle + 1) * interval)
+                        return new AnimationPhase(1f, startCycle, false, true);
                     return new AnimationPhase(
                         leapPhase,
                         Mathf.FloorToInt(beat / interval),
                         isActive,
-                        false,
-                        true);
+                        false);
 
                 default:
-                    return CreateCyclePhase(elapsed * Mathf.Max(0f, secondsSpeed), loop, false);
+                    return CreateCyclePhase(elapsed * Mathf.Max(0f, secondsSpeed), loop);
             }
         }
 
-        private static AnimationPhase CreateCyclePhase(float cycle, bool loop, bool easingApplied)
+        private static AnimationPhase CreateCyclePhase(float cycle, bool loop)
         {
             cycle = Mathf.Max(0f, cycle);
             var completed = !loop && cycle >= 1f;
@@ -444,25 +486,48 @@ namespace qoooo.Rendering.Sources
                 loop ? Mathf.Repeat(cycle, 1f) : Mathf.Clamp01(cycle),
                 Mathf.FloorToInt(cycle),
                 true,
-                completed,
-                easingApplied);
+                completed);
         }
 
-        private static float EvaluateMove(
-            PosterMoveAnimationSettings move,
+        private static float EvaluateValuePattern(
+            PosterValuePattern pattern,
+            PosterEnvelopeSettings envelope,
+            PosterMoveEasing easing,
             AnimationPhase timing)
         {
             if (timing.IsCompleted)
-                return move.Pattern == PosterMotionPattern.Traverse ? 1f : 0f;
+                return pattern == PosterValuePattern.Traverse ? 1f : 0f;
 
             var progress = timing.Phase;
-            if (move.Pattern == PosterMotionPattern.Traverse)
-                return timing.EasingApplied ? progress : Ease(move.Easing, progress);
+            if (pattern == PosterValuePattern.Traverse)
+                return Ease(easing, progress);
 
-            if (progress < 0.5f)
-                return timing.EasingApplied ? progress * 2f : Ease(move.Easing, progress * 2f);
-            var returnProgress = (progress - 0.5f) * 2f;
-            return timing.EasingApplied ? 1f - returnProgress : 1f - Ease(move.Easing, returnProgress);
+            if (pattern == PosterValuePattern.PingPong)
+            {
+                if (progress < 0.5f) return Ease(easing, progress * 2f);
+                return 1f - Ease(easing, (progress - 0.5f) * 2f);
+            }
+
+            envelope ??= new PosterEnvelopeSettings();
+            var rise = Mathf.Max(0f, envelope.Rise);
+            var highHold = Mathf.Max(0f, envelope.HighHold);
+            var fall = Mathf.Max(0f, envelope.Fall);
+            var lowHold = Mathf.Max(0f, envelope.LowHold);
+            var total = rise + highHold + fall + lowHold;
+            if (total <= 0f)
+            {
+                rise = fall = 0.1f;
+                highHold = lowHold = 0.4f;
+                total = 1f;
+            }
+
+            var position = progress * total;
+            if (position < rise) return rise <= 0f ? 1f : Ease(easing, position / rise);
+            position -= rise;
+            if (position < highHold) return 1f;
+            position -= highHold;
+            if (position < fall) return fall <= 0f ? 0f : 1f - Ease(easing, position / fall);
+            return 0f;
         }
 
         private static EasingFn ResolveEasingFn(PosterMoveEasing easing)
@@ -527,10 +592,172 @@ namespace qoooo.Rendering.Sources
                 1f,
                 typewriter.Loop,
                 typewriter.Easing);
-            var phase = timing.EasingApplied
-                ? timing.Phase
-                : Ease(typewriter.Easing, timing.Phase);
+            if (animation.Timing.Mode == PosterMotionTiming.BeatLeap
+                && (!timing.IsActive || timing.IsCompleted))
+                return characterCount;
+            var phase = Ease(typewriter.Easing, timing.Phase);
             return Mathf.Clamp(Mathf.FloorToInt(phase * characterCount), 0, characterCount);
+        }
+
+        private static float ResolveFadeMultiplier(
+            PosterTextRuntime runtime,
+            PosterTextAnimationEntry animation,
+            float elapsed,
+            float currentBeat)
+        {
+            var fade = animation.Fade;
+            if (fade == null) return 1f;
+            return ResolveTween(
+                runtime,
+                animation.Timing,
+                elapsed,
+                currentBeat,
+                fade.Speed,
+                fade.Loop,
+                fade.Easing,
+                fade.Pattern,
+                fade.Envelope,
+                Mathf.Clamp01(fade.FromAlpha),
+                Mathf.Clamp01(fade.ToAlpha),
+                1f);
+        }
+
+        private static float ResolveScaleMultiplier(
+            PosterTextRuntime runtime,
+            PosterTextAnimationEntry animation,
+            float elapsed,
+            float currentBeat)
+        {
+            var scale = animation.Scale;
+            if (scale == null) return 1f;
+            return ResolveTween(
+                runtime,
+                animation.Timing,
+                elapsed,
+                currentBeat,
+                scale.Speed,
+                scale.Loop,
+                scale.Easing,
+                scale.Pattern,
+                scale.Envelope,
+                scale.FromScale,
+                scale.ToScale,
+                1f);
+        }
+
+        private static float ResolveRotationOffset(
+            PosterTextRuntime runtime,
+            PosterTextAnimationEntry animation,
+            float elapsed,
+            float currentBeat)
+        {
+            var rotate = animation.Rotate;
+            if (rotate == null) return 0f;
+            return ResolveTween(
+                runtime,
+                animation.Timing,
+                elapsed,
+                currentBeat,
+                rotate.Speed,
+                rotate.Loop,
+                rotate.Easing,
+                rotate.Pattern,
+                rotate.Envelope,
+                rotate.FromDegrees,
+                rotate.ToDegrees,
+                0f);
+        }
+
+        private static float ResolveTween(
+            PosterTextRuntime runtime,
+            PosterAnimationTimingSettings timingSettings,
+            float elapsed,
+            float currentBeat,
+            float speed,
+            bool loop,
+            PosterMoveEasing easing,
+            PosterValuePattern pattern,
+            PosterEnvelopeSettings envelope,
+            float from,
+            float to,
+            float inactiveValue)
+        {
+            var timing = ResolveTiming(
+                timingSettings,
+                elapsed,
+                runtime.StartBeat,
+                currentBeat,
+                speed,
+                loop,
+                easing);
+            if (timingSettings?.Mode == PosterMotionTiming.BeatLeap
+                && (!timing.IsActive || timing.IsCompleted))
+                return inactiveValue;
+            var value01 = EvaluateValuePattern(pattern, envelope, easing, timing);
+            return Mathf.LerpUnclamped(from, to, value01);
+        }
+
+        private void ResolveShake(
+            PosterTextRuntime runtime,
+            PosterTextAnimationEntry animation,
+            float elapsed,
+            float currentBeat,
+            out Vector2 positionOffset,
+            out float rotationOffset)
+        {
+            positionOffset = Vector2.zero;
+            rotationOffset = 0f;
+            var shake = animation.Shake;
+            if (shake == null) return;
+
+            var timing = ResolveTiming(animation.Timing, elapsed, runtime.StartBeat, currentBeat,
+                shake.Speed, shake.Loop, shake.Easing);
+            if (animation.Timing?.Mode == PosterMotionTiming.BeatLeap
+                && (!timing.IsActive || timing.IsCompleted))
+                return;
+
+            var amplitude = EvaluateValuePattern(shake.Pattern, shake.Envelope, shake.Easing, timing);
+            var frequency = Mathf.Max(0.001f, shake.Frequency);
+            var noise = Rhythm.GetLerpNoise3D(
+                elapsed,
+                1f / frequency,
+                0.5f / frequency,
+                shake.Seed,
+                SmoothStep);
+            positionOffset = new Vector2(
+                noise.x * shake.PositionAmountX * Width,
+                noise.y * shake.PositionAmountY * Height) * amplitude;
+            rotationOffset = noise.z * shake.RotationAmount * amplitude;
+        }
+
+        private static float ResolveBlinkMultiplier(
+            PosterTextRuntime runtime,
+            PosterTextAnimationEntry animation,
+            float elapsed,
+            float currentBeat)
+        {
+            var blink = animation.Blink;
+            if (blink == null) return 1f;
+            var timing = ResolveTiming(animation.Timing, elapsed, runtime.StartBeat, currentBeat,
+                blink.Speed, blink.Loop, PosterMoveEasing.Linear);
+            if (timing.IsCompleted
+                || animation.Timing?.Mode == PosterMotionTiming.BeatLeap && !timing.IsActive)
+                return 1f;
+            return timing.Phase < Mathf.Clamp01(blink.OnRatio) ? 1f : 0f;
+        }
+
+        private static float ResolveTrackingOffset(
+            PosterTextRuntime runtime,
+            PosterTextAnimationEntry animation,
+            float elapsed,
+            float currentBeat)
+        {
+            var tracking = animation.Tracking;
+            if (tracking == null) return 0f;
+            return ResolveTween(runtime, animation.Timing, elapsed, currentBeat,
+                tracking.Speed, tracking.Loop, tracking.Easing,
+                tracking.Pattern, tracking.Envelope,
+                tracking.FromSpacing, tracking.ToSpacing, 0f);
         }
 
         internal static void NormalizeTextAnimations(PosterTextSettings settings)
@@ -589,7 +816,19 @@ namespace qoooo.Rendering.Sources
                     animation.Id = Guid.NewGuid().ToString("N");
                 animation.Timing ??= new PosterAnimationTimingSettings();
                 animation.Move ??= new PosterMoveAnimationSettings();
+                animation.Move.Envelope ??= new PosterEnvelopeSettings();
                 animation.Typewriter ??= new PosterTypewriterAnimationSettings();
+                animation.Fade ??= new PosterFadeAnimationSettings();
+                animation.Fade.Envelope ??= new PosterEnvelopeSettings();
+                animation.Scale ??= new PosterScaleAnimationSettings();
+                animation.Scale.Envelope ??= new PosterEnvelopeSettings();
+                animation.Rotate ??= new PosterRotateAnimationSettings();
+                animation.Rotate.Envelope ??= new PosterEnvelopeSettings();
+                animation.Shake ??= new PosterShakeAnimationSettings();
+                animation.Shake.Envelope ??= new PosterEnvelopeSettings();
+                animation.Blink ??= new PosterBlinkAnimationSettings();
+                animation.Tracking ??= new PosterTrackingAnimationSettings();
+                animation.Tracking.Envelope ??= new PosterEnvelopeSettings();
             }
         }
 
@@ -604,6 +843,11 @@ namespace qoooo.Rendering.Sources
             public readonly TextMeshProUGUI TextMesh;
             public readonly RectTransform RectTransform;
             public readonly Vector2 BasePosition;
+            public readonly Quaternion BaseRotation;
+            public readonly Vector3 BaseScale;
+            public readonly Color BaseColor;
+            public Vector3 CenterOffset { get; private set; }
+            public readonly float BaseCharacterSpacing;
             public readonly float StartTime;
             public readonly float StartBeat;
             public string FullText;
@@ -619,9 +863,22 @@ namespace qoooo.Rendering.Sources
                 TextMesh = textMesh;
                 RectTransform = textMesh.rectTransform;
                 BasePosition = RectTransform.anchoredPosition;
+                BaseRotation = RectTransform.localRotation;
+                BaseScale = RectTransform.localScale;
+                BaseColor = textMesh.color;
+                BaseCharacterSpacing = textMesh.characterSpacing;
                 StartTime = startTime;
                 StartBeat = startBeat;
                 FullText = fullText ?? string.Empty;
+                RefreshCenterOffset();
+            }
+
+            public void RefreshCenterOffset()
+            {
+                TextMesh.characterSpacing = BaseCharacterSpacing;
+                TextMesh.maxVisibleCharacters = int.MaxValue;
+                TextMesh.ForceMeshUpdate();
+                CenterOffset = TextMesh.textBounds.center;
             }
         }
 
@@ -631,20 +888,17 @@ namespace qoooo.Rendering.Sources
             public readonly int CycleIndex;
             public readonly bool IsActive;
             public readonly bool IsCompleted;
-            public readonly bool EasingApplied;
 
             public AnimationPhase(
                 float phase,
                 int cycleIndex,
                 bool isActive,
-                bool isCompleted,
-                bool easingApplied)
+                bool isCompleted)
             {
                 Phase = phase;
                 CycleIndex = cycleIndex;
                 IsActive = isActive;
                 IsCompleted = isCompleted;
-                EasingApplied = easingApplied;
             }
         }
 

@@ -75,10 +75,11 @@ namespace qoooo.Rendering.Sources
         EaseInOutQuad
     }
 
-    public enum PosterMotionPattern
+    public enum PosterValuePattern
     {
-        PingPong,
-        Traverse
+        PingPong = 0,
+        Traverse = 1,
+        Envelope = 2
     }
 
     public enum PosterMotionTiming
@@ -90,8 +91,14 @@ namespace qoooo.Rendering.Sources
 
     public enum PosterTextAnimationType
     {
-        Move,
-        Typewriter
+        Move = 0,
+        Typewriter = 1,
+        Fade = 2,
+        Scale = 3,
+        Rotate = 4,
+        Shake = 5,
+        Blink = 6,
+        Tracking = 7
     }
 
     public enum PosterTextureSource
@@ -184,6 +191,12 @@ namespace qoooo.Rendering.Sources
         public PosterAnimationTimingSettings Timing = new();
         public PosterMoveAnimationSettings Move = new();
         public PosterTypewriterAnimationSettings Typewriter = new();
+        public PosterFadeAnimationSettings Fade = new();
+        public PosterScaleAnimationSettings Scale = new();
+        public PosterRotateAnimationSettings Rotate = new();
+        public PosterShakeAnimationSettings Shake = new();
+        public PosterBlinkAnimationSettings Blink = new();
+        public PosterTrackingAnimationSettings Tracking = new();
     }
 
     [Serializable]
@@ -196,10 +209,20 @@ namespace qoooo.Rendering.Sources
     }
 
     [Serializable]
+    public sealed class PosterEnvelopeSettings
+    {
+        public float Rise = 0.1f;
+        public float HighHold = 0.4f;
+        public float Fall = 0.1f;
+        public float LowHold = 0.4f;
+    }
+
+    [Serializable]
     public sealed class PosterMoveAnimationSettings
     {
         public PosterTextMotion Axis = PosterTextMotion.MoveX;
-        public PosterMotionPattern Pattern;
+        public PosterValuePattern Pattern;
+        public PosterEnvelopeSettings Envelope = new();
         public float Amount = 0.1f;
         public float Speed = 1f;
         public PosterMoveEasing Easing = PosterMoveEasing.SmoothStep;
@@ -215,11 +238,82 @@ namespace qoooo.Rendering.Sources
     }
 
     [Serializable]
+    public sealed class PosterFadeAnimationSettings
+    {
+        public float FromAlpha = 1f;
+        public float ToAlpha;
+        public PosterValuePattern Pattern = PosterValuePattern.Traverse;
+        public PosterEnvelopeSettings Envelope = new();
+        public float Speed = 1f;
+        public PosterMoveEasing Easing = PosterMoveEasing.SmoothStep;
+        public bool Loop = true;
+    }
+
+    [Serializable]
+    public sealed class PosterScaleAnimationSettings
+    {
+        public float FromScale = 1f;
+        public float ToScale = 1.2f;
+        public PosterValuePattern Pattern = PosterValuePattern.Traverse;
+        public PosterEnvelopeSettings Envelope = new();
+        public float Speed = 1f;
+        public PosterMoveEasing Easing = PosterMoveEasing.SmoothStep;
+        public bool Loop = true;
+    }
+
+    [Serializable]
+    public sealed class PosterRotateAnimationSettings
+    {
+        public float FromDegrees;
+        public float ToDegrees = 90f;
+        public PosterValuePattern Pattern = PosterValuePattern.Traverse;
+        public PosterEnvelopeSettings Envelope = new();
+        public float Speed = 1f;
+        public PosterMoveEasing Easing = PosterMoveEasing.SmoothStep;
+        public bool Loop = true;
+    }
+
+    [Serializable]
+    public sealed class PosterShakeAnimationSettings
+    {
+        public float PositionAmountX = 0.01f;
+        public float PositionAmountY = 0.01f;
+        public float RotationAmount = 2f;
+        public float Frequency = 12f;
+        public uint Seed;
+        public PosterValuePattern Pattern = PosterValuePattern.Envelope;
+        public PosterEnvelopeSettings Envelope = new();
+        public float Speed = 1f;
+        public PosterMoveEasing Easing = PosterMoveEasing.SmoothStep;
+        public bool Loop = true;
+    }
+
+    [Serializable]
+    public sealed class PosterBlinkAnimationSettings
+    {
+        [Range(0f, 1f)] public float OnRatio = 0.5f;
+        public float Speed = 1f;
+        public bool Loop = true;
+    }
+
+    [Serializable]
+    public sealed class PosterTrackingAnimationSettings
+    {
+        public float FromSpacing;
+        public float ToSpacing = 10f;
+        public PosterValuePattern Pattern = PosterValuePattern.Traverse;
+        public PosterEnvelopeSettings Envelope = new();
+        public float Speed = 1f;
+        public PosterMoveEasing Easing = PosterMoveEasing.SmoothStep;
+        public bool Loop = true;
+    }
+
+    [Serializable]
     public sealed class PosterTextAnimationSettings
     {
         public bool Enabled;
         public PosterTextMotion Motion;
-        public PosterMotionPattern Pattern;
+        public PosterValuePattern Pattern;
         public float MoveAmount = 0.1f;
         public float MoveSpeed = 1f;
         public PosterMoveEasing MoveEasing = PosterMoveEasing.SmoothStep;

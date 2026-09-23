@@ -8,17 +8,38 @@ using qoooo.Rendering.Composition;
 using qoooo.Rendering.Models;
 using RosettaUI;
 using UnityEngine;
+using UnityEngine.UIElements;
 using UnitySimpleContainer;
 
 namespace qoooo.Presentation.Runtime
 {
     // Composes LIVE, AUTHORING, and SETUP RosettaUI from existing targets.
     // It owns no application values and coordinates only explicit Qoooo Save transactions.
-    public class UiBuilder : MonoBehaviour
+    public class UiBuilder : MonoBehaviour, IMidiParameterContainer
     {
         private List<IUiTarget> _targets;
         private List<IMidiBindableParameter> _parameters;
         private List<IPrefsSaveParticipant> _saveParticipants;
+        [SerializeField] private OneshotParameter _toggleVisibility = new("ui.toggle-visibility", "Toggle UI Visibility");
+        private UIDocument _uiDocument;
+        private bool _isUiVisible = true;
+
+        public IEnumerable<IMidiBindableParameter> MidiParameters
+        {
+            get { yield return _toggleVisibility; }
+        }
+
+        private void Awake()
+        {
+            _uiDocument = GetComponent<UIDocument>();
+            _toggleVisibility.Changed += OnToggleVisibilityChanged;
+        }
+
+        private void OnDestroy()
+        {
+            if (_toggleVisibility != null)
+                _toggleVisibility.Changed -= OnToggleVisibilityChanged;
+        }
 
         [Inject]
         public void Constructs(IEnumerable<IUiTarget> targets)
@@ -47,6 +68,15 @@ namespace qoooo.Presentation.Runtime
         {
             var root = GetComponent<RosettaUIRoot>();
             root.Build(CreateElement());
+        }
+
+        private void OnToggleVisibilityChanged(bool triggered)
+        {
+            if (!triggered) return;
+
+            _isUiVisible = !_isUiVisible;
+            if (_uiDocument?.rootVisualElement != null)
+                _uiDocument.rootVisualElement.visible = _isUiVisible;
         }
 
         Element CreateElement()

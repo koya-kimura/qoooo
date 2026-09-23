@@ -14,12 +14,19 @@ namespace qoooo.Parameters.Runtime
         [SerializeField] private Key _tapKey = Key.Space;
         [SerializeField] private Key _syncBeatKey = Key.B;
         [SerializeField] private Key _syncBarKey = Key.B;
+        [SerializeField] private Key _toggleUiKey = Key.D;
         [SerializeField] private MidiParameterRegistry _registry;
 
         private void Update()
         {
             var keyboard = Keyboard.current;
-            if (keyboard == null || _registry == null || IsTextInputFocused()) return;
+            if (keyboard == null || _registry == null) return;
+
+            // UI非表示中は残っているfocusに関わらず再表示できる。表示中のtext fieldでは文字入力を優先する。
+            if (keyboard[_toggleUiKey].wasPressedThisFrame && (IsUiHidden() || !IsTextInputFocused()))
+                Trigger("ui.toggle-visibility");
+
+            if (IsTextInputFocused()) return;
 
             if (keyboard[_tapKey].wasPressedThisFrame) Trigger("rhythm.tap");
 
@@ -44,6 +51,11 @@ namespace qoooo.Parameters.Runtime
             for (var element = focused; element != null; element = element.parent)
                 if (element is TextInputBaseField<string>) return true;
             return false;
+        }
+
+        private bool IsUiHidden()
+        {
+            return _uiDocument?.rootVisualElement != null && !_uiDocument.rootVisualElement.visible;
         }
     }
 }
