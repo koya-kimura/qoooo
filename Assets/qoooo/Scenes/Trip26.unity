@@ -227,6 +227,23 @@ MonoBehaviour:
     Offset: {x: 0, y: 0}
     IsPosterize: 0
     PosterizeLevels: 4
+    UvEffect: 0
+    SamplingEffect: 0
+    ColorEffect: 0
+    AlphaEffect: 0
+    Amount: 0
+    Scale: 1
+    Threshold: 0
+    Strength: 0
+    Probability: 0
+    Seed: 0
+    Direction: {x: 0, y: 0}
+    Grid: {x: 0, y: 0}
+    Thresholds: {x: 0, y: 0, z: 0}
+    ColorA: {r: 0, g: 0, b: 0, a: 0}
+    ColorB: {r: 0, g: 0, b: 0, a: 0}
+    ColorC: {r: 0, g: 0, b: 0, a: 0}
+    ColorD: {r: 0, g: 0, b: 0, a: 0}
 --- !u!114 &78356559
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -434,6 +451,7 @@ MonoBehaviour:
   _modelTextureSource: {fileID: 734515094}
   _backgroundTextureSource: {fileID: 78356558}
   _posterFont: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  _fontCatalog: {fileID: 11400000, guid: 7d1e3095045b4fc19358b6e61759ff3d, type: 2}
   _library:
     Documents: []
   _layout:
@@ -775,6 +793,25 @@ MonoBehaviour:
     IsTiling: 0
     TileNum: {x: 1, y: 1}
     Offset: {x: 0, y: 0}
+    IsPosterize: 0
+    PosterizeLevels: 4
+    UvEffect: 0
+    SamplingEffect: 0
+    ColorEffect: 0
+    AlphaEffect: 0
+    Amount: 0
+    Scale: 1
+    Threshold: 0
+    Strength: 0
+    Probability: 0
+    Seed: 0
+    Direction: {x: 0, y: 0}
+    Grid: {x: 0, y: 0}
+    Thresholds: {x: 0, y: 0, z: 0}
+    ColorA: {r: 0, g: 0, b: 0, a: 0}
+    ColorB: {r: 0, g: 0, b: 0, a: 0}
+    ColorC: {r: 0, g: 0, b: 0, a: 0}
+    ColorD: {r: 0, g: 0, b: 0, a: 0}
 --- !u!1 &291929304
 GameObject:
   m_ObjectHideFlags: 0
@@ -2371,6 +2408,23 @@ MonoBehaviour:
     Offset: {x: 0, y: 0}
     IsPosterize: 0
     PosterizeLevels: 4
+    UvEffect: 0
+    SamplingEffect: 0
+    ColorEffect: 0
+    AlphaEffect: 0
+    Amount: 0
+    Scale: 1
+    Threshold: 0
+    Strength: 0
+    Probability: 0
+    Seed: 0
+    Direction: {x: 0, y: 0}
+    Grid: {x: 0, y: 0}
+    Thresholds: {x: 0, y: 0, z: 0}
+    ColorA: {r: 0, g: 0, b: 0, a: 0}
+    ColorB: {r: 0, g: 0, b: 0, a: 0}
+    ColorC: {r: 0, g: 0, b: 0, a: 0}
+    ColorD: {r: 0, g: 0, b: 0, a: 0}
 --- !u!1001 &841000080
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4552,6 +4606,25 @@ MonoBehaviour:
     IsTiling: 0
     TileNum: {x: 0, y: 0}
     Offset: {x: 0, y: 0}
+    IsPosterize: 0
+    PosterizeLevels: 0
+    UvEffect: 0
+    SamplingEffect: 0
+    ColorEffect: 0
+    AlphaEffect: 0
+    Amount: 0
+    Scale: 0
+    Threshold: 0
+    Strength: 0
+    Probability: 0
+    Seed: 0
+    Direction: {x: 0, y: 0}
+    Grid: {x: 0, y: 0}
+    Thresholds: {x: 0, y: 0, z: 0}
+    ColorA: {r: 0, g: 0, b: 0, a: 0}
+    ColorB: {r: 0, g: 0, b: 0, a: 0}
+    ColorC: {r: 0, g: 0, b: 0, a: 0}
+    ColorD: {r: 0, g: 0, b: 0, a: 0}
 --- !u!114 &1993703951
 MonoBehaviour:
   m_ObjectHideFlags: 0

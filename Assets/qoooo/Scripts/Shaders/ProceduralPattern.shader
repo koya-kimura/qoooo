@@ -36,7 +36,7 @@ Shader "Custom/ProceduralPattern"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-            #include "Util/PatternMath.hlsl"
+            #include "Util/MathUtil.hlsl"
             #include "Pattern/PatternDispatcher.hlsl"
 
             struct Attributes

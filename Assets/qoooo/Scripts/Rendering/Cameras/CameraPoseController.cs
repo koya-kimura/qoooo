@@ -10,8 +10,7 @@ namespace qoooo.Rendering.Cameras
     // Owns the camera-pose Parameter and applies selected poses independently of model animation.
     public class CameraPoseController : MonoBehaviour, IMidiParameterContainer
     {
-        [SerializeField]
-        private RadioParameter _cameraPose = new(
+        [SerializeField] private RadioParameter _cameraPose = new(
             "model.camera-pose",
             "Model Camera Pose",
             new[] { "Front", "Close", "Low Angle" });
@@ -21,11 +20,6 @@ namespace qoooo.Rendering.Cameras
         [SerializeField] private CinemachineCamera _lowAngle;
 
         private int _activePose = -1;
-
-        public IEnumerable<IMidiBindableParameter> MidiParameters
-        {
-            get { yield return _cameraPose; }
-        }
 
         private void Start()
         {
@@ -38,6 +32,12 @@ namespace qoooo.Rendering.Cameras
                 ApplyPose(_cameraPose.Value);
         }
 
+        public IEnumerable<IMidiBindableParameter> MidiParameters
+        {
+            get { yield return _cameraPose; }
+        }
+
+        // カメラは配置を設定だが、カメラの動きは？配置だけの話はわかった
         private void ApplyPose(int poseIndex)
         {
             var selectedIndex = Mathf.Clamp(poseIndex, 0, 2);

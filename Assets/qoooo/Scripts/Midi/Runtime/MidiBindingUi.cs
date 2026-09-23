@@ -47,19 +47,78 @@ namespace qoooo.Midi.Runtime
             var rows = new List<Element>();
             foreach (var parameter in _registry.Parameters)
             {
-                var captured = parameter;
-                switch (captured)
-                {
-                    case RadioParameter radio: rows.Add(UI.Fold(captured.DisplayName, CreateSlots(captured, radio.Options.Count, index => radio.Options[index])).Open()); break;
-                    case SequenceParameter sequence: rows.Add(UI.Fold(captured.DisplayName, CreateSlots(captured, sequence.StepCount, index => $"Step {index + 1}")).Open()); break;
-                    case FloatParameter: rows.Add(CreateFader(captured)); break;
-                    case BoolParameter:
-                    case OneshotParameter:
-                    case MomentaryParameter:
-                    case StateParameter: rows.Add(CreateSimpleButton(captured)); break;
-                }
+                if (!IsTextureEffectParameter(parameter)) rows.Add(CreateBinding(parameter));
             }
+
+            var textureEffects = CreateTextureEffectBindings();
+            if (textureEffects != null) rows.Insert(0, textureEffects);
             return UI.Column(rows);
+        }
+
+        private Element CreateTextureEffectBindings()
+        {
+            var targets = new List<Element>();
+            AddTextureEffectTarget(targets, "Model", "effect.model.");
+            AddTextureEffectTarget(targets, "Background", "effect.background.");
+            AddTextureEffectTarget(targets, "Text (Legacy)", "effect.text.");
+            return targets.Count == 0
+                ? null
+                : UI.Fold("Texture Effects", UI.Column(targets)).Open();
+        }
+
+        private void AddTextureEffectTarget(List<Element> targets, string label, string idPrefix)
+        {
+            var parameters = new List<IMidiBindableParameter>();
+            foreach (var parameter in _registry.Parameters)
+                if (parameter.Id.StartsWith(idPrefix, StringComparison.Ordinal)) parameters.Add(parameter);
+            if (parameters.Count == 0) return;
+
+            var rows = new List<Element>();
+            AddTextureEffectStage(rows, parameters, idPrefix + "uv");
+            AddTextureEffectStage(rows, parameters, idPrefix + "sampling");
+            AddTextureEffectStage(rows, parameters, idPrefix + "color");
+            AddTextureEffectStage(rows, parameters, idPrefix + "alpha");
+
+            var shared = parameters.FindAll(parameter =>
+                parameter.Id != idPrefix + "uv"
+                && parameter.Id != idPrefix + "sampling"
+                && parameter.Id != idPrefix + "color"
+                && parameter.Id != idPrefix + "alpha");
+            if (shared.Count > 0)
+                rows.Add(UI.Fold("Shared Parameters", UI.Column(shared.ConvertAll(CreateBinding))));
+
+            targets.Add(UI.Fold(label, UI.Column(rows)).Open());
+        }
+
+        private void AddTextureEffectStage(
+            List<Element> rows,
+            List<IMidiBindableParameter> parameters,
+            string parameterId)
+        {
+            var parameter = parameters.Find(candidate => candidate.Id == parameterId);
+            if (parameter != null) rows.Add(CreateBinding(parameter));
+        }
+
+        private static bool IsTextureEffectParameter(IMidiBindableParameter parameter)
+        {
+            return parameter.Id.StartsWith("effect.model.", StringComparison.Ordinal)
+                     || parameter.Id.StartsWith("effect.background.", StringComparison.Ordinal)
+                     || parameter.Id.StartsWith("effect.text.", StringComparison.Ordinal);
+        }
+
+        private Element CreateBinding(IMidiBindableParameter parameter)
+        {
+            return parameter switch
+            {
+                RadioParameter radio => UI.Fold(parameter.DisplayName,
+                    CreateSlots(parameter, radio.Options.Count, index => radio.Options[index])).Open(),
+                SequenceParameter sequence => UI.Fold(parameter.DisplayName,
+                    CreateSlots(parameter, sequence.StepCount, index => $"Step {index + 1}")).Open(),
+                FloatParameter => CreateFader(parameter),
+                BoolParameter or OneshotParameter or MomentaryParameter or StateParameter =>
+                    CreateSimpleButton(parameter),
+                _ => UI.Label(parameter.DisplayName)
+            };
         }
         private Element CreateSimpleButton(IMidiBindableParameter parameter)
         {

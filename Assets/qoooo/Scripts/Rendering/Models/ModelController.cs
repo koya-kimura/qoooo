@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using qoooo.Foundation.Timing;
 using qoooo.Foundation.Utilities;
 using qoooo.Parameters.Model;
@@ -19,21 +20,20 @@ namespace qoooo.Rendering.Models
         [SerializeField]
         private OneshotParameter _resetTransform = new("model.reset-transform", "Reset Model Transform");
 
-        [SerializeField]
-        private BoolParameter _active = new("model.active", "Model Active", true);
+        [SerializeField] private BoolParameter _active = new("model.active", "Model Active", true);
 
         // CREATIVE AREA / 創作領域: beatからmotionへの反応をここで調整する。clockの所有者はBpmManagerだけ。
-        [SerializeField, Min(0.01f)] private float _spinBeatsPerRotation = 16f;
-        [SerializeField, Min(0.01f)] private float _pulseCycleBeats = 4f;
-        [SerializeField, Min(0.01f)] private float _pulseEaseBeats = 2f;
-
-        private ModelManager _modelManager;
+        [SerializeField] [Min(0.01f)] private float _spinBeatsPerRotation = 16f;
+        [SerializeField] [Min(0.01f)] private float _pulseCycleBeats = 4f;
+        [SerializeField] [Min(0.01f)] private float _pulseEaseBeats = 2f;
+        private readonly List<GameObject> _activeSlots = new();
+        private readonly Dictionary<GameObject, Quaternion> _initialRotations = new();
+        private readonly Dictionary<GameObject, Vector3> _initialScales = new();
+        private readonly List<Renderer> _renderers = new();
         private ModelArrangementController _arrangement;
         private IBpmSource _bpmSource;
-        private readonly List<GameObject> _activeSlots = new();
-        private readonly List<Renderer> _renderers = new();
-        private readonly Dictionary<GameObject, Vector3> _initialScales = new();
-        private readonly Dictionary<GameObject, Quaternion> _initialRotations = new();
+
+        private ModelManager _modelManager;
 
         private void Awake()
         {
@@ -62,20 +62,6 @@ namespace qoooo.Rendering.Models
                 SetSingleModel(_modelManager?.CurrentModel);
         }
 
-        [Inject]
-        public void Construct(IBpmSource bpmSource)
-        {
-            _bpmSource = bpmSource;
-        }
-
-        private void OnDestroy()
-        {
-            if (_modelManager != null)
-                _modelManager.CurrentModelChanged -= SetSingleModel;
-            if (_arrangement != null)
-                _arrangement.ActiveSlotsChanged -= SetActiveSlots;
-        }
-
         private void Update()
         {
             if (_activeSlots.Count == 0) return;
@@ -92,23 +78,34 @@ namespace qoooo.Rendering.Models
                     ? initialRotation
                     : slot.transform.localRotation;
                 if (!_resetTransform.Value)
-                {
+
+                    // important: モデルの動きを作成する、選択肢は_motionの宣言部の個数を調整すること->Enumに変更したほうがよさそうだ
                     switch (_motion.Value)
                     {
+                        case 0:
+                            break;
                         case 1:
-                            rotation *= Quaternion.Euler(0f, beat * 360f / _spinBeatsPerRotation, 0f);
+                            slotScale = 1f + 0.5f * Rhythm.GetLerpNoise(beat, 8, 2);
                             break;
                         case 2:
                             var localRhythmPhase = Mathf.Clamp01(rhythmPhase - rhythmIndex * 2f);
                             slotScale *= 1f + 0.2f * Mathf.Sin(localRhythmPhase * Mathf.PI);
                             break;
                     }
-                }
 
                 slot.transform.localRotation = rotation;
                 ApplyScale(slot, slotScale);
             }
+
             SetRendererVisibility(_active.Value);
+        }
+
+        private void OnDestroy()
+        {
+            if (_modelManager != null)
+                _modelManager.CurrentModelChanged -= SetSingleModel;
+            if (_arrangement != null)
+                _arrangement.ActiveSlotsChanged -= SetActiveSlots;
         }
 
         public IEnumerable<IMidiBindableParameter> MidiParameters
@@ -122,6 +119,12 @@ namespace qoooo.Rendering.Models
             }
         }
 
+        [Inject]
+        public void Construct(IBpmSource bpmSource)
+        {
+            _bpmSource = bpmSource;
+        }
+
         private void SetRendererVisibility(bool visible)
         {
             foreach (var renderer in _renderers)
@@ -131,7 +134,7 @@ namespace qoooo.Rendering.Models
 
         private void SetSingleModel(GameObject model)
         {
-            SetActiveSlots(model == null ? System.Array.Empty<GameObject>() : new[] { model });
+            SetActiveSlots(model == null ? Array.Empty<GameObject>() : new[] { model });
         }
 
         private void SetActiveSlots(IReadOnlyList<GameObject> slots)

@@ -87,7 +87,7 @@ Revert、Resetを扱う。MIDI UIにlive Parameter value editorを重複して�
 4. 例外時は`AbortSave()`とError logを実行する。
 
 `MidiProfileStore`はAPC mappingと、Oneshot/Momentaryを除くParameter値を保存する。
-`PosterComposer`は`qoooo.poster.library.v2`へDocument listを保存し、旧v1はload時にmigrationする。
+`PosterComposer`は`qoooo.poster.library.v3`へDocument listを保存し、旧v2/v1はload時にmigrationする。
 Syphon名は`PrefsString`で保存される。APC current page、接続状態、Listen sessionは保存しない。
 現行participantの`AbortSave()`はstaged Prefs cacheをrollbackしない。
 

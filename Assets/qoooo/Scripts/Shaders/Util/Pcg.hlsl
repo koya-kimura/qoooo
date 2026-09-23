@@ -138,27 +138,4 @@ float4 Pcg01(float4 v)
     return Pcg01(asuint(v));
 }
 
-
-// --------------------------------------------------
-// 2D座標から単一乱数
-// --------------------------------------------------
-
-float PcgRandom(float2 position, uint seed)
-{
-    uint2 state =
-        asuint(position);
-
-    uint seedX =
-        Pcg(seed);
-
-    uint seedY =
-        Pcg(seed ^ 0x9E3779B9u);
-
-    state =
-        state
-        ^ uint2(seedX, seedY);
-
-    return Pcg01(state).x;
-}
-
 #endif

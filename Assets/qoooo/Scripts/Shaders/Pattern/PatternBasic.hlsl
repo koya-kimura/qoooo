@@ -4,7 +4,7 @@
 #define QOOOO_PATTERN_BASIC_INCLUDED
 
 #include "../Util/Pcg.hlsl"
-#include "../Util/PatternMath.hlsl"
+#include "../Util/MathUtil.hlsl"
 #include "PatternCommon.hlsl"
 
 
@@ -20,38 +20,38 @@ float3 NoiseTexturePattern(
     float noise = 0.0;
 
     noise +=
-        PcgRandom(
+        Pcg01(float3(
             floor(uv * 8.0),
-            8u
-        )
+            8u)
+        ).x
         * 0.30;
 
     noise +=
-        PcgRandom(
+        Pcg01(float3(
             floor(uv * 20.0),
-            20u
-        )
+            20u)
+        ).x
         * 0.25;
 
     noise +=
-        PcgRandom(
+        Pcg01(float3(
             floor(uv * 50.0),
-            50u
-        )
+            50u)
+        ).x
         * 0.20;
 
     noise +=
-        PcgRandom(
+        Pcg01(float3(
             floor(uv * 100.0),
-            100u
-        )
+            100u)
+        ).x
         * 0.15;
 
     noise +=
-        PcgRandom(
+        Pcg01(float3(
             floor(uv * 200.0),
-            200u
-        )
+            200u)
+        ).x
         * 0.10;
 
     float blend =

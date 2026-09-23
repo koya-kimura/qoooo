@@ -46,17 +46,21 @@ Parameterの公開経路は2つある。
 
 ## 現在のParameter owner
 
-| Owner                        | Parameter ID                                                           |
-| ---------------------------- | ---------------------------------------------------------------------- |
-| procedural background source | `background.pattern`                                                   |
-| model controller             | `model.scale`、`model.motion`、`model.reset-transform`、`model.active` |
-| model manager                | `model.source`                                                         |
-| camera pose controller       | `model.camera-pose`                                                    |
-| palette provider             | `visual.palette`                                                       |
-| poster                       | `poster.layout`、`poster.main-text`                                    |
-| rhythm                       | `rhythm.bpm`、`rhythm.tap`、`rhythm.sync-beat`、`rhythm.sync-bar`      |
+| Owner                        | Parameter ID                                                                                   |
+| ---------------------------- | ---------------------------------------------------------------------------------------------- |
+| procedural background source | `background.pattern`                                                                           |
+| model controller             | `model.scale`、`model.motion`、`model.reset-transform`、`model.active`                         |
+| model manager                | `model.source`                                                                                 |
+| camera pose controller       | `model.camera-pose`                                                                            |
+| palette provider             | `visual.palette`                                                                               |
+| poster                       | `poster.layout`、`poster.main-text`                                                            |
+| rhythm                       | `rhythm.bpm`、`rhythm.tap`、`rhythm.sync-beat`、`rhythm.sync-bar`                              |
+| model texture effect         | `effect.model.{uv,sampling,color,alpha,amount,scale,threshold,strength,probability,seed}`      |
+| background texture effect    | `effect.background.{uv,sampling,color,alpha,amount,scale,threshold,strength,probability,seed}` |
+| legacy text texture effect   | `effect.text.{uv,sampling,color,alpha,amount,scale,threshold,strength,probability,seed}`        |
 
-live Parameterは合計14件である。
+live Parameterは合計44件である。inactiveなTextLayerのeffect Parameter setも現在のcontainer discoveryから
+live Registryへ登録されるため、MIDI Binding UIでは`Text (Legacy)`としてModel / Backgroundと区別する。
 
 Legacy `TextController`の`text.*` Parameterと`poster.model-layout`、`poster.typography-layout`は
 Trip26のlive Parameter / MIDI pathからretire済みである。保存済みmappingの該当IDだけはload時に除外し、
@@ -144,6 +148,8 @@ Shiftの前回値を保持して差分だけ送る。output connection generatio
 
 `MidiSystemController`は`IUiTarget`として接続状態、page、profile操作、Mapping UIを公開する。
 `MidiBindingUi`はRegistryの型からassignment UIを決め、Parameter値の直接操作は行わない。
+Texture effect bindingはstable IDを変えず、Texture Effects → target → UV / Sampling / Color / Alphaへ
+表示だけを階層化する。共通Amount / Scale / Threshold / Strength / Probability / Seedはtarget内へまとめる。
 
 `MIDI Setup`は接続概要とReconnectのhubである。詳細は標準RosettaUI child windowへ分ける。
 

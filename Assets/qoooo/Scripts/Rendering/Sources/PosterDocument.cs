@@ -18,6 +18,19 @@ namespace qoooo.Rendering.Sources
         Free
     }
 
+    public enum PosterAnchor
+    {
+        TopLeft = 0,
+        Top = 1,
+        TopRight = 2,
+        Left = 3,
+        Center = 4,
+        Right = 5,
+        BottomLeft = 6,
+        Bottom = 7,
+        BottomRight = 8
+    }
+
     public enum PosterRotation
     {
         Zero = 0,
@@ -67,7 +80,15 @@ namespace qoooo.Rendering.Sources
     public sealed class PosterDocument
     {
         public string Name;
+        public PosterGridDefinition Grid = new();
         public List<PosterElement> Elements = new();
+    }
+
+    [Serializable]
+    public sealed class PosterGridDefinition
+    {
+        public int Columns = 4;
+        public int Rows = 6;
     }
 
     [Serializable]
@@ -91,16 +112,13 @@ namespace qoooo.Rendering.Sources
     public sealed class PosterPlacement
     {
         public PosterPlacementMode Mode;
-        public int Column;
-        public int ColumnSpan = 1;
-        public int Baseline;
-        public int BaselineSpan = 1;
+        public PosterAnchor Anchor;
+        public int GridPointX;
+        public int GridPointY;
         public float X;
         public float Y;
         public float Width;
         public float Height;
-        public float OffsetX;
-        public float OffsetY;
     }
 
     [Serializable]
@@ -110,6 +128,7 @@ namespace qoooo.Rendering.Sources
         public PosterTextSource Source;
         public string Literal;
         public string Format;
+        public string FontId;
         public float FontSize = 0.04f;
         public PosterHorizontalAlign HorizontalAlign;
         public PosterVerticalAlign VerticalAlign;

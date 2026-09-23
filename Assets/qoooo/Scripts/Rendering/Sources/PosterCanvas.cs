@@ -37,6 +37,7 @@ namespace qoooo.Rendering.Sources
         [SerializeField] private ProcessedTextureSource _modelTextureSource;
         [SerializeField] private ProcessedTextureSource _backgroundTextureSource;
         [SerializeField] private TMP_FontAsset _posterFont;
+        [SerializeField] private PosterFontCatalog _fontCatalog;
         [SerializeField] private PosterLibrary _library = new();
         [SerializeField]
         private RadioParameter _layout = new(
@@ -68,6 +69,7 @@ namespace qoooo.Rendering.Sources
         public float Height => _resolutionContainer?.Resolution.y ?? 1080f;
         public float SizeUnit => Mathf.Min(Width, Height);
         public int ActiveDocumentIndex => _layout.Value;
+        public PosterFontCatalog FontCatalog => _fontCatalog;
         public PosterLibrary Library
         {
             get
@@ -166,7 +168,13 @@ namespace qoooo.Rendering.Sources
             var usedNames = new HashSet<string>();
             foreach (var document in _library.Documents)
             {
+                document.Grid ??= new PosterGridDefinition();
                 document.Elements ??= new List<PosterElement>();
+                foreach (var element in document.Elements)
+                {
+                    if (element?.Text != null && string.IsNullOrWhiteSpace(element.Text.FontId))
+                        element.Text.FontId = _fontCatalog?.DefaultFontId;
+                }
                 document.Name = UniqueDocumentName(document.Name, usedNames);
                 usedNames.Add(document.Name);
             }
@@ -193,7 +201,7 @@ namespace qoooo.Rendering.Sources
                 var element = document.Elements[index];
                 if (element == null || !element.Enabled) continue;
 
-                RenderElement(element, modelTexture, backgroundTexture);
+                RenderElement(document, element, modelTexture, backgroundTexture);
             }
 
             _builtLayout = _layout.Value;
@@ -207,9 +215,13 @@ namespace qoooo.Rendering.Sources
             _documentDirty = false;
         }
 
-        private void RenderElement(PosterElement element, Texture modelTexture, Texture backgroundTexture)
+        private void RenderElement(
+            PosterDocument document,
+            PosterElement element,
+            Texture modelTexture,
+            Texture backgroundTexture)
         {
-            var placement = ResolvePlacement(element.Placement);
+            var placement = PosterPlacementResolver.Resolve(document.Grid, element.Placement, Width, Height);
             var color = ResolveColor(element.Color, element.CustomColor);
             var rotation = (float)element.Rotation;
 
@@ -220,12 +232,12 @@ namespace qoooo.Rendering.Sources
                         ? backgroundTexture
                         : modelTexture;
                     if (texture != null)
-                        Image(texture, placement.x, placement.y, placement.width, placement.height,
+                        Image(texture, placement,
                             element.Texture?.Fit ?? PosterFit.Stretch, rotation);
                     break;
 
                 case PosterElementType.Rect:
-                    SolidRect(placement.x, placement.y, placement.width, placement.height, color, rotation);
+                    SolidRect(placement, color, rotation);
                     break;
 
                 case PosterElementType.Line:
@@ -238,65 +250,37 @@ namespace qoooo.Rendering.Sources
             }
         }
 
-        private void RenderLine(PosterElement element, Rect placement, Color color)
+        private void RenderLine(PosterElement element, PosterResolvedPlacement placement, Color color)
         {
             var line = element.Line ?? new PosterLineSettings();
             if (line.UsePlacementBounds)
             {
-                var isVertical = element.Rotation == PosterRotation.Ninety
-                                 || element.Rotation == PosterRotation.TwoSeventy;
-                if (isVertical)
-                    Line(placement.center.x, placement.y, placement.center.x, placement.yMax, line.Thickness, color);
-                else
-                    Line(placement.x, placement.center.y, placement.xMax, placement.center.y, line.Thickness, color);
+                Line(placement, line.Thickness, color, (float)element.Rotation);
                 return;
             }
 
-            Line(line.Start.x, line.Start.y, line.End.x, line.End.y, line.Thickness, color);
+            Line(
+                line.Start.x * Width,
+                line.Start.y * Height,
+                line.End.x * Width,
+                line.End.y * Height,
+                line.Thickness,
+                color);
         }
 
-        private void RenderText(PosterElement element, Rect placement, Color color, float rotation)
+        private void RenderText(
+            PosterElement element,
+            PosterResolvedPlacement placement,
+            Color color,
+            float rotation)
         {
             var settings = element.Text ?? new PosterTextSettings();
             var text = ResolveText(settings);
-            var x = settings.HorizontalAlign switch
-            {
-                PosterHorizontalAlign.Center => placement.center.x,
-                PosterHorizontalAlign.Right => placement.xMax,
-                _ => placement.x
-            };
-            var y = settings.VerticalAlign switch
-            {
-                PosterVerticalAlign.Center => placement.center.y,
-                PosterVerticalAlign.Bottom => placement.yMax,
-                _ => placement.y
-            };
-
-            var textMesh = Text(text, x, y, settings.FontSize * SizeUnit, color,
-                settings.HorizontalAlign, settings.VerticalAlign, rotation);
+            var font = _fontCatalog?.Resolve(settings.FontId, _posterFont) ?? _posterFont;
+            var textMesh = Text(text, placement, settings.FontSize * SizeUnit, color,
+                settings.HorizontalAlign, settings.VerticalAlign, rotation, font);
             if (textMesh != null && IsDynamicText(settings.Source))
                 _dynamicTexts.Add(new DynamicTextBinding(settings, textMesh));
-        }
-
-        private Rect ResolvePlacement(PosterPlacement placement)
-        {
-            placement ??= new PosterPlacement();
-            Rect rect;
-            if (placement.Mode == PosterPlacementMode.Grid)
-            {
-                var column = Mathf.Clamp(placement.Column, 0, PosterGrid.ColumnCount - 1);
-                var columnSpan = Mathf.Clamp(placement.ColumnSpan, 1, PosterGrid.ColumnCount - column);
-                rect = Grid.Rect(column, columnSpan, Mathf.Max(0, placement.Baseline), Mathf.Max(1, placement.BaselineSpan));
-            }
-            else
-            {
-                var width = placement.Width > 0f ? placement.Width : Width - placement.X;
-                var height = placement.Height > 0f ? placement.Height : Height - placement.Y;
-                rect = new Rect(placement.X, placement.Y, Mathf.Max(0f, width), Mathf.Max(0f, height));
-            }
-
-            rect.position += new Vector2(placement.OffsetX * SizeUnit, placement.OffsetY * SizeUnit);
-            return rect;
         }
 
         private Color ResolveColor(PosterColorRef color, Color customColor)
@@ -407,6 +391,27 @@ namespace qoooo.Rendering.Sources
             SetRotation(image.rectTransform, rotation);
         }
 
+        private void Image(
+            Texture texture,
+            PosterResolvedPlacement placement,
+            PosterFit fit,
+            float rotation)
+        {
+            if (texture == null) return;
+
+            var imageObject = new GameObject("Poster Image", typeof(RectTransform), typeof(RawImage));
+            var rectTransform = imageObject.GetComponent<RectTransform>();
+            rectTransform.SetParent(transform, false);
+            ConfigurePlacementRect(rectTransform, placement);
+            SetRotation(rectTransform, rotation);
+
+            var image = imageObject.GetComponent<RawImage>();
+            image.texture = texture;
+            image.uvRect = fit == PosterFit.Cover
+                ? CalculateCoverUvRect(texture, placement.Size.x, placement.Size.y)
+                : new Rect(0f, 0f, 1f, 1f);
+        }
+
         public void Image(
             Texture texture,
             float x,
@@ -469,6 +474,17 @@ namespace qoooo.Rendering.Sources
             imageObject.GetComponent<Image>().color = color;
         }
 
+        private void SolidRect(PosterResolvedPlacement placement, Color color, float rotation)
+        {
+            var imageObject = new GameObject("Poster Solid Rect", typeof(RectTransform), typeof(Image));
+            var rectTransform = imageObject.GetComponent<RectTransform>();
+            rectTransform.SetParent(transform, false);
+            ConfigurePlacementRect(rectTransform, placement);
+            SetRotation(rectTransform, rotation);
+
+            imageObject.GetComponent<Image>().color = color;
+        }
+
         public void Line(
             float x1,
             float y1,
@@ -500,6 +516,27 @@ namespace qoooo.Rendering.Sources
             imageObject.GetComponent<Image>().color = color;
         }
 
+        private void Line(
+            PosterResolvedPlacement placement,
+            float thickness,
+            Color color,
+            float rotation)
+        {
+            if (placement.Size.x <= 0f) return;
+
+            var lineObject = new GameObject("Poster Line", typeof(RectTransform), typeof(Image));
+            var rectTransform = lineObject.GetComponent<RectTransform>();
+            rectTransform.SetParent(transform, false);
+            rectTransform.anchorMin = new Vector2(0f, 1f);
+            rectTransform.anchorMax = new Vector2(0f, 1f);
+            rectTransform.pivot = placement.Pivot;
+            rectTransform.anchoredPosition = new Vector2(placement.Position.x, -placement.Position.y);
+            rectTransform.sizeDelta = new Vector2(placement.Size.x, thickness);
+            SetRotation(rectTransform, rotation);
+
+            lineObject.GetComponent<Image>().color = color;
+        }
+
         public TextMeshProUGUI Text(
             string text,
             float x,
@@ -522,22 +559,32 @@ namespace qoooo.Rendering.Sources
             PosterVerticalAlign verticalAlign,
             float rotation)
         {
-            if (_posterFont == null) return null;
+            var placement = new PosterResolvedPlacement(
+                new Vector2(x, y),
+                Vector2.zero,
+                new Vector2(GetHorizontalPivot(horizontalAlign), GetVerticalPivot(verticalAlign)));
+            return Text(text, placement, fontSize, color, horizontalAlign, verticalAlign, rotation, _posterFont);
+        }
+
+        private TextMeshProUGUI Text(
+            string text,
+            PosterResolvedPlacement placement,
+            float fontSize,
+            Color color,
+            PosterHorizontalAlign horizontalAlign,
+            PosterVerticalAlign verticalAlign,
+            float rotation,
+            TMP_FontAsset font)
+        {
+            if (font == null) return null;
 
             var textObject = new GameObject("Poster Text", typeof(RectTransform), typeof(TextMeshProUGUI));
             var textMesh = textObject.GetComponent<TextMeshProUGUI>();
             textMesh.rectTransform.SetParent(transform, false);
-            ConfigureText(textMesh, text, fontSize, color);
-
-            var preferred = textMesh.GetPreferredValues(text ?? string.Empty);
-            var pivot = new Vector2(
-                GetHorizontalPivot(horizontalAlign),
-                GetVerticalPivot(verticalAlign));
-            textMesh.rectTransform.anchorMin = new Vector2(0f, 1f);
-            textMesh.rectTransform.anchorMax = new Vector2(0f, 1f);
-            textMesh.rectTransform.pivot = pivot;
-            textMesh.rectTransform.anchoredPosition = new Vector2(x, -y);
-            textMesh.rectTransform.sizeDelta = preferred;
+            ConfigureText(textMesh, text, fontSize, color, font);
+            textMesh.horizontalAlignment = GetHorizontalAlignment(horizontalAlign);
+            textMesh.verticalAlignment = GetVerticalAlignment(verticalAlign);
+            ConfigurePlacementRect(textMesh.rectTransform, placement);
             SetRotation(textMesh.rectTransform, rotation);
             return textMesh;
         }
@@ -547,7 +594,7 @@ namespace qoooo.Rendering.Sources
             if (_posterFont == null) return 0f;
 
             var textMeasurer = GetTextMeasurer();
-            ConfigureText(textMeasurer, text, fontSize, Color.white);
+            ConfigureText(textMeasurer, text, fontSize, Color.white, _posterFont);
             return textMeasurer.GetPreferredValues(text ?? string.Empty).x;
         }
 
@@ -583,6 +630,17 @@ namespace qoooo.Rendering.Sources
             rectTransform.sizeDelta = new Vector2(width, height);
         }
 
+        private static void ConfigurePlacementRect(
+            RectTransform rectTransform,
+            PosterResolvedPlacement placement)
+        {
+            rectTransform.anchorMin = new Vector2(0f, 1f);
+            rectTransform.anchorMax = new Vector2(0f, 1f);
+            rectTransform.pivot = placement.Pivot;
+            rectTransform.anchoredPosition = new Vector2(placement.Position.x, -placement.Position.y);
+            rectTransform.sizeDelta = placement.Size;
+        }
+
         private static void SetRotation(RectTransform rectTransform, float rotation)
         {
             rectTransform.localRotation = Quaternion.Euler(0f, 0f, -rotation);
@@ -603,9 +661,10 @@ namespace qoooo.Rendering.Sources
             TextMeshProUGUI textMesh,
             string text,
             float fontSize,
-            Color color)
+            Color color,
+            TMP_FontAsset font)
         {
-            textMesh.font = _posterFont;
+            textMesh.font = font;
             textMesh.text = text ?? string.Empty;
             textMesh.fontSize = fontSize;
             textMesh.color = color;
@@ -633,6 +692,26 @@ namespace qoooo.Rendering.Sources
                 PosterVerticalAlign.Center => 0.5f,
                 PosterVerticalAlign.Bottom => 0f,
                 _ => 1f
+            };
+        }
+
+        private static HorizontalAlignmentOptions GetHorizontalAlignment(PosterHorizontalAlign alignment)
+        {
+            return alignment switch
+            {
+                PosterHorizontalAlign.Center => HorizontalAlignmentOptions.Center,
+                PosterHorizontalAlign.Right => HorizontalAlignmentOptions.Right,
+                _ => HorizontalAlignmentOptions.Left
+            };
+        }
+
+        private static VerticalAlignmentOptions GetVerticalAlignment(PosterVerticalAlign alignment)
+        {
+            return alignment switch
+            {
+                PosterVerticalAlign.Center => VerticalAlignmentOptions.Middle,
+                PosterVerticalAlign.Bottom => VerticalAlignmentOptions.Bottom,
+                _ => VerticalAlignmentOptions.Top
             };
         }
 

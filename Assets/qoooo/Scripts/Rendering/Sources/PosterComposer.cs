@@ -13,13 +13,20 @@ namespace qoooo.Rendering.Sources
     // Prepareでauthored documentをstageし、Commitで受け入れ、Abortで失敗したSaveを処理する。autosaveはしない。
     public sealed class PosterComposer : MonoBehaviour, IUiTarget, IPrefsSaveParticipant
     {
-        private const string PrefsKey = "qoooo.poster.library.v2";
-        private const string LegacyPrefsKey = "qoooo.poster.library.v1";
-        private const int SchemaVersion = 2;
+        private const string PrefsKey = "qoooo.poster.library.v3";
+        private const string LegacyV2PrefsKey = "qoooo.poster.library.v2";
+        private const string LegacyV1PrefsKey = "qoooo.poster.library.v1";
+        private const int SchemaVersion = 3;
         private const float LeftPaneWidth = 300f;
         private static readonly Color SelectedColor = new(0.08f, 0.45f, 0.55f, 0.4f);
         private static readonly string[] TypeNames = { "Text", "Rect", "Line", "Texture" };
         private static readonly string[] PlacementNames = { "Grid", "Free" };
+        private static readonly string[] AnchorNames =
+        {
+            "Top Left", "Top", "Top Right",
+            "Left", "Center", "Right",
+            "Bottom Left", "Bottom", "Bottom Right"
+        };
         private static readonly string[] RotationNames = { "0", "90", "180", "270" };
         private static readonly string[] ColorNames = { "Palette Main", "Palette Sub", "White", "Black", "Custom" };
         private static readonly string[] TextSourceNames = { "Literal", "Main Text", "Current Date", "Current Time" };
@@ -31,7 +38,8 @@ namespace qoooo.Rendering.Sources
         [SerializeField] private PosterCanvas _posterCanvas;
 
         private readonly PrefsAny<PosterLibraryRecord> _prefs = new(PrefsKey);
-        private readonly PrefsAny<LegacyPosterLibraryRecord> _legacyPrefs = new(LegacyPrefsKey);
+        private readonly PrefsAny<LegacyV2PosterLibraryRecord> _legacyV2Prefs = new(LegacyV2PrefsKey);
+        private readonly PrefsAny<LegacyV1PosterLibraryRecord> _legacyV1Prefs = new(LegacyV1PrefsKey);
         private PosterLibraryRecord _recordBeforePrepare;
         private PosterDocument _observedDocument;
         private PosterElement _selectedElement;
@@ -93,7 +101,7 @@ namespace qoooo.Rendering.Sources
         {
             if (_posterCanvas == null) return;
 
-            _recordBeforePrepare = Copy(_prefs.Get());
+            _recordBeforePrepare = Copy(_prefs.Get()) ?? new PosterLibraryRecord();
             _prefs.Set(new PosterLibraryRecord
             {
                 SchemaVersion = SchemaVersion,
@@ -128,22 +136,28 @@ namespace qoooo.Rendering.Sources
             var names = new string[documents.Count];
             for (var index = 0; index < documents.Count; index++) names[index] = documents[index].Name;
 
-            return UI.Row(
-                UI.Label("Layout"),
-                UI.Dropdown(null,
-                    () => _posterCanvas.ActiveDocumentIndex,
-                    index =>
-                    {
-                        _posterCanvas.SelectDocument(index);
-                        SynchronizeSelection();
-                    },
-                    names),
-                UI.Field("Name", () => ActiveDocument?.Name ?? string.Empty, RenameActiveDocument),
-                UI.Button("New", CreateDocument),
-                UI.Button("Duplicate", DuplicateDocument),
-                UI.Button("Delete", DeleteDocument),
-                UI.Space(),
-                UI.HelpBox("Use Qoooo > Save to persist poster changes."));
+            return UI.Column(
+                UI.Row(
+                    UI.Label("Layout"),
+                    UI.Dropdown(null,
+                        () => _posterCanvas.ActiveDocumentIndex,
+                        index =>
+                        {
+                            _posterCanvas.SelectDocument(index);
+                            SynchronizeSelection();
+                        },
+                        names),
+                    UI.Field("Name", () => ActiveDocument?.Name ?? string.Empty, RenameActiveDocument),
+                    UI.Button("New", CreateDocument),
+                    UI.Button("Duplicate", DuplicateDocument),
+                    UI.Button("Delete", DeleteDocument)),
+                UI.Row(
+                    UI.Field("Grid Columns", () => ActiveDocument.Grid.Columns,
+                        value => SetDocumentGrid(columns: Mathf.Max(1, value))),
+                    UI.Field("Grid Rows", () => ActiveDocument.Grid.Rows,
+                        value => SetDocumentGrid(rows: Mathf.Max(1, value))),
+                    UI.Space(),
+                    UI.HelpBox("Use Qoooo > Save to persist poster changes.")));
         }
 
         private void CreateDocument()
@@ -174,6 +188,16 @@ namespace qoooo.Rendering.Sources
 
             document.Name = name;
             _posterCanvas.SynchronizeLibrary(_posterCanvas.ActiveDocumentIndex);
+        }
+
+        private void SetDocumentGrid(int? columns = null, int? rows = null)
+        {
+            var document = ActiveDocument;
+            if (document == null) return;
+            document.Grid ??= new PosterGridDefinition();
+            if (columns.HasValue) document.Grid.Columns = columns.Value;
+            if (rows.HasValue) document.Grid.Rows = rows.Value;
+            DocumentChanged();
         }
 
         private void DeleteDocument()
@@ -271,6 +295,8 @@ namespace qoooo.Rendering.Sources
             return UI.Column(
                 UI.Dropdown("Mode", () => (int)placement.Mode,
                     value => Set(element, _ => placement.Mode = (PosterPlacementMode)value), PlacementNames),
+                UI.Dropdown("Anchor", () => (int)placement.Anchor,
+                    value => Set(element, _ => placement.Anchor = (PosterAnchor)value), AnchorNames),
                 UI.DynamicElementOnStatusChanged(
                     () => placement.Mode,
                     mode => mode == PosterPlacementMode.Grid
@@ -280,34 +306,29 @@ namespace qoooo.Rendering.Sources
 
         private Element CreateGridPlacementInspector(PosterElement element, PosterPlacement placement)
         {
+            var grid = ActiveDocument?.Grid ?? new PosterGridDefinition();
             return UI.Column(
-                UI.Field("Column", () => placement.Column,
-                    value => Set(element, _ => placement.Column = Mathf.Clamp(value, 0, 11))),
-                UI.Field("Column Span", () => placement.ColumnSpan,
-                    value => Set(element, _ => placement.ColumnSpan = Mathf.Clamp(value, 1, 12 - placement.Column))),
-                UI.Field("Baseline", () => placement.Baseline,
-                    value => Set(element, _ => placement.Baseline = Mathf.Max(0, value))),
-                UI.Field("Baseline Span", () => placement.BaselineSpan,
-                    value => Set(element, _ => placement.BaselineSpan = Mathf.Max(1, value))),
-                UI.Field("Offset X", () => placement.OffsetX,
-                    value => Set(element, _ => placement.OffsetX = value)),
-                UI.Field("Offset Y", () => placement.OffsetY,
-                    value => Set(element, _ => placement.OffsetY = value)));
+                UI.Field("Grid Point X", () => placement.GridPointX,
+                    value => Set(element, _ => placement.GridPointX = Mathf.Clamp(value, 0, Mathf.Max(0, grid.Columns - 1)))),
+                UI.Field("Grid Point Y", () => placement.GridPointY,
+                    value => Set(element, _ => placement.GridPointY = Mathf.Clamp(value, 0, Mathf.Max(0, grid.Rows - 1)))),
+                UI.Field("Grid Width (units)", () => placement.Width,
+                    value => Set(element, _ => placement.Width = Mathf.Max(0.001f, value))),
+                UI.Field("Grid Height (units)", () => placement.Height,
+                    value => Set(element, _ => placement.Height = Mathf.Max(0.001f, value))));
         }
 
         private Element CreateFreePlacementInspector(PosterElement element, PosterPlacement placement)
         {
             return UI.Column(
-                UI.Field("X", () => placement.X, value => Set(element, _ => placement.X = value)),
-                UI.Field("Y", () => placement.Y, value => Set(element, _ => placement.Y = value)),
-                UI.Field("Width", () => placement.Width,
-                    value => Set(element, _ => placement.Width = Mathf.Max(0f, value))),
-                UI.Field("Height", () => placement.Height,
-                    value => Set(element, _ => placement.Height = Mathf.Max(0f, value))),
-                UI.Field("Offset X", () => placement.OffsetX,
-                    value => Set(element, _ => placement.OffsetX = value)),
-                UI.Field("Offset Y", () => placement.OffsetY,
-                    value => Set(element, _ => placement.OffsetY = value)));
+                UI.Field("X (0..1)", () => placement.X,
+                    value => Set(element, _ => placement.X = Mathf.Clamp01(value))),
+                UI.Field("Y (0..1)", () => placement.Y,
+                    value => Set(element, _ => placement.Y = Mathf.Clamp01(value))),
+                UI.Field("Width (0..1)", () => placement.Width,
+                    value => Set(element, _ => placement.Width = Mathf.Clamp01(value))),
+                UI.Field("Height (0..1)", () => placement.Height,
+                    value => Set(element, _ => placement.Height = Mathf.Clamp01(value))));
         }
 
         private Element CreateAppearanceInspector(PosterElement element)
@@ -350,12 +371,32 @@ namespace qoooo.Rendering.Sources
                             value => Set(element, _ => settings.Format = value ?? string.Empty)),
                         _ => UI.HelpBox("Uses poster.main-text.")
                     }),
+                CreateFontInspector(element, settings),
                 UI.Field("Font Size", () => settings.FontSize,
                     value => Set(element, _ => settings.FontSize = Mathf.Max(0.001f, value))),
                 UI.Dropdown("Horizontal Align", () => (int)settings.HorizontalAlign,
                     value => Set(element, _ => settings.HorizontalAlign = (PosterHorizontalAlign)value), HorizontalAlignNames),
                 UI.Dropdown("Vertical Align", () => (int)settings.VerticalAlign,
                     value => Set(element, _ => settings.VerticalAlign = (PosterVerticalAlign)value), VerticalAlignNames));
+        }
+
+        private Element CreateFontInspector(PosterElement element, PosterTextSettings settings)
+        {
+            var catalog = _posterCanvas.FontCatalog;
+            if (catalog == null || catalog.Fonts.Count == 0)
+                return UI.HelpBox("Poster Font Catalog is not configured.");
+
+            var labels = new string[catalog.Fonts.Count];
+            for (var index = 0; index < labels.Length; index++)
+            {
+                var definition = catalog.Fonts[index];
+                labels[index] = string.IsNullOrWhiteSpace(definition?.Label)
+                    ? definition?.Id ?? "Missing Font"
+                    : definition.Label;
+            }
+
+            return UI.Dropdown("Font", () => catalog.IndexOf(settings.FontId),
+                value => Set(element, _ => settings.FontId = catalog.IdAt(value)), labels);
         }
 
         private Element CreateLineInspector(PosterElement element)
@@ -369,10 +410,10 @@ namespace qoooo.Rendering.Sources
                 UI.DynamicElementIf(
                     () => !settings.UsePlacementBounds,
                     () => UI.Column(
-                        UI.Field("Start", () => settings.Start,
-                            value => Set(element, _ => settings.Start = value)),
-                        UI.Field("End", () => settings.End,
-                            value => Set(element, _ => settings.End = value)))));
+                        UI.Field("Start (0..1)", () => settings.Start,
+                            value => Set(element, _ => settings.Start = Clamp01(value))),
+                        UI.Field("End (0..1)", () => settings.End,
+                            value => Set(element, _ => settings.End = Clamp01(value))))));
         }
 
         private Element CreateTextureInspector(PosterElement element)
@@ -399,8 +440,6 @@ namespace qoooo.Rendering.Sources
 
         private PosterElement CreateDefaultElement(PosterElementType type)
         {
-            var width = Mathf.Max(320f, _posterCanvas.Width * 0.35f);
-            var height = Mathf.Max(120f, _posterCanvas.Height * 0.2f);
             var element = new PosterElement
             {
                 Name = type == PosterElementType.Texture ? "Model" : type.ToString(),
@@ -409,16 +448,18 @@ namespace qoooo.Rendering.Sources
                 Placement = new PosterPlacement
                 {
                     Mode = PosterPlacementMode.Free,
-                    X = _posterCanvas.Width * 0.1f,
-                    Y = _posterCanvas.Height * 0.1f,
-                    Width = width,
-                    Height = height
+                    Anchor = PosterAnchor.TopLeft,
+                    X = 0.1f,
+                    Y = 0.1f,
+                    Width = 0.35f,
+                    Height = 0.2f
                 },
                 Color = type == PosterElementType.Text ? PosterColorRef.White : PosterColorRef.PaletteMain,
                 Text = new PosterTextSettings
                 {
                     Source = PosterTextSource.Literal,
                     Literal = "TEXT",
+                    FontId = _posterCanvas.FontCatalog?.DefaultFontId,
                     FontSize = 0.06f,
                     HorizontalAlign = PosterHorizontalAlign.Left,
                     VerticalAlign = PosterVerticalAlign.Top
@@ -435,7 +476,7 @@ namespace qoooo.Rendering.Sources
                 }
             };
 
-            if (type == PosterElementType.Line) element.Placement.Height = 40f;
+            if (type == PosterElementType.Line) element.Placement.Height = 0.04f;
             return element;
         }
 
@@ -538,33 +579,172 @@ namespace qoooo.Rendering.Sources
                 && record.Library != null)
             {
                 _posterCanvas.ReplaceLibrary(Copy(record.Library));
-                Debug.Log("[Poster] Library v2 loaded from Prefs.", this);
+                Debug.Log("[Poster] Library v3 loaded from Prefs.", this);
                 return;
             }
 
-            var legacyRecord = _legacyPrefs.Get();
-            if (legacyRecord == null
-                || !legacyRecord.HasSavedData
-                || legacyRecord.SchemaVersion != 1
-                || legacyRecord.Library == null) return;
+            var legacyV2Record = _legacyV2Prefs.Get();
+            if (legacyV2Record != null
+                && legacyV2Record.HasSavedData
+                && legacyV2Record.SchemaVersion == 2
+                && legacyV2Record.Library != null)
+            {
+                TryLoadLegacyLibrary(legacyV2Record.Library.Documents, 2);
+                return;
+            }
 
-            _posterCanvas.ReplaceLibrary(ConvertLegacyLibrary(legacyRecord.Library));
-            Debug.Log("[Poster] Library v1 migrated from Prefs.", this);
+            var legacyV1Record = _legacyV1Prefs.Get();
+            if (legacyV1Record == null
+                || !legacyV1Record.HasSavedData
+                || legacyV1Record.SchemaVersion != 1
+                || legacyV1Record.Library == null) return;
+
+            TryLoadLegacyLibrary(new[]
+            {
+                legacyV1Record.Library.Editorial,
+                legacyV1Record.Library.Split,
+                legacyV1Record.Library.Modular,
+                legacyV1Record.Library.Custom
+            }, 1);
         }
 
-        private static PosterLibrary ConvertLegacyLibrary(LegacyPosterLibrary legacy)
+        private void TryLoadLegacyLibrary(IEnumerable<LegacyPosterDocument> documents, int version)
+        {
+            try
+            {
+                var library = ConvertLegacyLibrary(documents);
+                _posterCanvas.ReplaceLibrary(library);
+                Debug.Log($"[Poster] Library v{version} migrated in memory. Save to persist v3.", this);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError(
+                    $"[Poster] Library v{version} migration failed; Scene defaults and legacy Prefs were preserved.\n{exception}",
+                    this);
+            }
+        }
+
+        private PosterLibrary ConvertLegacyLibrary(IEnumerable<LegacyPosterDocument> legacyDocuments)
         {
             var library = new PosterLibrary();
-            AddLegacyDocument(library.Documents, legacy.Editorial);
-            AddLegacyDocument(library.Documents, legacy.Split);
-            AddLegacyDocument(library.Documents, legacy.Modular);
-            AddLegacyDocument(library.Documents, legacy.Custom);
-            return library.Documents.Count == 0 ? PosterDocumentFactory.CreateDefaultLibrary() : library;
+            if (legacyDocuments != null)
+            {
+                foreach (var legacyDocument in legacyDocuments)
+                {
+                    if (legacyDocument != null)
+                        library.Documents.Add(ConvertLegacyDocument(legacyDocument));
+                }
+            }
+
+            return library.Documents.Count == 0
+                ? PosterDocumentFactory.CreateDefaultLibrary()
+                : library;
         }
 
-        private static void AddLegacyDocument(List<PosterDocument> documents, PosterDocument document)
+        private PosterDocument ConvertLegacyDocument(LegacyPosterDocument legacy)
         {
-            if (document != null) documents.Add(Copy(document));
+            var document = new PosterDocument
+            {
+                Name = legacy.Name,
+                Grid = new PosterGridDefinition(),
+                Elements = new List<PosterElement>()
+            };
+            if (legacy.Elements == null) return document;
+
+            foreach (var legacyElement in legacy.Elements)
+            {
+                if (legacyElement != null)
+                    document.Elements.Add(ConvertLegacyElement(legacyElement));
+            }
+
+            return document;
+        }
+
+        private PosterElement ConvertLegacyElement(LegacyPosterElement legacy)
+        {
+            var text = legacy.Text ?? new PosterTextSettings();
+            var anchor = legacy.Type == PosterElementType.Text
+                ? ResolveTextAnchor(text.HorizontalAlign, text.VerticalAlign)
+                : PosterAnchor.TopLeft;
+            var placement = ConvertLegacyPlacement(legacy.Placement, anchor);
+            var line = legacy.Line ?? new PosterLineSettings();
+            if (!line.UsePlacementBounds)
+            {
+                line.Start = new Vector2(
+                    line.Start.x / PosterLegacyPlacementConverter.ReferenceWidth,
+                    line.Start.y / PosterLegacyPlacementConverter.ReferenceHeight);
+                line.End = new Vector2(
+                    line.End.x / PosterLegacyPlacementConverter.ReferenceWidth,
+                    line.End.y / PosterLegacyPlacementConverter.ReferenceHeight);
+            }
+
+            return new PosterElement
+            {
+                Name = legacy.Name,
+                Enabled = legacy.Enabled,
+                Type = legacy.Type,
+                Placement = placement,
+                Rotation = legacy.Rotation,
+                Color = legacy.Color,
+                CustomColor = legacy.CustomColor,
+                Text = new PosterTextSettings
+                {
+                    Source = text.Source,
+                    Literal = text.Literal,
+                    Format = text.Format,
+                    FontId = string.IsNullOrWhiteSpace(text.FontId)
+                        ? _posterCanvas.FontCatalog?.DefaultFontId
+                        : text.FontId,
+                    FontSize = text.FontSize,
+                    HorizontalAlign = text.HorizontalAlign,
+                    VerticalAlign = text.VerticalAlign
+                },
+                Texture = Copy(legacy.Texture) ?? new PosterTextureSettings(),
+                Line = Copy(line) ?? new PosterLineSettings()
+            };
+        }
+
+        private static PosterPlacement ConvertLegacyPlacement(
+            LegacyPosterPlacement legacy,
+            PosterAnchor anchor)
+        {
+            legacy ??= new LegacyPosterPlacement();
+            var placement = legacy.Mode == PosterPlacementMode.Grid
+                ? PosterLegacyPlacementConverter.FromGrid(
+                    legacy.Column,
+                    legacy.ColumnSpan,
+                    legacy.Baseline,
+                    legacy.BaselineSpan,
+                    legacy.OffsetX,
+                    legacy.OffsetY)
+                : PosterLegacyPlacementConverter.FromFree(
+                    legacy.X,
+                    legacy.Y,
+                    legacy.Width,
+                    legacy.Height,
+                    legacy.OffsetX,
+                    legacy.OffsetY);
+            return anchor == PosterAnchor.TopLeft
+                ? placement
+                : PosterLegacyPlacementConverter.WithAnchor(placement, anchor);
+        }
+
+        private static PosterAnchor ResolveTextAnchor(
+            PosterHorizontalAlign horizontalAlign,
+            PosterVerticalAlign verticalAlign)
+        {
+            return (horizontalAlign, verticalAlign) switch
+            {
+                (PosterHorizontalAlign.Center, PosterVerticalAlign.Top) => PosterAnchor.Top,
+                (PosterHorizontalAlign.Right, PosterVerticalAlign.Top) => PosterAnchor.TopRight,
+                (PosterHorizontalAlign.Left, PosterVerticalAlign.Center) => PosterAnchor.Left,
+                (PosterHorizontalAlign.Center, PosterVerticalAlign.Center) => PosterAnchor.Center,
+                (PosterHorizontalAlign.Right, PosterVerticalAlign.Center) => PosterAnchor.Right,
+                (PosterHorizontalAlign.Left, PosterVerticalAlign.Bottom) => PosterAnchor.BottomLeft,
+                (PosterHorizontalAlign.Center, PosterVerticalAlign.Bottom) => PosterAnchor.Bottom,
+                (PosterHorizontalAlign.Right, PosterVerticalAlign.Bottom) => PosterAnchor.BottomRight,
+                _ => PosterAnchor.TopLeft
+            };
         }
 
         private static int CalculateOrderSignature(PosterDocument document)
@@ -598,6 +778,11 @@ namespace qoooo.Rendering.Sources
             return Mathf.Clamp((int)rotation / 90, 0, 3);
         }
 
+        private static Vector2 Clamp01(Vector2 value)
+        {
+            return new Vector2(Mathf.Clamp01(value.x), Mathf.Clamp01(value.y));
+        }
+
         private static void EnsureSettings(PosterElement element)
         {
             element.Placement ??= new PosterPlacement();
@@ -614,26 +799,78 @@ namespace qoooo.Rendering.Sources
         [Serializable]
         private sealed class PosterLibraryRecord
         {
-            public int SchemaVersion = 2;
+            public int SchemaVersion = 3;
             public bool HasSavedData;
             public PosterLibrary Library;
         }
 
         [Serializable]
-        private sealed class LegacyPosterLibraryRecord
+        private sealed class LegacyV2PosterLibraryRecord
         {
-            public int SchemaVersion = 1;
+            public int SchemaVersion = 2;
             public bool HasSavedData;
-            public LegacyPosterLibrary Library;
+            public LegacyV2PosterLibrary Library;
         }
 
         [Serializable]
-        private sealed class LegacyPosterLibrary
+        private sealed class LegacyV2PosterLibrary
         {
-            public PosterDocument Editorial;
-            public PosterDocument Split;
-            public PosterDocument Modular;
-            public PosterDocument Custom;
+            public List<LegacyPosterDocument> Documents = new();
+        }
+
+        [Serializable]
+        private sealed class LegacyV1PosterLibraryRecord
+        {
+            public int SchemaVersion = 1;
+            public bool HasSavedData;
+            public LegacyV1PosterLibrary Library;
+        }
+
+        [Serializable]
+        private sealed class LegacyV1PosterLibrary
+        {
+            public LegacyPosterDocument Editorial;
+            public LegacyPosterDocument Split;
+            public LegacyPosterDocument Modular;
+            public LegacyPosterDocument Custom;
+        }
+
+        [Serializable]
+        private sealed class LegacyPosterDocument
+        {
+            public string Name;
+            public List<LegacyPosterElement> Elements = new();
+        }
+
+        [Serializable]
+        private sealed class LegacyPosterElement
+        {
+            public string Name;
+            public bool Enabled = true;
+            public PosterElementType Type;
+            public LegacyPosterPlacement Placement = new();
+            public PosterRotation Rotation;
+            public PosterColorRef Color;
+            public Color CustomColor = UnityEngine.Color.white;
+            public PosterTextSettings Text = new();
+            public PosterTextureSettings Texture = new();
+            public PosterLineSettings Line = new();
+        }
+
+        [Serializable]
+        private sealed class LegacyPosterPlacement
+        {
+            public PosterPlacementMode Mode;
+            public int Column;
+            public int ColumnSpan = 1;
+            public int Baseline;
+            public int BaselineSpan = 1;
+            public float X;
+            public float Y;
+            public float Width;
+            public float Height;
+            public float OffsetX;
+            public float OffsetY;
         }
     }
 }

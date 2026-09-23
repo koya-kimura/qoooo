@@ -20,6 +20,23 @@ flowchart LR
 `TextureLayer`は`MonoBehaviour`参照を持つが、`ITextureContainer`実装だけをsourceとして受け付ける。
 任意の`TextureEffect`を適用した後、`TextureCompositor`へ渡す。
 
+ModelとBackgroundの`ProcessedTextureSource`はsourceごとのeffect Parameterを所有する。RosettaUIとMIDIは
+同じParameter instanceを編集し、`TextureEffect`が現在値をshader uniformへ渡す。effectは一つのpass内で
+次の順に実行する。
+
+1. UV変形
+2. Sampling filter
+3. Color変換
+4. Alpha変換
+
+各段階はmode選択で排他的にし、同じ入力textureを読む複数sampling filterの後勝ちを防ぐ。共有Parameterは
+Amount、Scale、Threshold、Strength、Probability、Seedであり、Direction、Grid、Palette colorsは
+Texture RosettaUIから編集する。旧Invert / Mosaic / Tiling / Posterize fieldはScene互換のため残し、
+段階別effectの前後に従来順で適用する。
+
+Texture RosettaUIは選択中のModel / Backgroundについて、固定順のActive Pipelineをread-only表示する。
+effectの選択は既存の4 dropdownだけで行い、任意の並べ替えや複数pass stackは持たない。
+
 Trip26の通常出力では`BackgroundLayer`、`ModelLayer`、`TextLayer`はinactiveであり、
 `PosterLayer`だけをCompositorへ渡す。Background generatorとModel CameraはLayerとは独立してactiveである。
 `PosterCanvas`はBackground textureを直接参照し、ModelLayerの既存`TextureEffect`を一度だけ適用した
@@ -34,8 +51,12 @@ processed Model textureを参照する。
 `PosterCanvas`は`PosterLibrary.Documents`から選択された`PosterDocument`を描画する。
 `PosterDocument = Layout = Preset`であり、別のslotやpreset型は持たない。Documentはfront-to-back順の
 `List<PosterElement>`を持ち、Canvas生成時には逆順に生成するため、List先頭が前面になる。
-Element typeは`Text`、`Rect`、`Line`、`Texture(Model / Background)`である。Placementは既存12-column
-`PosterGrid`またはtop-left基準のFree座標を使い、rotationは0 / 90 / 180 / 270度に限定する。
+Element typeは`Text`、`Rect`、`Line`、`Texture(Model / Background)`である。各Documentは既定4×6の
+point gridを持つ。Grid placementはpoint indexを使い、Width / Heightは正のgrid unitとして保持する。
+描画sizeは`Width / Columns`、`Height / Rows`をcanvas幅・高さへ掛け、grid外へ伸びるsizeもclipしない。
+Free placementの座標とsizeは従来どおり0..1で保持する。全Elementは共通の9点anchorを持ち、rotationはanchorを中心に
+0 / 90 / 180 / 270度で適用する。Textのhorizontal / vertical alignmentはplacement anchorとは別に、
+固定placement box内のglyph配置だけを決める。
 
 `poster.layout`はActive PosterDocumentを選択する。
 
@@ -50,7 +71,10 @@ layout、main text、palette、resolution、source texture参照の変更時に�
 `CurrentDate` / `CurrentTime` Text elementは生成したTMP参照を保持し、値が変わった時だけ`TMP.text`を更新する。
 `poster.main-text`は`MainText` sourceのText elementから参照する。
 `Poster Composer`はDocumentの作成、複製、rename、削除とlayer編集を行うauthoring UIである。
-保存先は`qoooo.poster.library.v2`で、旧v1固定4-field recordはload時だけDocumentsへmigrationする。`poster.model-layout`と
+Textは`Poster Font Catalog`のstable IDを保存し、描画とComposer dropdownが同じcatalogを参照する。
+IDが空、未知、削除済みの場合はcatalog default、既存`_posterFont`の順でfallbackする。
+保存先は`qoooo.poster.library.v3`で、旧v2 pixel/grid recordとv1固定4-field recordはload時に
+normalized v3 modelへin-memory migrationする。旧Prefsは変更せず、次の明示Saveでv3を保存する。`poster.model-layout`と
 `poster.typography-layout`はretire済みで、live Parameterには登録されない。
 
 ## Procedural background

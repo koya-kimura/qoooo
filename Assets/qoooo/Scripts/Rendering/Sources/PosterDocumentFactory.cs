@@ -23,24 +23,24 @@ namespace qoooo.Rendering.Sources
         public static PosterDocument CreateDefaultEditorial()
         {
             var elements = new List<PosterElement>();
-            AddText(elements, "Top Left Meta", "09.26 / SATURDAY", Grid(0, 12, 1, 2, 0.02f), 0.025f,
+            AddText(elements, "Top Left Meta", "09.26 / SATURDAY", LegacyGrid(0, 12, 1, 2, 0.02f), 0.025f,
                 PosterHorizontalAlign.Left, PosterVerticalAlign.Center, PosterColorRef.Black);
-            AddText(elements, "Top Right Meta", "UNITY / 2026", Grid(0, 12, 1, 2, -0.02f), 0.025f,
+            AddText(elements, "Top Right Meta", "UNITY / 2026", LegacyGrid(0, 12, 1, 2, -0.02f), 0.025f,
                 PosterHorizontalAlign.Right, PosterVerticalAlign.Center, PosterColorRef.Black);
-            AddMainText(elements, "Hero", Grid(1, 10, 3, 5), 0.225f,
+            AddMainText(elements, "Hero", LegacyGrid(1, 10, 3, 5), 0.225f,
                 PosterHorizontalAlign.Center, PosterVerticalAlign.Center, PosterColorRef.Black);
-            AddText(elements, "Secondary", "HAPILABO / DJ RØKI", Grid(4, 4, 8, 2), 0.042f,
+            AddText(elements, "Secondary", "HAPILABO / DJ RØKI", LegacyGrid(4, 4, 8, 2), 0.042f,
                 PosterHorizontalAlign.Center, PosterVerticalAlign.Center, PosterColorRef.Black);
-            AddText(elements, "Bottom Left Meta", "NAEBA / NIIGATA", Grid(0, 12, 20, 2, 0.02f), 0.026f,
+            AddText(elements, "Bottom Left Meta", "NAEBA / NIIGATA", LegacyGrid(0, 12, 20, 2, 0.02f), 0.026f,
                 PosterHorizontalAlign.Left, PosterVerticalAlign.Center, PosterColorRef.Black);
-            AddText(elements, "Bottom Right Meta", "128 BPM / LIVE", Grid(0, 12, 20, 2, -0.02f), 0.026f,
+            AddText(elements, "Bottom Right Meta", "128 BPM / LIVE", LegacyGrid(0, 12, 20, 2, -0.02f), 0.026f,
                 PosterHorizontalAlign.Right, PosterVerticalAlign.Center, PosterColorRef.Black);
 
-            AddRect(elements, "Top Meta Band", Grid(0, 12, 1, 2), PosterColorRef.PaletteSub);
-            AddRect(elements, "Hero Band", Grid(1, 10, 3, 5), PosterColorRef.PaletteMain);
-            AddRect(elements, "Secondary Band", Grid(4, 4, 8, 2), PosterColorRef.PaletteSub);
-            AddRect(elements, "Bottom Meta Band", Grid(0, 12, 20, 2), PosterColorRef.PaletteSub);
-            AddTexture(elements, "Hero Model", PosterTextureSource.Model, Grid(2, 8, 7, 12), PosterFit.Cover);
+            AddRect(elements, "Top Meta Band", LegacyGrid(0, 12, 1, 2), PosterColorRef.PaletteSub);
+            AddRect(elements, "Hero Band", LegacyGrid(1, 10, 3, 5), PosterColorRef.PaletteMain);
+            AddRect(elements, "Secondary Band", LegacyGrid(4, 4, 8, 2), PosterColorRef.PaletteSub);
+            AddRect(elements, "Bottom Meta Band", LegacyGrid(0, 12, 20, 2), PosterColorRef.PaletteSub);
+            AddTexture(elements, "Hero Model", PosterTextureSource.Model, LegacyGrid(2, 8, 7, 12), PosterFit.Cover);
             AddTexture(elements, "Background", PosterTextureSource.Background, FullCanvas(), PosterFit.Stretch);
             return Document("Editorial", elements);
         }
@@ -48,25 +48,25 @@ namespace qoooo.Rendering.Sources
         public static PosterDocument CreateDefaultSplit()
         {
             var elements = new List<PosterElement>();
-            AddMainText(elements, "Hero", Grid(0, 5, 2, 6, 0.04f), 0.15f,
+            AddMainText(elements, "Hero", LegacyGrid(0, 5, 2, 6, 0.04f), 0.15f,
                 PosterHorizontalAlign.Left, PosterVerticalAlign.Top, PosterColorRef.Black);
-            AddText(elements, "Artist", "HAPILABO", Grid(0, 5, 10, 1, 0.04f), 0.052f,
+            AddText(elements, "Artist", "HAPILABO", LegacyGrid(0, 5, 10, 1, 0.04f), 0.052f,
                 PosterHorizontalAlign.Left, PosterVerticalAlign.Top, PosterColorRef.Black);
-            AddText(elements, "Artist", "DJ RØKI", Grid(0, 5, 11, 1, 0.04f), 0.052f,
+            AddText(elements, "Artist", "DJ RØKI", LegacyGrid(0, 5, 11, 1, 0.04f), 0.052f,
                 PosterHorizontalAlign.Left, PosterVerticalAlign.Top, PosterColorRef.Black);
-            AddText(elements, "Date", "09.26 / SATURDAY", Grid(0, 5, 14, 1, 0.04f), 0.03f,
+            AddText(elements, "Date", "09.26 / SATURDAY", LegacyGrid(0, 5, 14, 1, 0.04f), 0.03f,
                 PosterHorizontalAlign.Left, PosterVerticalAlign.Top, PosterColorRef.Black);
-            AddText(elements, "Location", "NAEBA / NIIGATA", Grid(0, 5, 21, 1, 0.04f), 0.03f,
+            AddText(elements, "Location", "NAEBA / NIIGATA", LegacyGrid(0, 5, 21, 1, 0.04f), 0.03f,
                 PosterHorizontalAlign.Left, PosterVerticalAlign.Top, PosterColorRef.Black);
-            AddText(elements, "Side Meta", "UNITY", Grid(11, 1, 3, 15), 0.032f,
+            AddText(elements, "Side Meta", "UNITY", LegacyGrid(11, 1, 3, 15), 0.032f,
                 PosterHorizontalAlign.Center, PosterVerticalAlign.Center, PosterColorRef.Black, PosterRotation.TwoSeventy);
-            AddText(elements, "Bottom Meta", "128 BPM / LIVE", Grid(6, 5, 20, 2), 0.03f,
+            AddText(elements, "Bottom Meta", "128 BPM / LIVE", LegacyGrid(6, 5, 20, 2), 0.03f,
                 PosterHorizontalAlign.Center, PosterVerticalAlign.Center, PosterColorRef.Black);
 
-            AddRect(elements, "Typography Block", Grid(0, 5, 2, 20), PosterColorRef.PaletteMain);
-            AddRect(elements, "Side Meta Panel", Grid(11, 1, 3, 15), PosterColorRef.PaletteSub);
-            AddRect(elements, "Bottom Meta Panel", Grid(6, 5, 20, 2), PosterColorRef.PaletteSub);
-            AddTexture(elements, "Split Model", PosterTextureSource.Model, Grid(6, 6, 2, 20), PosterFit.Cover);
+            AddRect(elements, "Typography Block", LegacyGrid(0, 5, 2, 20), PosterColorRef.PaletteMain);
+            AddRect(elements, "Side Meta Panel", LegacyGrid(11, 1, 3, 15), PosterColorRef.PaletteSub);
+            AddRect(elements, "Bottom Meta Panel", LegacyGrid(6, 5, 20, 2), PosterColorRef.PaletteSub);
+            AddTexture(elements, "Split Model", PosterTextureSource.Model, LegacyGrid(6, 6, 2, 20), PosterFit.Cover);
             AddTexture(elements, "Background", PosterTextureSource.Background, FullCanvas(), PosterFit.Stretch);
             return Document("Split", elements);
         }
@@ -74,26 +74,26 @@ namespace qoooo.Rendering.Sources
         public static PosterDocument CreateDefaultModular()
         {
             var elements = new List<PosterElement>();
-            AddMainText(elements, "Headline", Grid(0, 4, 1, 5, 0.04f), 0.115f,
+            AddMainText(elements, "Headline", LegacyGrid(0, 4, 1, 5, 0.04f), 0.115f,
                 PosterHorizontalAlign.Left, PosterVerticalAlign.Top, PosterColorRef.Black);
-            AddText(elements, "Secondary", "HAPILABO / DJ RØKI", Grid(0, 4, 5, 1, 0.04f), 0.036f,
+            AddText(elements, "Secondary", "HAPILABO / DJ RØKI", LegacyGrid(0, 4, 5, 1, 0.04f), 0.036f,
                 PosterHorizontalAlign.Left, PosterVerticalAlign.Top, PosterColorRef.Black);
-            AddText(elements, "Date", "09.26", Grid(9, 3, 1, 1), 0.03f,
+            AddText(elements, "Date", "09.26", LegacyGrid(9, 3, 1, 1), 0.03f,
                 PosterHorizontalAlign.Center, PosterVerticalAlign.Top, PosterColorRef.Black);
-            AddText(elements, "Year", "2026", Grid(9, 3, 2, 1), 0.024f,
+            AddText(elements, "Year", "2026", LegacyGrid(9, 3, 2, 1), 0.024f,
                 PosterHorizontalAlign.Center, PosterVerticalAlign.Top, PosterColorRef.Black);
-            AddText(elements, "Bottom Left Meta", "VISUALS BY QOOOO", Grid(0, 12, 20, 2, 0.02f), 0.026f,
+            AddText(elements, "Bottom Left Meta", "VISUALS BY QOOOO", LegacyGrid(0, 12, 20, 2, 0.02f), 0.026f,
                 PosterHorizontalAlign.Left, PosterVerticalAlign.Center, PosterColorRef.Black);
-            AddText(elements, "Bottom Right Meta", "128 BPM / LIVE", Grid(0, 12, 20, 2, -0.02f), 0.026f,
+            AddText(elements, "Bottom Right Meta", "128 BPM / LIVE", LegacyGrid(0, 12, 20, 2, -0.02f), 0.026f,
                 PosterHorizontalAlign.Right, PosterVerticalAlign.Center, PosterColorRef.Black);
 
-            AddRect(elements, "Headline Panel", Grid(0, 4, 1, 5), PosterColorRef.PaletteMain);
-            AddRect(elements, "Date Panel", Grid(9, 3, 1, 3), PosterColorRef.PaletteSub);
-            AddRect(elements, "Bottom Meta Panel", Grid(0, 12, 20, 2), PosterColorRef.PaletteSub);
-            AddTexture(elements, "Large Model", PosterTextureSource.Model, Grid(4, 6, 6, 13), PosterFit.Cover);
-            AddTexture(elements, "Small Model Left", PosterTextureSource.Model, Grid(0, 3, 9, 4), PosterFit.Cover);
-            AddTexture(elements, "Small Model Right", PosterTextureSource.Model, Grid(9, 3, 3, 3), PosterFit.Cover);
-            AddTexture(elements, "Small Model Bottom", PosterTextureSource.Model, Grid(1, 3, 16, 3), PosterFit.Cover);
+            AddRect(elements, "Headline Panel", LegacyGrid(0, 4, 1, 5), PosterColorRef.PaletteMain);
+            AddRect(elements, "Date Panel", LegacyGrid(9, 3, 1, 3), PosterColorRef.PaletteSub);
+            AddRect(elements, "Bottom Meta Panel", LegacyGrid(0, 12, 20, 2), PosterColorRef.PaletteSub);
+            AddTexture(elements, "Large Model", PosterTextureSource.Model, LegacyGrid(4, 6, 6, 13), PosterFit.Cover);
+            AddTexture(elements, "Small Model Left", PosterTextureSource.Model, LegacyGrid(0, 3, 9, 4), PosterFit.Cover);
+            AddTexture(elements, "Small Model Right", PosterTextureSource.Model, LegacyGrid(9, 3, 3, 3), PosterFit.Cover);
+            AddTexture(elements, "Small Model Bottom", PosterTextureSource.Model, LegacyGrid(1, 3, 16, 3), PosterFit.Cover);
             AddTexture(elements, "Background", PosterTextureSource.Background, FullCanvas(), PosterFit.Stretch);
             return Document("Modular", elements);
         }
@@ -101,35 +101,43 @@ namespace qoooo.Rendering.Sources
         public static PosterDocument CreateDefaultCustom()
         {
             var elements = new List<PosterElement>();
-            AddMainText(elements, "Headline", Grid(1, 10, 2, 4), 0.16f,
+            AddMainText(elements, "Headline", LegacyGrid(1, 10, 2, 4), 0.16f,
                 PosterHorizontalAlign.Center, PosterVerticalAlign.Center, PosterColorRef.Black);
-            AddRect(elements, "Headline Band", Grid(1, 10, 2, 4), PosterColorRef.PaletteMain);
-            AddTexture(elements, "Model", PosterTextureSource.Model, Grid(3, 6, 7, 12), PosterFit.Cover);
+            AddRect(elements, "Headline Band", LegacyGrid(1, 10, 2, 4), PosterColorRef.PaletteMain);
+            AddTexture(elements, "Model", PosterTextureSource.Model, LegacyGrid(3, 6, 7, 12), PosterFit.Cover);
             AddTexture(elements, "Background", PosterTextureSource.Background, FullCanvas(), PosterFit.Stretch);
             return Document("Custom", elements);
         }
 
         private static PosterDocument Document(string name, List<PosterElement> elements)
         {
-            return new PosterDocument { Name = name, Elements = elements };
+            return new PosterDocument
+            {
+                Name = name,
+                Grid = new PosterGridDefinition(),
+                Elements = elements
+            };
         }
 
-        private static PosterPlacement Grid(int column, int columnSpan, int baseline, int baselineSpan, float offsetX = 0f)
+        private static PosterPlacement LegacyGrid(int column, int columnSpan, int baseline, int baselineSpan, float offsetX = 0f)
         {
-            return new PosterPlacement
-            {
-                Mode = PosterPlacementMode.Grid,
-                Column = column,
-                ColumnSpan = columnSpan,
-                Baseline = baseline,
-                BaselineSpan = baselineSpan,
-                OffsetX = offsetX
-            };
+            return PosterLegacyPlacementConverter.FromGrid(
+                column,
+                columnSpan,
+                baseline,
+                baselineSpan,
+                offsetX);
         }
 
         private static PosterPlacement FullCanvas()
         {
-            return new PosterPlacement { Mode = PosterPlacementMode.Free };
+            return new PosterPlacement
+            {
+                Mode = PosterPlacementMode.Free,
+                Anchor = PosterAnchor.TopLeft,
+                Width = 1f,
+                Height = 1f
+            };
         }
 
         private static void AddTexture(List<PosterElement> elements, string name, PosterTextureSource source, PosterPlacement placement, PosterFit fit)
@@ -173,6 +181,9 @@ namespace qoooo.Rendering.Sources
             PosterPlacement placement, float fontSize, PosterHorizontalAlign horizontalAlign,
             PosterVerticalAlign verticalAlign, PosterColorRef color, PosterRotation rotation)
         {
+            placement = PosterLegacyPlacementConverter.WithAnchor(
+                placement,
+                ResolveTextAnchor(horizontalAlign, verticalAlign));
             elements.Add(new PosterElement
             {
                 Name = name,
@@ -189,6 +200,24 @@ namespace qoooo.Rendering.Sources
                     VerticalAlign = verticalAlign
                 }
             });
+        }
+
+        private static PosterAnchor ResolveTextAnchor(
+            PosterHorizontalAlign horizontalAlign,
+            PosterVerticalAlign verticalAlign)
+        {
+            return (horizontalAlign, verticalAlign) switch
+            {
+                (PosterHorizontalAlign.Center, PosterVerticalAlign.Top) => PosterAnchor.Top,
+                (PosterHorizontalAlign.Right, PosterVerticalAlign.Top) => PosterAnchor.TopRight,
+                (PosterHorizontalAlign.Left, PosterVerticalAlign.Center) => PosterAnchor.Left,
+                (PosterHorizontalAlign.Center, PosterVerticalAlign.Center) => PosterAnchor.Center,
+                (PosterHorizontalAlign.Right, PosterVerticalAlign.Center) => PosterAnchor.Right,
+                (PosterHorizontalAlign.Left, PosterVerticalAlign.Bottom) => PosterAnchor.BottomLeft,
+                (PosterHorizontalAlign.Center, PosterVerticalAlign.Bottom) => PosterAnchor.Bottom,
+                (PosterHorizontalAlign.Right, PosterVerticalAlign.Bottom) => PosterAnchor.BottomRight,
+                _ => PosterAnchor.TopLeft
+            };
         }
     }
 }

@@ -7,6 +7,66 @@
 #define QOOOO_PI 3.14159265358979
 #endif
 
+#ifndef QOOOO_MATH_EPSILON
+#define QOOOO_MATH_EPSILON 0.00001
+#endif
+
+
+float QooooSafeDiv(float numerator, float denominator)
+{
+    float safeDenominator =
+        abs(denominator) < QOOOO_MATH_EPSILON
+            ? (denominator < 0.0 ? -QOOOO_MATH_EPSILON : QOOOO_MATH_EPSILON)
+            : denominator;
+
+    return numerator / safeDenominator;
+}
+
+
+float2 SafeNormalize2D(float2 value)
+{
+    return value
+        / max(
+            length(value),
+            QOOOO_MATH_EPSILON
+        );
+}
+
+
+float2 PixelToUv(
+    float2 pixel,
+    float2 resolution
+)
+{
+    return pixel
+        / max(
+            resolution,
+            float2(1.0, 1.0)
+        );
+}
+
+
+float4 ToPremultiplied(float4 color)
+{
+    return float4(
+        color.rgb * color.a,
+        color.a
+    );
+}
+
+
+float4 ToStraightAlpha(float4 color)
+{
+    float alpha = color.a;
+
+    return float4(
+        alpha > QOOOO_MATH_EPSILON
+            ? color.rgb / alpha
+            : float3(0.0, 0.0, 0.0),
+        alpha
+    );
+}
+
 
 float Mod(float x, float y)
 {
