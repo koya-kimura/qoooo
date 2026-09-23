@@ -39,6 +39,7 @@ namespace qoooo.Midi.Runtime
 
         private readonly Dictionary<int, Action> _buttons = new();
         private readonly Dictionary<int, FloatParameter> _faders = new();
+        private readonly Dictionary<int, FloatMidiBinding> _faderBindings = new();
         private readonly Dictionary<int, OneshotParameter> _pressedOneshots = new();
         private readonly bool[] _pickupArmed = new bool[ApcMiniMk2Constants.FaderCount];
         private readonly float[] _previousPhysicalFader = new float[ApcMiniMk2Constants.FaderCount];
@@ -167,6 +168,41 @@ namespace qoooo.Midi.Runtime
             index=-1; return false;
         }
 
+        public bool TryGetFaderOutputRange(string parameterId, out float outputMin, out float outputMax)
+        {
+            if (TryParameter(parameterId, MidiParameterKind.Float, out var raw))
+            {
+                var parameter = (FloatParameter)raw;
+                var binding = _floats.Find(value => value != null && value.ParameterId == parameterId);
+                if (binding == null || !binding.HasOutputRange)
+                {
+                    outputMin = parameter.Min;
+                    outputMax = parameter.Max;
+                    return true;
+                }
+                outputMin = binding.OutputMin;
+                outputMax = binding.OutputMax;
+                return true;
+            }
+
+            outputMin = 0f;
+            outputMax = 1f;
+            return false;
+        }
+
+        public void SetFaderOutputRange(string parameterId, float outputMin, float outputMax)
+        {
+            if (!TryParameter(parameterId, MidiParameterKind.Float, out var raw)) return;
+            var parameter = (FloatParameter)raw;
+            var binding = FindOrCreateFloatBinding(parameterId);
+            binding.OutputMin = float.IsFinite(outputMin) ? outputMin : parameter.Min;
+            binding.OutputMax = float.IsFinite(outputMax) ? outputMax : parameter.Max;
+            binding.HasOutputRange = true;
+            if (binding.Assigned && binding.FaderIndex >= 0 && binding.FaderIndex < _pickupArmed.Length)
+                _pickupArmed[binding.FaderIndex] = true;
+            MappingChanged?.Invoke();
+        }
+
         public void Configure(MinisMidiInput input, MidiParameterRegistry parameters, IBpmSource bpmSource)
         { _input=input; _parameters=parameters; _bpmSource=bpmSource; _configured=true; }
 
@@ -185,12 +221,12 @@ namespace qoooo.Midi.Runtime
 
         private void OnDisable()
         {
-            Unsubscribe(); ReleaseOneshots(); _buttons.Clear(); _faders.Clear();
+            Unsubscribe(); ReleaseOneshots(); _buttons.Clear(); _faders.Clear(); _faderBindings.Clear();
         }
 
         public void Rebuild()
         {
-            ReleaseOneshots(); _buttons.Clear(); _faders.Clear();
+            ReleaseOneshots(); _buttons.Clear(); _faders.Clear(); _faderBindings.Clear();
             if (_parameters == null) return;
             AddButtons(_toggles, MidiParameterKind.Toggle, (p, _) => { var value=(BoolParameter)p; return () => value.TrySetValue(!value.Value); });
             AddButtons(_oneshots, MidiParameterKind.Oneshot, (p, _) => { var value=(OneshotParameter)p; return () => value.TrySetValue(true); });
@@ -213,7 +249,10 @@ namespace qoooo.Midi.Runtime
                 if(binding == null || !binding.Assigned || binding.FaderIndex < 0 || binding.FaderIndex >= ApcMiniMk2Constants.FaderCount || !TryParameter(binding.ParameterId,MidiParameterKind.Float,out var raw)) continue;
                 if(_faders.ContainsKey(binding.FaderIndex)) { Debug.LogWarning($"[MIDI] Fader {binding.FaderIndex} is assigned more than once; later binding is ignored.",this); continue; }
                 var parameter=(FloatParameter)raw;
-                _faders.Add(binding.FaderIndex,parameter); _pickupArmed[binding.FaderIndex]=true;
+                FaderRangeMapping.EnsureRange(binding, parameter);
+                _faders.Add(binding.FaderIndex,parameter);
+                _faderBindings.Add(binding.FaderIndex,binding);
+                _pickupArmed[binding.FaderIndex]=true;
             }
             Debug.Log($"[MIDI] APC mapping active: {_buttons.Count} pad slots, {_faders.Count} faders.",this);
         }
@@ -261,11 +300,13 @@ namespace qoooo.Midi.Runtime
             if(_faderModes[index] != FaderButtonMode.Normal) return;
             if(_pickupArmed[index])
             {
-                var target=parameter.NormalizedValue; var previous=_previousPhysicalFader[index];
+                var binding=_faderBindings[index];
+                var target=FaderRangeMapping.Inverse(binding,parameter,parameter.Value); var previous=_previousPhysicalFader[index];
                 if(Mathf.Abs(normalized-target)>0.02f && (previous-target)*(normalized-target)>0f) { _previousPhysicalFader[index]=normalized; return; }
                 _pickupArmed[index]=false; Debug.Log($"[MIDI] Fader {index} pickup acquired.",this);
             }
-            _previousPhysicalFader[index]=normalized; parameter.TrySetNormalizedValue(normalized);
+            _previousPhysicalFader[index]=normalized;
+            parameter.TrySetValue(FaderRangeMapping.Map(_faderBindings[index],parameter,normalized));
         }
         private void AddButtons<T>(IEnumerable<T> bindings,MidiParameterKind kind,Func<IMidiBindableParameter,T,Action> create) where T:class
         { foreach(var binding in bindings ?? Array.Empty<T>()) { if(binding==null)continue; var id=BindingId(binding); if(!TryParameter(id,kind,out var parameter))continue; AddButton(BindingSlot(binding),create(parameter,binding)); } }
@@ -284,7 +325,8 @@ namespace qoooo.Midi.Runtime
             for(var index=0;index<_faderModes.Length;index++)
             {
                 if(_faderModes[index] != FaderButtonMode.Random || !_faders.TryGetValue(index,out var parameter))continue;
-                parameter.TrySetNormalizedValue(Random01(step + 1d,index + 1000d) < 0.5f ? 0f : 1f);
+                parameter.TrySetValue(FaderRangeMapping.Map(
+                    _faderBindings[index],parameter,Random01(step + 1d,index + 1000d) < 0.5f ? 0f : 1f));
             }
         }
         private void ToggleFaderMode(int index)
@@ -295,7 +337,8 @@ namespace qoooo.Midi.Runtime
             _faderModes[index]=_faderModes[index]==next?FaderButtonMode.Normal:next;
             if(_faders.TryGetValue(index,out var parameter))
             {
-                if(_faderModes[index]==FaderButtonMode.Mute)parameter.TrySetNormalizedValue(0f);
+                if(_faderModes[index]==FaderButtonMode.Mute)
+                    parameter.TrySetValue(FaderRangeMapping.Map(_faderBindings[index],parameter,0f));
                 else if(_faderModes[index]==FaderButtonMode.Random)_previousRandomStep=long.MinValue;
                 else _pickupArmed[index]=true;
             }
@@ -320,6 +363,15 @@ namespace qoooo.Midi.Runtime
                 if (binding != null && binding.ParameterId == parameterId) return binding;
             return null;
         }
+
+        private FloatMidiBinding FindOrCreateFloatBinding(string parameterId)
+        {
+            var binding = _floats.Find(value => value != null && value.ParameterId == parameterId);
+            if (binding != null) return binding;
+            binding = new FloatMidiBinding { ParameterId = parameterId };
+            _floats.Add(binding);
+            return binding;
+        }
         private void AssignListeningButton(ApcButtonSlot slot)
         {
             var parameterId = _listeningToggleParameterId;
@@ -334,8 +386,9 @@ namespace qoooo.Midi.Runtime
         {
             var parameterId=_listeningToggleParameterId; CancelListen();
             foreach(var binding in _floats) if(binding != null && binding.Assigned && binding.FaderIndex==index) binding.Assigned=false;
-            var target=_floats.Find(x=>x != null && x.ParameterId==parameterId);
-            if(target==null) { target=new FloatMidiBinding { ParameterId=parameterId }; _floats.Add(target); }
+            var target=FindOrCreateFloatBinding(parameterId);
+            if (TryParameter(parameterId, MidiParameterKind.Float, out var raw))
+                FaderRangeMapping.EnsureRange(target, (FloatParameter)raw);
             target.Assigned=true; target.FaderIndex=index; _previousPhysicalFader[index]=value; _pickupArmed[index]=true;
             Rebuild(); MappingChanged?.Invoke();
             Debug.Log($"[MIDI] Fader listen assigned '{parameterId}' to fader {index}. Pickup is armed.",this);

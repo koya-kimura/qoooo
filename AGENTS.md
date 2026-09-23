@@ -5,14 +5,10 @@
 Read the current architecture before changing code:
 
 - `Docs/Architecture.md` (current repository entry point)
-- `Docs/Architecture/Architecture.md` (intended nested entry point; may not exist yet)
-- `Docs/Architecture/ParametersAndMidi.md`
-- `Docs/Architecture/RenderingAndText.md`
-- `Docs/Architecture/Runtime.md`
-- `Docs/Architecture/Development.md`
-- `Docs/Architecture/PlanStatus.md`
-
-Implementation Plan documents are historical context. Do not treat them as the current specification or unfinished-task list. At task start, also read `Docs/CodexHandoff.md`.
+- `Docs/ParametersAndMidi.md`
+- `Docs/Rendering.md`
+- `Docs/Development.md`
+- `Docs/CreativeCoding.md` when changing visual behavior
 
 ## Build and verification
 

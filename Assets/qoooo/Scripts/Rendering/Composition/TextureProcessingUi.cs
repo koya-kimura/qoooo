@@ -1,12 +1,12 @@
-using System.Text;
-using System.Linq;
+using System.Collections.Generic;
+using qoooo.Parameters.Model;
 using qoooo.Presentation.Contracts;
 using RosettaUI;
 using UnityEngine;
 
 namespace qoooo.Rendering.Composition
 {
-    // UIはstateを持たず、選択中のsourceが所有するTextureEffectParamsを直接編集する。
+    // Effect値はsourceが所有し、このUIはRackと単一Inspectorのnavigation stateだけを持つ。
     public sealed class TextureProcessingUi : MonoBehaviour, IUiTarget
     {
         private static readonly string[] TargetNames = { "Model", "Background" };
@@ -16,6 +16,10 @@ namespace qoooo.Rendering.Composition
 
         // TargetはTexture処理の値ではなく、このWindow内だけのnavigation state。
         private int _selectedTarget;
+        private int _inspectorTarget;
+        private TextureEffectStage _inspectorStage;
+        private int _inspectorEffect;
+        private bool _inspectorOpen;
 
         public Element CreateElement()
         {
@@ -23,7 +27,10 @@ namespace qoooo.Rendering.Composition
                 UI.Dropdown("Target", () => _selectedTarget, SetSelectedTarget, TargetNames),
                 UI.DynamicElementOnStatusChanged(
                     () => _selectedTarget,
-                    _ => CreateEffectsElement()));
+                    _ => CreateEffectsElement()),
+                UI.DynamicElementOnStatusChanged(
+                    InspectorStatus,
+                    _ => CreateInspectorElement()));
         }
 
         private Element CreateEffectsElement()
@@ -34,67 +41,158 @@ namespace qoooo.Rendering.Composition
 
             return UI.Column(
                 UI.Fold("Active Pipeline",
-                    UI.Label(() => $"1. UV       {ActiveEffectName(parameters.UvMode)}"),
-                    UI.Label(() => $"2. Sampling {ActiveEffectName(parameters.SamplingMode)}"),
-                    UI.Label(() => $"3. Color    {ActiveEffectName(parameters.ColorMode)}"),
-                    UI.Label(() => $"4. Alpha    {ActiveEffectName(parameters.AlphaMode)}")
+                    UI.Label(() => $"1. UV        {ActiveEffectName(TextureEffectStage.Uv, parameters.UvMode.Value)}"),
+                    UI.Label(() => $"2. Sampling  {ActiveEffectName(TextureEffectStage.Sampling, parameters.SamplingMode.Value)}"),
+                    UI.Label(() => $"3. Color     {ActiveEffectName(TextureEffectStage.Color, parameters.ColorMode.Value)}"),
+                    UI.Label(() => $"4. Alpha     {ActiveEffectName(TextureEffectStage.Alpha, parameters.AlphaMode.Value)}")
                 ).Open(),
                 UI.Fold("Effects",
-                    UI.Dropdown("UV Effect", () => parameters.UvMode.Value,
-                        value => parameters.UvMode.TrySetValue(value), parameters.UvMode.Options.ToArray()),
-                    UI.Dropdown("Sampling Effect", () => parameters.SamplingMode.Value,
-                        value => parameters.SamplingMode.TrySetValue(value), parameters.SamplingMode.Options.ToArray()),
-                    UI.Dropdown("Color Effect", () => parameters.ColorMode.Value,
-                        value => parameters.ColorMode.TrySetValue(value), parameters.ColorMode.Options.ToArray()),
-                    UI.Dropdown("Alpha Effect", () => parameters.AlphaMode.Value,
-                        value => parameters.AlphaMode.TrySetValue(value), parameters.AlphaMode.Options.ToArray()),
-                    UI.Slider("Amount (px / angle)", () => parameters.Amount.Value,
-                        value => parameters.Amount.TrySetValue(value), parameters.Amount.Min, parameters.Amount.Max),
-                    UI.Slider("Scale / Frequency", () => parameters.Scale.Value,
-                        value => parameters.Scale.TrySetValue(value), parameters.Scale.Min, parameters.Scale.Max),
-                    UI.Slider("Threshold", () => parameters.Threshold.Value,
-                        value => parameters.Threshold.TrySetValue(value), parameters.Threshold.Min, parameters.Threshold.Max),
-                    UI.Slider("Strength", () => parameters.Strength.Value,
-                        value => parameters.Strength.TrySetValue(value), parameters.Strength.Min, parameters.Strength.Max),
-                    UI.Slider("Probability / Decay", () => parameters.Probability.Value,
-                        value => parameters.Probability.TrySetValue(value), parameters.Probability.Min, parameters.Probability.Max),
-                    UI.Slider("Seed", () => parameters.Seed.Value,
-                        value => parameters.Seed.TrySetValue(value), parameters.Seed.Min, parameters.Seed.Max),
-                    UI.Field("Direction / Phase", () => source.EffectParams.Direction, value => SetDirection(source, value)),
-                    UI.Field("Grid", () => source.EffectParams.Grid, value => SetGrid(source, value)),
-                    UI.Field("Tiling Scale", () => source.EffectParams.TileNum, value => SetTilingScale(source, value)),
-                    UI.Field("Tiling Offset", () => source.EffectParams.Offset, value => SetTilingOffset(source, value)),
-                    UI.Field("Palette Thresholds", () => source.EffectParams.Thresholds, value => SetThresholds(source, value)),
-                    UI.Field("Color A", () => source.EffectParams.ColorA, value => SetColorA(source, value)),
-                    UI.Field("Color B", () => source.EffectParams.ColorB, value => SetColorB(source, value)),
-                    UI.Field("Color C", () => source.EffectParams.ColorC, value => SetColorC(source, value)),
-                    UI.Field("Color D", () => source.EffectParams.ColorD, value => SetColorD(source, value))
+                    CreateStageRack("UV", TextureEffectStage.Uv, parameters.UvMode),
+                    CreateStageRack("Sampling", TextureEffectStage.Sampling, parameters.SamplingMode),
+                    CreateStageRack("Color", TextureEffectStage.Color, parameters.ColorMode),
+                    CreateStageRack("Alpha", TextureEffectStage.Alpha, parameters.AlphaMode)
                 ).Open());
         }
 
-        private static string ActiveEffectName(qoooo.Parameters.Model.RadioParameter parameter)
+        private Element CreateStageRack(string label, TextureEffectStage stage, RadioParameter parameter)
         {
-            var value = parameter.Options[parameter.Value];
-            if (value == "None") return "—";
-
-            var label = new StringBuilder(value.Length + 4);
-            for (var index = 0; index < value.Length; index++)
+            var rows = new List<Element>();
+            foreach (var definition in TextureEffectUiMetadata.ForStage(stage))
             {
-                if (index > 0
-                    && char.IsUpper(value[index])
-                    && (char.IsLower(value[index - 1])
-                        || index + 1 < value.Length && char.IsLower(value[index + 1])))
-                    label.Append(' ');
-                label.Append(value[index]);
+                var selected = definition;
+                rows.Add(UI.Row(
+                    UI.Field(null,
+                        () => parameter.Value == selected.Value,
+                        active => SetEffectActive(parameter, selected.Value, active)),
+                    UI.Button(selected.Label, () => OpenInspector(selected)),
+                    UI.Button("Edit", () => OpenInspector(selected))));
             }
-            return label.ToString();
+
+            return UI.Fold(label, UI.Column(rows));
+        }
+
+        private Element CreateInspectorElement()
+        {
+            if (!_inspectorOpen)
+                return UI.Fold("Effect Inspector", UI.HelpBox("Choose an effect's Edit button."));
+
+            var source = SourceForTarget(_inspectorTarget);
+            var definition = TextureEffectUiMetadata.Find(_inspectorStage, _inspectorEffect);
+            if (source == null || !definition.HasValue)
+                return UI.Fold("Effect Inspector", UI.HelpBox("The selected effect is unavailable."));
+
+            var selected = definition.Value;
+            var controls = CreateInspectorControls(source, selected.Parameters);
+            controls.Insert(0, UI.Label($"Target: {TargetNames[_inspectorTarget]}"));
+            controls.Insert(1, UI.Label($"Stage: {StageLabel(selected.Stage)}"));
+            controls.Insert(2, UI.Label($"Effect: {selected.Label}"));
+            controls.Add(UI.Button("Close", CloseInspector));
+            return UI.Fold("Effect Inspector", UI.Column(controls)).Open();
+        }
+
+        private static List<Element> CreateInspectorControls(
+            ProcessedTextureSource source,
+            TextureEffectUiParameter visible)
+        {
+            var parameters = source.EffectParameters;
+            var controls = new List<Element>();
+
+            if (visible.HasFlag(TextureEffectUiParameter.Amount))
+                controls.Add(FloatSlider("Amount (px / angle)", parameters.Amount));
+            if (visible.HasFlag(TextureEffectUiParameter.Scale))
+                controls.Add(FloatSlider("Scale / Frequency", parameters.Scale));
+            if (visible.HasFlag(TextureEffectUiParameter.Threshold))
+                controls.Add(FloatSlider("Threshold", parameters.Threshold));
+            if (visible.HasFlag(TextureEffectUiParameter.Strength))
+                controls.Add(FloatSlider("Strength", parameters.Strength));
+            if (visible.HasFlag(TextureEffectUiParameter.Probability))
+                controls.Add(FloatSlider("Probability / Decay", parameters.Probability));
+            if (visible.HasFlag(TextureEffectUiParameter.Seed))
+                controls.Add(FloatSlider("Seed", parameters.Seed));
+            if (visible.HasFlag(TextureEffectUiParameter.Direction))
+                controls.Add(UI.Field("Direction / Phase", () => source.EffectParams.Direction,
+                    value => SetDirection(source, value)));
+            if (visible.HasFlag(TextureEffectUiParameter.Grid))
+                controls.Add(UI.Field("Grid", () => source.EffectParams.Grid, value => SetGrid(source, value)));
+            if (visible.HasFlag(TextureEffectUiParameter.TilingScale))
+                controls.Add(UI.Field("Tiling Scale", () => source.EffectParams.TileNum,
+                    value => SetTilingScale(source, value)));
+            if (visible.HasFlag(TextureEffectUiParameter.TilingOffset))
+                controls.Add(UI.Field("Tiling Offset", () => source.EffectParams.Offset,
+                    value => SetTilingOffset(source, value)));
+            if (visible.HasFlag(TextureEffectUiParameter.PaletteThresholds))
+                controls.Add(UI.Field("Palette Thresholds", () => source.EffectParams.Thresholds,
+                    value => SetThresholds(source, value)));
+            if (visible.HasFlag(TextureEffectUiParameter.ColorA))
+                controls.Add(UI.Field("Color A", () => source.EffectParams.ColorA, value => SetColorA(source, value)));
+            if (visible.HasFlag(TextureEffectUiParameter.ColorB))
+                controls.Add(UI.Field("Color B", () => source.EffectParams.ColorB, value => SetColorB(source, value)));
+            if (visible.HasFlag(TextureEffectUiParameter.ColorC))
+                controls.Add(UI.Field("Color C", () => source.EffectParams.ColorC, value => SetColorC(source, value)));
+            if (visible.HasFlag(TextureEffectUiParameter.ColorD))
+                controls.Add(UI.Field("Color D", () => source.EffectParams.ColorD, value => SetColorD(source, value)));
+
+            return controls;
+        }
+
+        private static Element FloatSlider(string label, FloatParameter parameter)
+        {
+            return UI.Slider(label, () => parameter.Value, value => parameter.TrySetValue(value),
+                parameter.Min, parameter.Max);
+        }
+
+        private static void SetEffectActive(RadioParameter parameter, int value, bool active)
+        {
+            if (active) parameter.TrySetValue(value);
+            else if (parameter.Value == value) parameter.TrySetValue(0);
+        }
+
+        private void OpenInspector(TextureEffectUiDefinition definition)
+        {
+            _inspectorTarget = _selectedTarget;
+            _inspectorStage = definition.Stage;
+            _inspectorEffect = definition.Value;
+            _inspectorOpen = true;
+        }
+
+        private void CloseInspector()
+        {
+            _inspectorOpen = false;
+        }
+
+        private string InspectorStatus()
+        {
+            return $"{_inspectorOpen}:{_inspectorTarget}:{(int)_inspectorStage}:{_inspectorEffect}";
+        }
+
+        private static string ActiveEffectName(TextureEffectStage stage, int value)
+        {
+            if (value == 0) return "—";
+            return TextureEffectUiMetadata.Find(stage, value)?.Label ?? "Unknown";
+        }
+
+        private static string StageLabel(TextureEffectStage stage)
+        {
+            return stage switch
+            {
+                TextureEffectStage.Uv => "UV",
+                TextureEffectStage.Sampling => "Sampling",
+                TextureEffectStage.Color => "Color",
+                _ => "Alpha"
+            };
         }
 
         private ProcessedTextureSource SelectedSource => _selectedTarget == 0 ? _modelSource : _backgroundSource;
 
+        private ProcessedTextureSource SourceForTarget(int target)
+        {
+            return target == 0 ? _modelSource : _backgroundSource;
+        }
+
         private void SetSelectedTarget(int target)
         {
             _selectedTarget = Mathf.Clamp(target, 0, TargetNames.Length - 1);
+            if (_inspectorOpen) _inspectorTarget = _selectedTarget;
         }
 
         private static void SetDirection(ProcessedTextureSource source, Vector2 value)

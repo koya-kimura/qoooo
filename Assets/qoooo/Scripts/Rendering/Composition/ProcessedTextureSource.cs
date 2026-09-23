@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using qoooo.Parameters.Model;
 using qoooo.Parameters.Runtime;
 using UnityEngine;
+using UnitySimpleContainer;
 
 namespace qoooo.Rendering.Composition
 {
@@ -16,6 +17,7 @@ namespace qoooo.Rendering.Composition
         [SerializeField] private TextureEffect _effect;
         [SerializeField] private TextureEffectParams _effectParams;
         [NonSerialized] private TextureEffectParameters _effectParameters;
+        private IPaletteProvider _palette;
 
         private int _renderedFrame = -1;
         private Texture _processedTexture;
@@ -44,6 +46,12 @@ namespace qoooo.Rendering.Composition
                 foreach (var parameter in source.MidiParameters)
                     if (parameter != null) yield return parameter;
             }
+        }
+
+        [Inject]
+        public void Construct(IPaletteProvider palette)
+        {
+            _palette = palette;
         }
 
         private void OnValidate()
@@ -90,6 +98,13 @@ namespace qoooo.Rendering.Composition
             EnsureEffectParameters();
             var effectParams = _effectParams;
             _effectParameters.ApplyTo(ref effectParams);
+            if (_palette != null && effectParams.ColorEffect == TextureColorEffect.Palette4)
+            {
+                effectParams.ColorA = _palette.ColorA;
+                effectParams.ColorB = _palette.ColorB;
+                effectParams.ColorC = _palette.ColorC;
+                effectParams.ColorD = _palette.ColorD;
+            }
             return effectParams;
         }
 

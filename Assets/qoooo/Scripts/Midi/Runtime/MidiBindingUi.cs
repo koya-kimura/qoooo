@@ -114,7 +114,7 @@ namespace qoooo.Midi.Runtime
                     CreateSlots(parameter, radio.Options.Count, index => radio.Options[index])).Open(),
                 SequenceParameter sequence => UI.Fold(parameter.DisplayName,
                     CreateSlots(parameter, sequence.StepCount, index => $"Step {index + 1}")).Open(),
-                FloatParameter => CreateFader(parameter),
+                FloatParameter value => CreateFader(value),
                 BoolParameter or OneshotParameter or MomentaryParameter or StateParameter =>
                     CreateSimpleButton(parameter),
                 _ => UI.Label(parameter.DisplayName)
@@ -141,13 +141,43 @@ namespace qoooo.Midi.Runtime
             }
             return UI.Column(rows);
         }
-        private Element CreateFader(IMidiBindableParameter parameter)
+        private Element CreateFader(FloatParameter parameter)
         {
-            return UI.Row(
-                UI.Label(parameter.DisplayName),
-                UI.Label(() => _controller.TryGetFaderIndex(parameter.Id, out var index) ? $"Fader {index + 1}" : "Unassigned"),
-                UI.Button("Listen Fader", () => _controller.BeginFaderListen(parameter.Id)),
-                UI.Button("Clear", () => _controller.ClearFaderBinding(parameter.Id)));
+            return UI.Column(
+                UI.Row(
+                    UI.Label(parameter.DisplayName),
+                    UI.Label(() => _controller.TryGetFaderIndex(parameter.Id, out var index) ? $"Fader {index + 1}" : "Unassigned"),
+                    UI.Button("Listen Fader", () => _controller.BeginFaderListen(parameter.Id)),
+                    UI.Button("Clear", () => _controller.ClearFaderBinding(parameter.Id))),
+                UI.Row(
+                    UI.Field("Output Min", () => OutputMin(parameter),
+                        value => SetOutputMin(parameter, value)),
+                    UI.Field("Output Max", () => OutputMax(parameter),
+                        value => SetOutputMax(parameter, value))));
+        }
+
+        private float OutputMin(FloatParameter parameter)
+        {
+            return _controller.TryGetFaderOutputRange(parameter.Id, out var outputMin, out _)
+                ? outputMin
+                : parameter.Min;
+        }
+
+        private float OutputMax(FloatParameter parameter)
+        {
+            return _controller.TryGetFaderOutputRange(parameter.Id, out _, out var outputMax)
+                ? outputMax
+                : parameter.Max;
+        }
+
+        private void SetOutputMin(FloatParameter parameter, float value)
+        {
+            _controller.SetFaderOutputRange(parameter.Id, value, OutputMax(parameter));
+        }
+
+        private void SetOutputMax(FloatParameter parameter, float value)
+        {
+            _controller.SetFaderOutputRange(parameter.Id, OutputMin(parameter), value);
         }
         private string SlotLabel(string parameterId, MidiParameterKind kind, int index)
         {

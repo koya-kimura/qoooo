@@ -4,6 +4,7 @@ using PrefsGUI;
 using qoooo.Parameters.Model;
 using qoooo.Parameters.Runtime;
 using qoooo.Presentation.Contracts;
+using qoooo.Rendering.Composition;
 using qoooo.Rendering.Models;
 using RosettaUI;
 using UnityEngine;
@@ -55,7 +56,7 @@ namespace qoooo.Presentation.Runtime
                 CreateModelWindow(),
                 CreateParameterWindow("Camera", "model.camera-pose"),
                 CreateParameterWindow("Poster", "poster.layout", "poster.main-text"),
-                CreateParameterWindow("Background / Palette", "background.pattern", "visual.palette"),
+                CreateBackgroundWindow(),
                 CreateParameterWindow("Rhythm", "rhythm.bpm", "rhythm.tap", "rhythm.sync-beat", "rhythm.sync-bar")
             };
             liveLaunchers.InsertRange(4, CreateTargetLaunchers("TextureProcessingUi"));
@@ -109,6 +110,17 @@ namespace qoooo.Presentation.Runtime
             var arrangement = (_targets ?? new List<IUiTarget>()).OfType<ModelArrangementController>().FirstOrDefault();
             if (arrangement != null) controls.Add(arrangement.CreateElement());
             return UI.WindowLauncher(UI.Window("Model", UI.Column(controls)));
+        }
+
+        private Element CreateBackgroundWindow()
+        {
+            var controls = new List<Element>();
+            var backgroundPattern = CreateParameterControl(FindParameter("background.pattern"));
+            if (backgroundPattern != null) controls.Add(backgroundPattern);
+
+            var palette = (_targets ?? new List<IUiTarget>()).OfType<PaletteProvider>().FirstOrDefault();
+            if (palette != null) controls.Add(palette.CreateElement(SavePrefs));
+            return UI.WindowLauncher(UI.Window("Background / Palette", UI.Column(controls)));
         }
 
         private IMidiBindableParameter FindParameter(string id)

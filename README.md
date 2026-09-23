@@ -4,14 +4,6 @@ Unityで動作するVJ / リアルタイム映像合成アプリケーション�
 合成し、RosettaUIとAkai APC mini mk2から型付きParameterを操作します。合成結果は
 previewとSyphonへ出力できます。
 
-## 主な機能
-
-- procedural background、model、textをlayerとして合成
-- RosettaUIによるParameterと映像layerの操作
-- APC mini mk2のPad/Fader mapping、LED feedback、MIDI profile保存
-- BPM駆動のSequenceとFader Random mode
-- macOS Syphon出力
-
 ## 動作環境
 
 - Unity `6000.3.12f1`
@@ -41,17 +33,12 @@ MIDI機器が未接続でも、RosettaUI、描画、Parameterの操作は動作�
 
 ## Architecture
 
-アーキテクチャの入口は [Docs/README.md](Docs/README.md) です。
+現行 architecture の入口は [Docs/Architecture.md](Docs/Architecture.md) です。
 
+- [開発・検証](Docs/Development.md)
+- [Parameter と MIDI](Docs/ParametersAndMidi.md)
+- [Rendering](Docs/Rendering.md)
 - [Creative Coding Guide](Docs/CreativeCoding.md)
-- [全体構成](Docs/Architecture.md)
-- [Scene構成とlifecycle](Docs/Architecture/Runtime.md)
-- [ParameterとMIDI](Docs/Architecture/ParametersAndMidi.md)
-- [RenderingとText](Docs/Architecture/RenderingAndText.md)
-- [開発・検証ガイド](Docs/Architecture/Development.md)
-
-既存のImplementation Planは設計経緯を残す履歴資料です。現行仕様と計画の差分は
-[PlanStatus](Docs/Architecture/PlanStatus.md) を参照してください。
 
 ## Asset policy
 
@@ -70,16 +57,8 @@ GitHubは通常Gitの単一blobを100MBまでしか受け付けません。制�
 
 ## Validation
 
-通常のC# compile確認:
-
-```sh
-dotnet build qoooo.sln --no-restore
-```
-
-Unity compile確認:
-
 ```sh
 uloop compile --timeout-seconds 180
 ```
 
-詳細な検証手順は[開発・検証ガイド](Docs/Architecture/Development.md)にまとめています。
+詳細は[開発・検証](Docs/Development.md)を参照する。

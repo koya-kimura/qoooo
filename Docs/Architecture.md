@@ -1,132 +1,66 @@
 # qoooo Architecture
 
-この文書は qoooo の現行アーキテクチャの入口である。実装の詳細は
-[Architecture/](Architecture/) 配下を参照する。
+qoooo は RosettaUI と Akai APC mini mk2 で型付き Parameter を操作し、映像を preview と Syphon へ出力する Unity VJ アプリケーションである。主 Scene は `Assets/qoooo/Scenes/Trip26.unity`。
 
-見た目を変更する入口は[CreativeCoding.md](CreativeCoding.md)である。creative workではコード内の
-`CREATIVE AREA`、Creative Coding Guide、この文書、詳細文書の順に確認する。
+## Core Ownership
 
-## システム概要
+| 領域              | 所有者                           | 責務                                                                                                          |
+| ----------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Tempo             | `BpmManager`                     | BPM clock を更新し、`IBpmSource` として read-only 公開する。                                                  |
+| Parameter         | 各 consumer                      | 値を使う component が型付き Parameter を所有する。`MidiParameterRegistry` は validation と index だけを担う。 |
+| MIDI              | `ApcMiniMk2ParameterController`  | APC page、typed binding、Listen、pickup、fader mode を持ち、owner Parameter を操作する。                      |
+| Model source      | `ModelManager`                   | model source catalog と選択を持つ。                                                                           |
+| Model arrangement | `ModelArrangementController`     | active slot の arrangement、requested source、position を決める。                                             |
+| Model instances   | `ModelInstanceCache`             | runtime clone の生成、再利用、破棄を管理する。                                                                |
+| Model appearance  | `ModelController`                | active slot へ scale、motion、visibility を適用する。                                                         |
+| Poster            | `PosterLibrary` / `PosterCanvas` | document とその Canvas 表現を管理する。                                                                       |
+| Texture effects   | `ProcessedTextureSource`         | source ごとの effect Parameter と処理済み texture を持つ。                                                    |
+| Composition       | `TextureCompositor`              | layer 合成用の ping-pong buffer と最終 texture を持つ。                                                       |
+| Palette           | `PaletteProvider`                | shared palette catalog と active palette を持つ。                                                             |
 
-qoooo は、複数の映像sourceを合成し、RosettaUIとAPC mini mk2から操作し、
-previewとSyphonへ出力するUnityアプリケーションである。主Sceneは
-`Assets/qoooo/Scenes/Trip26.unity` である。
+UI、Keyboard、MIDI は同じ owner Parameter を操作する。consumer は入力元を参照せず、現在値だけを読む。
 
-設計の中心は、各機能が所有する型付きParameterである。UIとMIDIは同じParameterを
-操作し、描画・Model・Text側はMIDI APIを参照せずParameterの現在値だけを読む。
+## Rendering Invariants
 
-```mermaid
-flowchart LR
-    UI[RosettaUI] --> P[Typed Parameters]
-    MIDI[APC mini mk2] --> IN[MinisMidiInput]
-    IN --> APC[ApcMiniMk2ParameterController]
-    APC --> P
-    BPM[BpmManager / IBpmSource] --> PR[MidiParameterRuntime]
-    PR --> P
-    P --> APP[Rendering / Model / Text]
-    P --> LED[ApcMiniMk2LedRenderer]
-    APC --> LED
-    LED --> OUT[RtMidiOutput worker]
-    APP --> COMP[TextureCompositor]
-    COMP --> PREVIEW[Preview]
-    COMP --> SYPHON[Syphon]
-    P --> STORE[MidiProfileStore]
-    APC --> STORE
-    STORE --> PREFS[PrefsGUI]
+```text
+ModelCamera
+  ↓
+PosterCamera
+  ↓
+TextureCompositor
+  ↓
+Preview / Syphon
 ```
 
-## 論理領域
+`TextureCompositor` は PosterCamera の描画完了後に同じ frame の合成を開始する。PosterCamera より前に RenderTexture を読むと、前 frame の Poster を合成するため、この順序を崩さない。
 
-| 領域         | 主な責務                                                | 代表パス                            |
-| ------------ | ------------------------------------------------------- | ----------------------------------- |
-| Foundation   | frame rate、BPM/beat、汎用数学                          | `Assets/qoooo/Scripts/Foundation`   |
-| Parameters   | 型付き値、validation、registry、beat/frame更新          | `Assets/qoooo/Scripts/Parameters`   |
-| Midi         | raw I/O、APC mapping、Parameter操作、LED、profile       | `Assets/qoooo/Scripts/Midi`         |
-| Rendering    | source生成、camera capture、layer effect、合成、preview | `Assets/qoooo/Scripts/Rendering`    |
-| Text         | glyph layout、motion、TMP mesh更新                      | `Assets/qoooo/Scripts/Text`         |
-| Presentation | RosettaUI構築、Prefs save transaction契約               | `Assets/qoooo/Scripts/Presentation` |
-| Integration  | 外部出力。現在はSyphon                                  | `Assets/qoooo/Scripts/Integration`  |
-| Editor       | Editor起動時の補助処理                                  | `Assets/qoooo/Scripts/Editor`       |
+Texture effect は任意順の stack ではなく、次の固定 pipeline で処理する。
 
-フォルダとnamespaceは同じ境界を表す。ただしasmdefはなく、すべて
-`Assembly-CSharp` / `Assembly-CSharp-Editor` にコンパイルされる。したがって依存方向は
-コンパイラではなくinterfaceとレビューで維持している。
-
-## 依存方向
-
-```mermaid
-flowchart TD
-    Foundation --> Parameters
-    Foundation --> Midi
-    Foundation --> Rendering
-    Parameters --> Midi
-    Parameters --> Rendering
-    Parameters --> Text
-    PresentationContracts[Presentation.Contracts] --> Midi
-    PresentationContracts --> Rendering
-    Midi --> ExternalMidi[Minis / RtMidi / PrefsGUI]
-    Rendering --> ExternalRendering[Unity Rendering / RosettaUI]
-    Text --> TMPro
-    Integration --> Rendering
-    Integration --> Syphon
+```text
+UV → Sampling → Color → Alpha
 ```
 
-`Presentation.Contracts` は上位UI実装というより、`IUiTarget` と
-`IPrefsSaveParticipant` を置く共有境界として使われている。
+## Poster Placement Invariants
 
-## 主要な状態所有者
+- Grid は cell layout ではなく grid point coordinate system である。
+- Grid point は Element Anchor を合わせる位置である。
+- Grid の Width / Height は element size の grid unit である。
+- Free placement は normalized coordinate を使う。
+- Anchor は 9-point anchor を使う。
 
-| 状態                                 | 所有者                                          | 備考                               |
-| ------------------------------------ | ----------------------------------------------- | ---------------------------------- |
-| BPM、経過時間、beat                  | `BpmClock`を持つ`BpmManager`                    | `IBpmSource`でread-only公開        |
-| VJ機能の操作値                       | 各consumerがserialized fieldとして持つParameter | Registryはindexでありownerではない |
-| APC page、fader mode、pickup、listen | `ApcMiniMk2ParameterController`                 | 保存しないruntime状態              |
-| APC mapping                          | `ApcMiniMk2ParameterController`                 | Scene値がdefault、Prefsで上書き    |
-| MIDI profile snapshot/dirty          | `MidiProfileStore`                              | mappingと保存対象Parameter値       |
-| 描画buffer                           | 各source/cameraと`TextureCompositor`            | 解像度変更時に再生成               |
-| Text layout定義                      | `TextController`内の`TextPattern` list          | Trip26ではinactive                 |
+`PosterLibrary.Documents` が document の source of truth であり、`poster.layout` は active document を選択する。
 
-## 主要フロー
+## Stable Boundaries
 
-### 操作
+- Parameter ID は binding と保存データの identity である。変更時は互換性を明示的に扱う。
+- MIDI mapping は Parameter identity を変更しない。Fader は pickup / soft takeover を使い、assignment 切替時の jump を防ぐ。
+- Effect Parameter も通常の Parameter として registry に公開する。
+- Palette は shared catalog として管理する。Poster の保存データは `PosterFontCatalog` の stable Font ID を保持する。
+- Legacy Text subsystem は Trip26 の最終出力経路ではない。現在の Poster text は `PosterDocument` が所有する。
 
-1. RosettaUIはParameterを直接編集するか、APC bindingを変更する。
-2. MIDI入力は`MinisMidiInput`でqueueされ、main threadの`Update`でeventになる。
-3. `ApcMiniMk2ParameterController`がpageとmappingを解決し、Parameterを更新する。
-4. consumerは通常の`Update`でParameter値を読む。
-5. `MidiProfileStore`は永続対象の変更をdirtyとして追跡する。
+## Current Documentation
 
-### 描画
-
-1. procedural materialまたはcameraが`ITextureContainer.Texture`を生成する。
-2. `TextureLayer`がsourceへeffectを適用する。
-3. `TextureCompositor`がscene内のlayer順にping-pong合成する。
-4. 最終textureをGame View previewとSyphonへ渡す。
-
-### 時間
-
-`BpmManager`だけが`Time.unscaledDeltaTime`からBPM clockを進める。
-`MidiParameterRuntime`はそのbeatからSequenceのactive stepを更新する。
-procedural backgroundも同じ`IBpmSource.Beat`をshaderの`_Beat`へ渡す。
-
-## 現行設計上の注意
-
-- `MidiSystemController`はMIDI subsystemのcomposition rootだが、transportやLEDの
-  Unity lifecycle自体は各MonoBehaviourも所有する。
-- `ApcMiniMk2MidiInput`と文字列keyベースのcontrollerはlegacyコードとして残るが、
-  `Trip26` Sceneには配置されていない。
-- 現行profileはmapping/stateの2レコードである。connection settingsのPrefs保存、
-  独立したSurface/Listen service、orphan state保持は未実装である。
-- Legacy Text subsystemはTrip26でinactiveである。内部のglyph motionとtransform animationは
-  `Time.time`を使用し、BPM同期ではない。
-- EditMode test sourceは2クラスあるが専用asmdefはない。テスト発見可否はUnity Editorで
-  確認する必要がある。
-
-## 詳細文書
-
-- [CreativeCoding.md](CreativeCoding.md)
-- [Runtime.md](Architecture/Runtime.md)
-- [ParametersAndMidi.md](Architecture/ParametersAndMidi.md)
-- [RenderingAndText.md](Architecture/RenderingAndText.md)
-- [Development.md](Architecture/Development.md)
-- [PlanStatus.md](Architecture/PlanStatus.md)
+- [Development.md](Development.md): 開発と handoff の最小手順
+- [ParametersAndMidi.md](ParametersAndMidi.md): Parameter、MIDI、保存の境界
+- [Rendering.md](Rendering.md): rendering、Poster、palette の関係
+- [CreativeCoding.md](CreativeCoding.md): 見た目を変更する入口
