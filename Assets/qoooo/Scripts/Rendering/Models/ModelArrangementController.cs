@@ -32,12 +32,12 @@ namespace qoooo.Rendering.Models
         [SerializeField, Min(0f)] private float _spacing = 0.25f;
         [SerializeField] private ModelSourceMode _sourceMode;
 
-        private readonly List<CloneSlot> _clones = new();
         private readonly List<GameObject> _activeSlots = new();
         private readonly Dictionary<GameObject, Vector3> _sourcePositions = new();
         private readonly Dictionary<GameObject, Vector3> _sourceScales = new();
         private readonly Dictionary<GameObject, Quaternion> _sourceRotations = new();
         private ModelManager _modelManager;
+        private ModelInstanceCache _instanceCache;
         private GameObject _prototype;
         private Vector3 _prototypePosition;
         private Vector3 _prototypeScale;
@@ -48,6 +48,7 @@ namespace qoooo.Rendering.Models
 
         private void Awake()
         {
+            _instanceCache = new ModelInstanceCache(transform, SourceScale, SourceRotation);
             _modelManager = GetComponent<ModelManager>();
             if (_modelManager != null)
             {
@@ -75,7 +76,7 @@ namespace qoooo.Rendering.Models
                 _modelManager.CurrentModelChanged -= SetSource;
 
             RestorePrototypeTransform();
-            ClearClones();
+            _instanceCache.Dispose();
         }
 
         public Element CreateElement()
@@ -145,18 +146,13 @@ namespace qoooo.Rendering.Models
             var slotCount = SlotCount;
             for (var index = 1; index < slotCount; index++)
             {
-                var slot = GetOrCreateClone(index - 1, ResolveSlotSource(index));
-                if (slot?.Instance == null) continue;
+                var instance = _instanceCache.GetOrCreate(index - 1, ResolveSlotSource(index));
+                if (instance == null) continue;
 
-                slot.Instance.SetActive(true);
-                _activeSlots.Add(slot.Instance);
+                _activeSlots.Add(instance);
             }
 
-            for (var index = slotCount - 1; index < _clones.Count; index++)
-            {
-                var slot = _clones[index];
-                if (slot?.Instance != null) slot.Instance.SetActive(false);
-            }
+            _instanceCache.SetActiveCount(slotCount - 1);
 
             for (var index = 0; index < _activeSlots.Count; index++)
             {
@@ -185,42 +181,11 @@ namespace qoooo.Rendering.Models
             _ => _sideCount
         };
 
-        private CloneSlot GetOrCreateClone(int cloneIndex, GameObject source)
-        {
-            while (_clones.Count <= cloneIndex) _clones.Add(new CloneSlot());
-
-            var slot = _clones[cloneIndex];
-            if (slot.Source == source && slot.Instance != null) return slot;
-
-            if (slot.Instance != null)
-            {
-                slot.Instance.SetActive(false);
-                Destroy(slot.Instance);
-            }
-
-            slot.Source = source;
-            slot.Instance = source == null ? null : Instantiate(source, transform);
-            if (slot.Instance != null)
-            {
-                slot.Instance.name = $"{source.name} Arrangement Slot";
-                slot.Instance.transform.localScale = SourceScale(source);
-                slot.Instance.transform.localRotation = SourceRotation(source);
-                slot.Instance.SetActive(true);
-            }
-
-            return slot;
-        }
-
         private void PrewarmCurrentSource()
         {
             if (_prototype == null) return;
 
-            for (var index = 0; index < MaximumSlotCount - 1; index++)
-            {
-                var slot = GetOrCreateClone(index, _prototype);
-                if (slot?.Instance != null) slot.Instance.SetActive(false);
-            }
-
+            _instanceCache.Prewarm(_prototype, MaximumSlotCount - 1);
             RefreshSlots();
         }
 
@@ -276,23 +241,5 @@ namespace qoooo.Rendering.Models
             }
         }
 
-        private void ClearClones()
-        {
-            foreach (var clone in _clones)
-            {
-                if (clone?.Instance == null) continue;
-                clone.Instance.SetActive(false);
-                Destroy(clone.Instance);
-            }
-
-            _clones.Clear();
-            _activeSlots.Clear();
-        }
-
-        private sealed class CloneSlot
-        {
-            public GameObject Source;
-            public GameObject Instance;
-        }
     }
 }

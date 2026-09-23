@@ -42,10 +42,6 @@ namespace qoooo.Rendering.Models
         private void Awake()
         {
             SynchronizeSourceOptions();
-        }
-
-        private void Start()
-        {
             ApplySource(_source.Value);
         }
 
