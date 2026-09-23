@@ -24,13 +24,16 @@ namespace qoooo.Rendering.Models
     // WHY / Poster上のTexture repeatではなく、Model Cameraに映る3D object配置を扱う。
     public sealed class ModelArrangementController : MonoBehaviour, IUiTarget
     {
-        private const int MaximumSideCount = 4;
-        private const int MaximumSlotCount = MaximumSideCount * MaximumSideCount;
+        private const int MaximumAxisCount = 4;
+        private const int MaximumSlotCount = 16;
 
         [SerializeField] private ModelArrangementMode _mode;
-        [SerializeField, Range(1, MaximumSideCount)] private int _sideCount = 1;
-        [SerializeField, Min(0f)] private float _spacing = 0.25f;
+        [SerializeField] private Vector3Int _counts = Vector3Int.one;
+        [SerializeField] private Vector3 _spacings = Vector3.one * 0.25f;
         [SerializeField] private ModelSourceMode _sourceMode;
+        [SerializeField, HideInInspector, Range(1, MaximumAxisCount)] private int _sideCount = 1;
+        [SerializeField, HideInInspector, Min(0f)] private float _spacing = 0.25f;
+        [SerializeField, HideInInspector] private bool _xyzArrangementMigrated;
 
         private readonly List<GameObject> _activeSlots = new();
         private readonly Dictionary<GameObject, Vector3> _sourcePositions = new();
@@ -48,6 +51,7 @@ namespace qoooo.Rendering.Models
 
         private void Awake()
         {
+            MigrateArrangementSettings();
             _instanceCache = new ModelInstanceCache(transform, SourceScale, SourceRotation);
             _modelManager = GetComponent<ModelManager>();
             if (_modelManager != null)
@@ -84,11 +88,43 @@ namespace qoooo.Rendering.Models
         {
             return UI.Fold("Arrangement",
                 UI.Dropdown("Mode", () => (int)_mode, SetMode, Enum.GetNames(typeof(ModelArrangementMode))),
-                UI.Field("Side Count", () => _sideCount, SetSideCount),
-                UI.Field("Spacing", () => _spacing, SetSpacing),
+                UI.DynamicElementOnStatusChanged(
+                    () => _mode,
+                    CreateArrangementFields),
                 UI.Dropdown("Source Mode", () => (int)_sourceMode, SetSourceMode,
                     Enum.GetNames(typeof(ModelSourceMode))))
                 .Open();
+        }
+
+        private Element CreateArrangementFields(ModelArrangementMode mode)
+        {
+            return mode switch
+            {
+                ModelArrangementMode.Row => UI.Column(
+                    CreateCountField("Count X", 0),
+                    CreateSpacingField("Spacing X", 0)),
+                ModelArrangementMode.Column => UI.Column(
+                    CreateCountField("Count Y", 1),
+                    CreateSpacingField("Spacing Y", 1)),
+                ModelArrangementMode.Grid => UI.Column(
+                    CreateCountField("Count X", 0),
+                    CreateCountField("Count Y", 1),
+                    CreateCountField("Count Z", 2),
+                    CreateSpacingField("Spacing X", 0),
+                    CreateSpacingField("Spacing Y", 1),
+                    CreateSpacingField("Spacing Z", 2)),
+                _ => UI.Space()
+            };
+        }
+
+        private Element CreateCountField(string label, int axis)
+        {
+            return UI.Field(label, () => GetAxis(_counts, axis), value => SetCount(axis, value));
+        }
+
+        private Element CreateSpacingField(string label, int axis)
+        {
+            return UI.Field(label, () => GetAxis(_spacings, axis), value => SetSpacing(axis, value));
         }
 
         private void SetSource(GameObject source)
@@ -113,15 +149,22 @@ namespace qoooo.Rendering.Models
             RefreshSlots();
         }
 
-        private void SetSideCount(int value)
+        private void SetCount(int axis, int value)
         {
-            _sideCount = Mathf.Clamp(value, 1, MaximumSideCount);
+            var counts = _counts;
+            SetAxis(ref counts, axis, Mathf.Clamp(value, 1, MaximumAxisCount));
+            var descriptor = CreateDescriptor(_mode, counts, _spacings);
+            var otherAxes = Mathf.Max(1, descriptor.Count / GetAxis(descriptor.Counts, axis));
+            SetAxis(ref counts, axis, Mathf.Min(GetAxis(counts, axis), MaximumSlotCount / otherAxes));
+            _counts = counts;
             RefreshSlots();
         }
 
-        private void SetSpacing(float value)
+        private void SetSpacing(int axis, float value)
         {
-            _spacing = Mathf.Max(0f, value);
+            var spacings = _spacings;
+            SetAxis(ref spacings, axis, Mathf.Max(0f, value));
+            _spacings = spacings;
             RefreshSlots();
         }
 
@@ -145,7 +188,8 @@ namespace qoooo.Rendering.Models
             // slot 0はScene上のoriginal、slot 1以降はCacheが所有するruntime clone。
             _prototype.SetActive(true);
             _activeSlots.Add(_prototype);
-            var slotCount = SlotCount;
+            var descriptor = CreateDescriptor(_mode, _counts, _spacings);
+            var slotCount = descriptor.Count;
             for (var index = 1; index < slotCount; index++)
             {
                 var instance = _instanceCache.GetOrCreate(index - 1, ResolveSlotSource(index));
@@ -161,7 +205,10 @@ namespace qoooo.Rendering.Models
                 var slot = _activeSlots[index];
                 if (slot == null) continue;
 
-                slot.transform.localPosition = _prototypePosition + SlotOffset(index);
+                var source = index == 0 ? _prototype : ResolveSlotSource(index);
+                slot.transform.localPosition = _prototypePosition + SlotOffset(index, descriptor);
+                slot.transform.localRotation = SourceRotation(source);
+                slot.transform.localScale = SourceScale(source);
             }
 
             ActiveSlotsChanged?.Invoke(_activeSlots);
@@ -177,13 +224,6 @@ namespace qoooo.Rendering.Models
             return _modelManager.GetSource(sourceIndex);
         }
 
-        private int SlotCount => _mode switch
-        {
-            ModelArrangementMode.Single => 1,
-            ModelArrangementMode.Grid => _sideCount * _sideCount,
-            _ => _sideCount
-        };
-
         private void PrewarmCurrentSource()
         {
             if (_prototype == null) return;
@@ -192,25 +232,93 @@ namespace qoooo.Rendering.Models
             RefreshSlots();
         }
 
-        private Vector3 SlotOffset(int index)
+        private static Vector3 SlotOffset(int index, ArrangementDescriptor descriptor)
         {
-            var columns = _mode switch
-            {
-                ModelArrangementMode.Single => 1,
-                ModelArrangementMode.Row => _sideCount,
-                ModelArrangementMode.Column => 1,
-                _ => _sideCount
-            };
-            var rows = _mode == ModelArrangementMode.Column
-                ? _sideCount
-                : _mode == ModelArrangementMode.Grid ? _sideCount : 1;
-            var column = _mode == ModelArrangementMode.Column ? 0 : index % columns;
-            var row = _mode == ModelArrangementMode.Row ? 0 : index / columns;
+            var x = index % descriptor.Counts.x;
+            var y = index / descriptor.Counts.x % descriptor.Counts.y;
+            var z = index / (descriptor.Counts.x * descriptor.Counts.y);
 
             return new Vector3(
-                (column - (columns - 1) * 0.5f) * _spacing,
-                ((rows - 1) * 0.5f - row) * _spacing,
-                0f);
+                (x - (descriptor.Counts.x - 1) * 0.5f) * descriptor.Spacings.x,
+                ((descriptor.Counts.y - 1) * 0.5f - y) * descriptor.Spacings.y,
+                (z - (descriptor.Counts.z - 1) * 0.5f) * descriptor.Spacings.z);
+        }
+
+        private void MigrateArrangementSettings()
+        {
+            if (!_xyzArrangementMigrated)
+            {
+                var sideCount = Mathf.Clamp(_sideCount, 1, MaximumAxisCount);
+                _counts = _mode switch
+                {
+                    ModelArrangementMode.Row => new Vector3Int(sideCount, 1, 1),
+                    ModelArrangementMode.Column => new Vector3Int(1, sideCount, 1),
+                    ModelArrangementMode.Grid => new Vector3Int(sideCount, sideCount, 1),
+                    _ => Vector3Int.one
+                };
+                _spacings = Vector3.one * Mathf.Max(0f, _spacing);
+                _xyzArrangementMigrated = true;
+            }
+
+            _counts = ClampCounts(_counts);
+            _spacings = new Vector3(
+                Mathf.Max(0f, _spacings.x),
+                Mathf.Max(0f, _spacings.y),
+                Mathf.Max(0f, _spacings.z));
+        }
+
+        private static Vector3Int ClampCounts(Vector3Int counts)
+        {
+            counts = new Vector3Int(
+                Mathf.Clamp(counts.x, 1, MaximumAxisCount),
+                Mathf.Clamp(counts.y, 1, MaximumAxisCount),
+                Mathf.Clamp(counts.z, 1, MaximumAxisCount));
+            while (counts.x * counts.y * counts.z > MaximumSlotCount)
+            {
+                if (counts.z > 1) counts.z--;
+                else if (counts.y > 1) counts.y--;
+                else counts.x--;
+            }
+            return counts;
+        }
+
+        private static ArrangementDescriptor CreateDescriptor(
+            ModelArrangementMode mode,
+            Vector3Int counts,
+            Vector3 spacings)
+        {
+            var mappedCounts = mode switch
+            {
+                ModelArrangementMode.Row => new Vector3Int(counts.x, 1, 1),
+                ModelArrangementMode.Column => new Vector3Int(1, counts.y, 1),
+                ModelArrangementMode.Grid => counts,
+                _ => Vector3Int.one
+            };
+            return new ArrangementDescriptor(mappedCounts, spacings);
+        }
+
+        private static int GetAxis(Vector3Int value, int axis)
+        {
+            return axis switch { 1 => value.y, 2 => value.z, _ => value.x };
+        }
+
+        private static float GetAxis(Vector3 value, int axis)
+        {
+            return axis switch { 1 => value.y, 2 => value.z, _ => value.x };
+        }
+
+        private static void SetAxis(ref Vector3Int value, int axis, int axisValue)
+        {
+            if (axis == 1) value.y = axisValue;
+            else if (axis == 2) value.z = axisValue;
+            else value.x = axisValue;
+        }
+
+        private static void SetAxis(ref Vector3 value, int axis, float axisValue)
+        {
+            if (axis == 1) value.y = axisValue;
+            else if (axis == 2) value.z = axisValue;
+            else value.x = axisValue;
         }
 
         private Vector3 SourcePosition(GameObject source)
@@ -241,6 +349,19 @@ namespace qoooo.Rendering.Models
                 _prototype.transform.localPosition = SourcePosition(_prototype);
                 _prototype.transform.localScale = _prototypeScale;
                 _prototype.transform.localRotation = _prototypeRotation;
+            }
+        }
+
+        private readonly struct ArrangementDescriptor
+        {
+            public readonly Vector3Int Counts;
+            public readonly Vector3 Spacings;
+            public int Count => Counts.x * Counts.y * Counts.z;
+
+            public ArrangementDescriptor(Vector3Int counts, Vector3 spacings)
+            {
+                Counts = counts;
+                Spacings = spacings;
             }
         }
 
