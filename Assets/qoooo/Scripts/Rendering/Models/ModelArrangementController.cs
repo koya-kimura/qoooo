@@ -77,7 +77,7 @@ namespace qoooo.Rendering.Models
                 _modelManager.CurrentModelChanged -= SetSource;
 
             RestorePrototypeTransform();
-            _instanceCache.Dispose();
+            _instanceCache?.Dispose();
         }
 
         public Element CreateElement()

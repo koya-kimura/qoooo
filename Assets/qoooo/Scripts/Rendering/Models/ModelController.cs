@@ -23,7 +23,6 @@ namespace qoooo.Rendering.Models
         [SerializeField] private BoolParameter _active = new("model.active", "Model Active", true);
 
         // CREATIVE AREA / 創作領域: beatからmotionへの反応をここで調整する。clockの所有者はBpmManagerだけ。
-        [SerializeField] [Min(0.01f)] private float _spinBeatsPerRotation = 16f;
         [SerializeField] [Min(0.01f)] private float _pulseCycleBeats = 4f;
         [SerializeField] [Min(0.01f)] private float _pulseEaseBeats = 2f;
         private readonly List<GameObject> _activeSlots = new();

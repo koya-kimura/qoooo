@@ -30,7 +30,8 @@ namespace qoooo.Rendering.Sources
         private static readonly string[] RotationNames = { "0", "90", "180", "270" };
         private static readonly string[] ColorNames = { "Palette Main", "Palette Sub", "White", "Black", "Custom" };
         private static readonly string[] TextSourceNames = { "Literal", "Main Text", "Current Date", "Current Time" };
-        private static readonly string[] TextMotionNames = { "None", "Move X", "Move Y" };
+        private static readonly string[] AnimationTypeNames = { "Move", "Typewriter" };
+        private static readonly string[] MoveAxisNames = { "X", "Y" };
         private static readonly string[] MotionPatternNames = { "Ping Pong", "Traverse" };
         private static readonly string[] MotionTimingNames = { "Seconds", "Beat Cycle", "Beat Leap" };
         private static readonly string[] MoveEasingNames =
@@ -52,6 +53,7 @@ namespace qoooo.Rendering.Sources
         private PosterDocument _observedDocument;
         private PosterElement _selectedElement;
         private int _observedOrderSignature;
+        private int _animationTypeToAdd;
 
         private PosterDocument ActiveDocument => _posterCanvas?.ActiveDocument;
 
@@ -391,63 +393,219 @@ namespace qoooo.Rendering.Sources
 
         private Element CreateTextAnimationInspector(PosterElement element, PosterTextSettings settings)
         {
-            var animation = settings.Animation;
             return UI.Column(
-                UI.Label("Motion"),
-                UI.Dropdown("Axis", () => (int)animation.Motion,
-                    value => Set(element, _ => animation.Motion = (PosterTextMotion)value), TextMotionNames),
-                UI.DynamicElementIf(
-                    () => animation.Motion != PosterTextMotion.None,
-                    () => CreateTextMotionInspector(element, animation)),
-                UI.Label("Typewriter"),
-                UI.Field("Enabled", () => animation.TypewriterEnabled,
-                    value => Set(element, _ => animation.TypewriterEnabled = value)),
-                UI.DynamicElementIf(
-                    () => animation.TypewriterEnabled,
-                    () => UI.Column(
-                        UI.Field("Characters / Sec", () => animation.CharactersPerSecond,
-                            value => Set(element, _ => animation.CharactersPerSecond = Mathf.Max(0f, value))),
-                        UI.Field("Typewriter Loop", () => animation.TypewriterLoop,
-                            value => Set(element, _ => animation.TypewriterLoop = value)))));
+                UI.Row(
+                    UI.Dropdown("Add", () => _animationTypeToAdd,
+                        value => _animationTypeToAdd = value, AnimationTypeNames),
+                    UI.Button("+ Add Animation", () => AddTextAnimation(settings))),
+                UI.DynamicElementOnStatusChanged(
+                    () => AnimationListStatus(settings),
+                    _ => CreateAnimationList(element, settings)));
         }
 
-        private Element CreateTextMotionInspector(
+        private Element CreateAnimationList(PosterElement element, PosterTextSettings settings)
+        {
+            if (settings.Animations.Count == 0)
+                return UI.HelpBox("No animations.");
+
+            var entries = new Element[settings.Animations.Count];
+            for (var index = 0; index < settings.Animations.Count; index++)
+            {
+                var entry = settings.Animations[index];
+                entries[index] = UI.Fold(
+                    $"{index + 1}. {AnimationSummary(entry)}",
+                    CreateAnimationEntryInspector(element, settings, entry));
+            }
+
+            return UI.Column(entries);
+        }
+
+        private Element CreateAnimationEntryInspector(
             PosterElement element,
-            PosterTextAnimationSettings animation)
+            PosterTextSettings settings,
+            PosterTextAnimationEntry animation)
         {
             return UI.Column(
-                UI.Dropdown("Pattern", () => (int)animation.Pattern,
-                    value => Set(element, _ => animation.Pattern = (PosterMotionPattern)value), MotionPatternNames),
-                UI.Field("Amount (normalized)", () => animation.MoveAmount,
-                    value => Set(element, _ => animation.MoveAmount = value)),
-                UI.Dropdown("Timing", () => (int)animation.Timing,
-                    value => Set(element, _ => animation.Timing = (PosterMotionTiming)value), MotionTimingNames),
+                UI.Field("Enabled", () => animation.Enabled,
+                    value => Set(element, _ => animation.Enabled = value)),
+                UI.Dropdown("Type", () => (int)animation.Type,
+                    value => Set(element, _ => animation.Type = (PosterTextAnimationType)value), AnimationTypeNames),
                 UI.DynamicElementOnStatusChanged(
-                    () => animation.Timing,
-                    timing => CreateMotionTimingInspector(element, animation, timing)),
-                UI.Dropdown("Easing", () => (int)animation.MoveEasing,
-                    value => Set(element, _ => animation.MoveEasing = (PosterMoveEasing)value), MoveEasingNames),
-                UI.Field("Move Loop", () => animation.MoveLoop,
-                    value => Set(element, _ => animation.MoveLoop = value)));
+                    () => animation.Type,
+                    type => type == PosterTextAnimationType.Move
+                        ? CreateMoveAnimationInspector(element, animation)
+                        : CreateTypewriterAnimationInspector(element, animation)),
+                UI.Row(
+                    UI.Button("↑", () => MoveTextAnimation(settings, animation.Id, -1)),
+                    UI.Button("↓", () => MoveTextAnimation(settings, animation.Id, 1)),
+                    UI.Button("Duplicate", () => DuplicateTextAnimation(settings, animation.Id)),
+                    UI.Button("Delete", () => DeleteTextAnimation(settings, animation.Id))));
         }
 
-        private Element CreateMotionTimingInspector(
+        private Element CreateMoveAnimationInspector(
             PosterElement element,
-            PosterTextAnimationSettings animation,
+            PosterTextAnimationEntry animation)
+        {
+            var move = animation.Move;
+            return UI.Column(
+                UI.Dropdown("Axis", () => move.Axis == PosterTextMotion.MoveY ? 1 : 0,
+                    value => Set(element, _ => move.Axis = value == 1
+                        ? PosterTextMotion.MoveY
+                        : PosterTextMotion.MoveX), MoveAxisNames),
+                UI.Dropdown("Pattern", () => (int)move.Pattern,
+                    value => Set(element, _ => move.Pattern = (PosterMotionPattern)value), MotionPatternNames),
+                UI.Field("Amount (normalized)", () => move.Amount,
+                    value => Set(element, _ => move.Amount = value)),
+                CreateAnimationTimingInspector(element, animation),
+                UI.Field("Loop", () => move.Loop,
+                    value => Set(element, _ => move.Loop = value)));
+        }
+
+        private Element CreateTypewriterAnimationInspector(
+            PosterElement element,
+            PosterTextAnimationEntry animation)
+        {
+            return UI.Column(
+                CreateAnimationTimingInspector(element, animation),
+                UI.Field("Loop", () => animation.Typewriter.Loop,
+                    value => Set(element, _ => animation.Typewriter.Loop = value)));
+        }
+
+        private Element CreateAnimationTimingInspector(
+            PosterElement element,
+            PosterTextAnimationEntry animation)
+        {
+            return UI.Column(
+                UI.Dropdown("Timing", () => (int)animation.Timing.Mode,
+                    value => Set(element, _ => animation.Timing.Mode = (PosterMotionTiming)value), MotionTimingNames),
+                UI.DynamicElementOnStatusChanged(
+                    () => animation.Timing.Mode,
+                    timing => CreateAnimationTimingFields(element, animation, timing)));
+        }
+
+        private Element CreateAnimationTimingFields(
+            PosterElement element,
+            PosterTextAnimationEntry animation,
             PosterMotionTiming timing)
         {
-            return timing switch
+            if (timing == PosterMotionTiming.Seconds)
             {
-                PosterMotionTiming.BeatCycle => UI.Field("Beats Per Cycle", () => animation.BeatsPerCycle,
-                    value => Set(element, _ => animation.BeatsPerCycle = Mathf.Max(0.001f, value))),
-                PosterMotionTiming.BeatLeap => UI.Column(
-                    UI.Field("Interval Beats", () => animation.IntervalBeats,
-                        value => Set(element, _ => animation.IntervalBeats = Mathf.Max(0.001f, value))),
-                    UI.Field("Move Beats", () => animation.MoveBeats,
-                        value => Set(element, _ => animation.MoveBeats = Mathf.Max(0.001f, value)))),
-                _ => UI.Field("Speed (cycles / sec)", () => animation.MoveSpeed,
-                    value => Set(element, _ => animation.MoveSpeed = Mathf.Max(0f, value)))
+                return animation.Type == PosterTextAnimationType.Move
+                    ? UI.Field("Speed (cycles / sec)", () => animation.Move.Speed,
+                        value => Set(element, _ => animation.Move.Speed = Mathf.Max(0f, value)))
+                    : UI.Field("Characters / Sec", () => animation.Typewriter.CharactersPerSecond,
+                        value => Set(element, _ => animation.Typewriter.CharactersPerSecond = Mathf.Max(0f, value)));
+            }
+
+            Element EasingField() => UI.Dropdown("Easing", () => (int)(
+                    animation.Type == PosterTextAnimationType.Move
+                        ? animation.Move.Easing
+                        : animation.Typewriter.Easing),
+                value => Set(element, _ =>
+                {
+                    if (animation.Type == PosterTextAnimationType.Move)
+                        animation.Move.Easing = (PosterMoveEasing)value;
+                    else
+                        animation.Typewriter.Easing = (PosterMoveEasing)value;
+                }), MoveEasingNames);
+
+            return timing == PosterMotionTiming.BeatCycle
+                ? UI.Column(
+                    UI.Field("Beats Per Cycle", () => animation.Timing.BeatsPerCycle,
+                        value => Set(element, _ => animation.Timing.BeatsPerCycle = Mathf.Max(0.001f, value))),
+                    EasingField())
+                : UI.Column(
+                    UI.Field("Interval Beats", () => animation.Timing.IntervalBeats,
+                        value => Set(element, _ => animation.Timing.IntervalBeats = Mathf.Max(0.001f, value))),
+                    UI.Field("Active Beats", () => animation.Timing.ActiveBeats,
+                        value => Set(element, _ => animation.Timing.ActiveBeats = Mathf.Max(0.001f, value))),
+                    EasingField());
+        }
+
+        private void AddTextAnimation(PosterTextSettings settings)
+        {
+            PosterCanvas.NormalizeTextAnimations(settings);
+            var animation = new PosterTextAnimationEntry
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Type = (PosterTextAnimationType)_animationTypeToAdd
             };
+            settings.Animations.Add(animation);
+            DocumentChanged();
+        }
+
+        private void DuplicateTextAnimation(PosterTextSettings settings, string id)
+        {
+            PosterCanvas.NormalizeTextAnimations(settings);
+            var index = FindAnimationIndex(settings, id);
+            if (index < 0 || index >= settings.Animations.Count) return;
+            var duplicate = Copy(settings.Animations[index]);
+            duplicate.Id = Guid.NewGuid().ToString("N");
+            settings.Animations.Insert(index + 1, duplicate);
+            DocumentChanged();
+        }
+
+        private void DeleteTextAnimation(PosterTextSettings settings, string id)
+        {
+            var index = FindAnimationIndex(settings, id);
+            if (index < 0 || index >= settings.Animations.Count) return;
+            settings.Animations.RemoveAt(index);
+            DocumentChanged();
+        }
+
+        private void MoveTextAnimation(
+            PosterTextSettings settings,
+            string id,
+            int direction)
+        {
+            var index = FindAnimationIndex(settings, id);
+            var target = index + direction;
+            if (index < 0 || index >= settings.Animations.Count
+                          || target < 0 || target >= settings.Animations.Count) return;
+            var animation = settings.Animations[index];
+            settings.Animations.RemoveAt(index);
+            settings.Animations.Insert(target, animation);
+            DocumentChanged();
+        }
+
+        private static int FindAnimationIndex(PosterTextSettings settings, string id)
+        {
+            return settings.Animations.FindIndex(animation => animation?.Id == id);
+        }
+
+        private static int AnimationListStatus(PosterTextSettings settings)
+        {
+            unchecked
+            {
+                var hash = settings.Animations.Count;
+                foreach (var animation in settings.Animations)
+                {
+                    hash = hash * 31 + (animation?.GetHashCode() ?? 0);
+                    if (animation == null) continue;
+                    hash = hash * 31 + (int)animation.Type;
+                    hash = hash * 31 + (int)animation.Timing.Mode;
+                    hash = hash * 31 + (int)animation.Move.Axis;
+                    hash = hash * 31 + (int)animation.Move.Pattern;
+                }
+                return hash;
+            }
+        }
+
+        private static string AnimationSummary(PosterTextAnimationEntry animation)
+        {
+            if (animation == null) return "Missing";
+            var timing = animation.Timing.Mode switch
+            {
+                PosterMotionTiming.BeatCycle => $"Beat Cycle {animation.Timing.BeatsPerCycle:g}",
+                PosterMotionTiming.BeatLeap =>
+                    $"Beat Leap {animation.Timing.IntervalBeats:g}/{animation.Timing.ActiveBeats:g}",
+                _ => "Seconds"
+            };
+            if (animation.Type == PosterTextAnimationType.Typewriter)
+                return $"Typewriter — {timing}";
+
+            var axis = animation.Move.Axis == PosterTextMotion.MoveY ? "Y" : "X";
+            return $"Move — {axis} / {animation.Move.Pattern} / {timing}";
         }
 
         private Element CreateFontInspector(PosterElement element, PosterTextSettings settings)
@@ -857,7 +1015,7 @@ namespace qoooo.Rendering.Sources
         {
             element.Placement ??= new PosterPlacement();
             element.Text ??= new PosterTextSettings();
-            element.Text.Animation ??= new PosterTextAnimationSettings();
+            PosterCanvas.NormalizeTextAnimations(element.Text);
             element.Texture ??= new PosterTextureSettings();
             element.Line ??= new PosterLineSettings();
         }

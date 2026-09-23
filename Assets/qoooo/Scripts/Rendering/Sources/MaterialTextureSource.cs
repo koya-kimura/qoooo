@@ -21,7 +21,17 @@ namespace qoooo.Rendering.Sources
         PolkaDot = 6,
         Sunburst = 7,
         GridLine = 8,
-        PsychedelicRing = 9
+        PsychedelicRing = 9,
+        HandDrawnGrid = 10,
+        OrganicDot = 11,
+        HalftoneCircle = 12,
+        PaperGrain = 13,
+        Plaster = 14,
+        InkSpeckle = 15,
+        WavyChecker = 16,
+        Linen = 17,
+        Marble = 18,
+        RoughStripe = 19
     }
 
     [DefaultExecutionOrder(-100)]
@@ -36,7 +46,9 @@ namespace qoooo.Rendering.Sources
             new[]
             {
                 "Noise Texture", "Diagonal Stripe", "Vertical Stripe", "Horizontal Stripe", "Wave Stripe",
-                "Checkerboard", "Polka Dot", "Sunburst", "Grid Line", "Psychedelic Ring"
+                "Checkerboard", "Polka Dot", "Sunburst", "Grid Line", "Psychedelic Ring",
+                "Hand Drawn Grid", "Organic Dot", "Halftone Circle", "Paper Grain", "Plaster",
+                "Ink Speckle", "Wavy Checker", "Linen", "Marble", "Rough Stripe"
             },
             (int)ProceduralPatternType.NoiseTexture);
         [SerializeField, FormerlySerializedAs("_colorA")]
@@ -166,7 +178,9 @@ namespace qoooo.Rendering.Sources
                 new[]
                 {
                     "Noise Texture", "Diagonal Stripe", "Vertical Stripe", "Horizontal Stripe", "Wave Stripe",
-                    "Checkerboard", "Polka Dot", "Sunburst", "Grid Line", "Psychedelic Ring"
+                    "Checkerboard", "Polka Dot", "Sunburst", "Grid Line", "Psychedelic Ring",
+                    "Hand Drawn Grid", "Organic Dot", "Halftone Circle", "Paper Grain", "Plaster",
+                    "Ink Speckle", "Wavy Checker", "Linen", "Marble", "Rough Stripe"
                 });
             _materialContractValidated = false;
             if (_material != null) SetUniforms();

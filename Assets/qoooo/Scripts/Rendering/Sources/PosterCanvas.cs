@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using TMPro;
 using qoooo.Parameters.Model;
@@ -181,9 +182,7 @@ namespace qoooo.Rendering.Sources
                 {
                     if (element == null) continue;
                     element.Text ??= new PosterTextSettings();
-                    element.Text.Animation ??= new PosterTextAnimationSettings();
-                    if (element.Text.Animation.CharactersPerSecond <= 0f)
-                        element.Text.Animation.CharactersPerSecond = 12f;
+                    NormalizeTextAnimations(element.Text);
                     if (string.IsNullOrWhiteSpace(element.Text.FontId))
                         element.Text.FontId = _fontCatalog?.DefaultFontId;
                 }
@@ -346,91 +345,124 @@ namespace qoooo.Rendering.Sources
                     }
                 }
 
-                var animation = runtime.Settings.Animation;
-                if (animation == null)
+                var elapsed = Mathf.Max(0f, Time.time - runtime.StartTime);
+                var currentBeat = (float)(_bpmSource?.Beat ?? runtime.StartBeat);
+                var positionOffset = Vector2.zero;
+                var visibleCharacters = runtime.FullText.Length;
+
+                foreach (var animation in runtime.Settings.Animations)
                 {
-                    runtime.RectTransform.anchoredPosition = runtime.BasePosition;
-                    runtime.TextMesh.maxVisibleCharacters = runtime.FullText.Length;
-                    continue;
+                    if (animation == null || !animation.Enabled) continue;
+
+                    switch (animation.Type)
+                    {
+                        case PosterTextAnimationType.Move:
+                            positionOffset += ResolveMoveOffset(runtime, animation, elapsed, currentBeat);
+                            break;
+                        case PosterTextAnimationType.Typewriter:
+                            visibleCharacters = ResolveVisibleCharacterCount(
+                                runtime.FullText.Length, runtime, animation, elapsed, currentBeat);
+                            break;
+                    }
                 }
 
-                var elapsed = Mathf.Max(0f, Time.time - runtime.StartTime);
-                runtime.RectTransform.anchoredPosition = runtime.BasePosition
-                                                         + ResolveMotionOffset(runtime, animation, elapsed);
-                runtime.TextMesh.maxVisibleCharacters = animation.TypewriterEnabled
-                    ? ResolveVisibleCharacterCount(runtime.FullText.Length, animation, elapsed)
-                    : runtime.FullText.Length;
+                runtime.RectTransform.anchoredPosition = runtime.BasePosition + positionOffset;
+                runtime.TextMesh.maxVisibleCharacters = visibleCharacters;
             }
         }
 
-        private Vector2 ResolveMotionOffset(
+        private Vector2 ResolveMoveOffset(
             PosterTextRuntime runtime,
-            PosterTextAnimationSettings animation,
-            float elapsed)
+            PosterTextAnimationEntry animation,
+            float elapsed,
+            float currentBeat)
         {
-            if (animation.Motion == PosterTextMotion.None) return Vector2.zero;
+            var move = animation.Move;
+            if (move == null) return Vector2.zero;
 
-            var phase = ResolveMotionPhase(runtime, animation, elapsed, out var usePatternEasing);
-            var offset = EvaluateMove(animation, phase, usePatternEasing) * animation.MoveAmount;
-            return animation.Motion == PosterTextMotion.MoveX
+            var timing = ResolveTiming(
+                animation.Timing,
+                elapsed,
+                runtime.StartBeat,
+                currentBeat,
+                move.Speed,
+                move.Loop,
+                move.Easing);
+            var offset = EvaluateMove(move, timing) * move.Amount;
+            return move.Axis == PosterTextMotion.MoveX
                 ? new Vector2(offset * Width, 0f)
                 : new Vector2(0f, offset * Height);
         }
 
-        private float ResolveMotionPhase(
-            PosterTextRuntime runtime,
-            PosterTextAnimationSettings animation,
+        private static AnimationPhase ResolveTiming(
+            PosterAnimationTimingSettings settings,
             float elapsed,
-            out bool usePatternEasing)
+            float startBeat,
+            float currentBeat,
+            float secondsSpeed,
+            bool loop,
+            PosterMoveEasing easing)
         {
-            usePatternEasing = animation.Timing != PosterMotionTiming.BeatLeap;
-            switch (animation.Timing)
+            settings ??= new PosterAnimationTimingSettings();
+            var beat = Mathf.Max(0f, currentBeat);
+            var elapsedBeat = Mathf.Max(0f, beat - startBeat);
+            switch (settings.Mode)
             {
                 case PosterMotionTiming.BeatCycle:
-                    var beatCycle = Mathf.Max(0f, (float)(_bpmSource?.Beat ?? runtime.StartBeat) - runtime.StartBeat)
-                                    / Mathf.Max(0.001f, animation.BeatsPerCycle);
-                    return ResolveCyclePhase(beatCycle, animation.MoveLoop);
+                    var beatCycle = elapsedBeat / Mathf.Max(0.001f, settings.BeatsPerCycle);
+                    return CreateCyclePhase(beatCycle, loop, false);
 
                 case PosterMotionTiming.BeatLeap:
-                    var beat = Mathf.Max(0f, (float)(_bpmSource?.Beat ?? runtime.StartBeat));
-                    var interval = Mathf.Max(0.001f, animation.IntervalBeats);
-                    var move = Mathf.Clamp(animation.MoveBeats, 0.001f, interval);
+                    var interval = Mathf.Max(0.001f, settings.IntervalBeats);
+                    var active = Mathf.Clamp(settings.ActiveBeats, 0.001f, interval);
                     var leapPhase = Mathf.Repeat(Rhythm.GetPhase(
                         beat,
                         interval,
-                        move,
-                        ResolveEasingFn(animation.MoveEasing)), 1f);
-                    if (!animation.MoveLoop && beat - runtime.StartBeat >= interval)
-                        return 1f;
-                    return leapPhase;
+                        active,
+                        ResolveEasingFn(easing)), 1f);
+                    var localBeat = Mathf.Repeat(beat, interval);
+                    var isActive = localBeat >= interval - active;
+                    if (!loop && elapsedBeat >= interval)
+                        return new AnimationPhase(1f, 0, false, true, true);
+                    return new AnimationPhase(
+                        leapPhase,
+                        Mathf.FloorToInt(beat / interval),
+                        isActive,
+                        false,
+                        true);
 
                 default:
-                    return ResolveCyclePhase(elapsed * Mathf.Max(0f, animation.MoveSpeed), animation.MoveLoop);
+                    return CreateCyclePhase(elapsed * Mathf.Max(0f, secondsSpeed), loop, false);
             }
         }
 
-        private static float ResolveCyclePhase(float cycle, bool loop)
+        private static AnimationPhase CreateCyclePhase(float cycle, bool loop, bool easingApplied)
         {
-            if (cycle < 0f) return 0f;
-            return loop ? Mathf.Repeat(cycle, 1f) : Mathf.Clamp01(cycle);
+            cycle = Mathf.Max(0f, cycle);
+            var completed = !loop && cycle >= 1f;
+            return new AnimationPhase(
+                loop ? Mathf.Repeat(cycle, 1f) : Mathf.Clamp01(cycle),
+                Mathf.FloorToInt(cycle),
+                true,
+                completed,
+                easingApplied);
         }
 
         private static float EvaluateMove(
-            PosterTextAnimationSettings animation,
-            float phase,
-            bool usePatternEasing)
+            PosterMoveAnimationSettings move,
+            AnimationPhase timing)
         {
-            if (!animation.MoveLoop && phase >= 1f)
-                return animation.Pattern == PosterMotionPattern.Traverse ? 1f : 0f;
+            if (timing.IsCompleted)
+                return move.Pattern == PosterMotionPattern.Traverse ? 1f : 0f;
 
-            var progress = Mathf.Clamp01(phase);
-            if (animation.Pattern == PosterMotionPattern.Traverse)
-                return usePatternEasing ? Ease(animation.MoveEasing, progress) : progress;
+            var progress = timing.Phase;
+            if (move.Pattern == PosterMotionPattern.Traverse)
+                return timing.EasingApplied ? progress : Ease(move.Easing, progress);
 
             if (progress < 0.5f)
-                return usePatternEasing ? Ease(animation.MoveEasing, progress * 2f) : progress * 2f;
+                return timing.EasingApplied ? progress * 2f : Ease(move.Easing, progress * 2f);
             var returnProgress = (progress - 0.5f) * 2f;
-            return usePatternEasing ? 1f - Ease(animation.MoveEasing, returnProgress) : 1f - returnProgress;
+            return timing.EasingApplied ? 1f - returnProgress : 1f - Ease(move.Easing, returnProgress);
         }
 
         private static EasingFn ResolveEasingFn(PosterMoveEasing easing)
@@ -468,15 +500,97 @@ namespace qoooo.Rendering.Sources
 
         private static int ResolveVisibleCharacterCount(
             int characterCount,
-            PosterTextAnimationSettings animation,
-            float elapsed)
+            PosterTextRuntime runtime,
+            PosterTextAnimationEntry animation,
+            float elapsed,
+            float currentBeat)
         {
             if (characterCount <= 0) return 0;
 
-            var visible = Mathf.FloorToInt(elapsed * Mathf.Max(0.01f, animation.CharactersPerSecond));
-            return animation.TypewriterLoop
-                ? visible % (characterCount + 1)
-                : Mathf.Min(visible, characterCount);
+            var typewriter = animation.Typewriter;
+            if (typewriter == null) return characterCount;
+
+            if (animation.Timing?.Mode == PosterMotionTiming.Seconds)
+            {
+                var visible = Mathf.FloorToInt(
+                    elapsed * Mathf.Max(0.01f, typewriter.CharactersPerSecond));
+                return typewriter.Loop
+                    ? visible % (characterCount + 1)
+                    : Mathf.Min(visible, characterCount);
+            }
+
+            var timing = ResolveTiming(
+                animation.Timing,
+                elapsed,
+                runtime.StartBeat,
+                currentBeat,
+                1f,
+                typewriter.Loop,
+                typewriter.Easing);
+            var phase = timing.EasingApplied
+                ? timing.Phase
+                : Ease(typewriter.Easing, timing.Phase);
+            return Mathf.Clamp(Mathf.FloorToInt(phase * characterCount), 0, characterCount);
+        }
+
+        internal static void NormalizeTextAnimations(PosterTextSettings settings)
+        {
+            settings.Animations ??= new List<PosterTextAnimationEntry>();
+            if (!settings.AnimationsMigrated)
+            {
+                var legacy = settings.Animation;
+                if (settings.Animations.Count == 0 && legacy != null)
+                {
+                    if (legacy.Motion != PosterTextMotion.None)
+                    {
+                        settings.Animations.Add(new PosterTextAnimationEntry
+                        {
+                            Type = PosterTextAnimationType.Move,
+                            Timing = new PosterAnimationTimingSettings
+                            {
+                                Mode = legacy.Timing,
+                                BeatsPerCycle = legacy.BeatsPerCycle,
+                                IntervalBeats = legacy.IntervalBeats,
+                                ActiveBeats = legacy.MoveBeats
+                            },
+                            Move = new PosterMoveAnimationSettings
+                            {
+                                Axis = legacy.Motion,
+                                Pattern = legacy.Pattern,
+                                Amount = legacy.MoveAmount,
+                                Speed = legacy.MoveSpeed,
+                                Easing = legacy.MoveEasing,
+                                Loop = legacy.MoveLoop
+                            }
+                        });
+                    }
+
+                    if (legacy.TypewriterEnabled)
+                    {
+                        settings.Animations.Add(new PosterTextAnimationEntry
+                        {
+                            Type = PosterTextAnimationType.Typewriter,
+                            Typewriter = new PosterTypewriterAnimationSettings
+                            {
+                                CharactersPerSecond = Mathf.Max(0.01f, legacy.CharactersPerSecond),
+                                Loop = legacy.TypewriterLoop
+                            }
+                        });
+                    }
+                }
+
+                settings.AnimationsMigrated = true;
+            }
+
+            foreach (var animation in settings.Animations)
+            {
+                if (animation == null) continue;
+                if (string.IsNullOrWhiteSpace(animation.Id))
+                    animation.Id = Guid.NewGuid().ToString("N");
+                animation.Timing ??= new PosterAnimationTimingSettings();
+                animation.Move ??= new PosterMoveAnimationSettings();
+                animation.Typewriter ??= new PosterTypewriterAnimationSettings();
+            }
         }
 
         private static bool IsDynamicText(PosterTextSource source)
@@ -508,6 +622,29 @@ namespace qoooo.Rendering.Sources
                 StartTime = startTime;
                 StartBeat = startBeat;
                 FullText = fullText ?? string.Empty;
+            }
+        }
+
+        private readonly struct AnimationPhase
+        {
+            public readonly float Phase;
+            public readonly int CycleIndex;
+            public readonly bool IsActive;
+            public readonly bool IsCompleted;
+            public readonly bool EasingApplied;
+
+            public AnimationPhase(
+                float phase,
+                int cycleIndex,
+                bool isActive,
+                bool isCompleted,
+                bool easingApplied)
+            {
+                Phase = phase;
+                CycleIndex = cycleIndex;
+                IsActive = isActive;
+                IsCompleted = isCompleted;
+                EasingApplied = easingApplied;
             }
         }
 

@@ -88,6 +88,12 @@ namespace qoooo.Rendering.Sources
         BeatLeap
     }
 
+    public enum PosterTextAnimationType
+    {
+        Move,
+        Typewriter
+    }
+
     public enum PosterTextureSource
     {
         Model,
@@ -164,7 +170,48 @@ namespace qoooo.Rendering.Sources
         public float FontSize = 0.04f;
         public PosterHorizontalAlign HorizontalAlign;
         public PosterVerticalAlign VerticalAlign;
+        public List<PosterTextAnimationEntry> Animations = new();
+        public bool AnimationsMigrated;
         public PosterTextAnimationSettings Animation = new();
+    }
+
+    [Serializable]
+    public sealed class PosterTextAnimationEntry
+    {
+        public string Id;
+        public bool Enabled = true;
+        public PosterTextAnimationType Type;
+        public PosterAnimationTimingSettings Timing = new();
+        public PosterMoveAnimationSettings Move = new();
+        public PosterTypewriterAnimationSettings Typewriter = new();
+    }
+
+    [Serializable]
+    public sealed class PosterAnimationTimingSettings
+    {
+        public PosterMotionTiming Mode;
+        public float BeatsPerCycle = 1f;
+        public float IntervalBeats = 4f;
+        public float ActiveBeats = 1f;
+    }
+
+    [Serializable]
+    public sealed class PosterMoveAnimationSettings
+    {
+        public PosterTextMotion Axis = PosterTextMotion.MoveX;
+        public PosterMotionPattern Pattern;
+        public float Amount = 0.1f;
+        public float Speed = 1f;
+        public PosterMoveEasing Easing = PosterMoveEasing.SmoothStep;
+        public bool Loop = true;
+    }
+
+    [Serializable]
+    public sealed class PosterTypewriterAnimationSettings
+    {
+        public float CharactersPerSecond = 12f;
+        public PosterMoveEasing Easing;
+        public bool Loop;
     }
 
     [Serializable]

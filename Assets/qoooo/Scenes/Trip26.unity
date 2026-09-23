@@ -231,6 +231,10 @@ MonoBehaviour:
     SamplingEffect: 0
     ColorEffect: 0
     AlphaEffect: 0
+    UvEffects: 0
+    SamplingEffects: 0
+    ColorEffects: 0
+    AlphaEffects: 0
     Amount: 0
     Scale: 1
     Threshold: 0
@@ -530,11 +534,11 @@ Transform:
   m_GameObject: {fileID: 184558105}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.20000029}
+  m_LocalPosition: {x: 0, y: 0, z: 4.65}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1591138852}
+  m_Father: {fileID: 1034376984}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &184558107
 MonoBehaviour:
@@ -799,6 +803,10 @@ MonoBehaviour:
     SamplingEffect: 0
     ColorEffect: 0
     AlphaEffect: 0
+    UvEffects: 0
+    SamplingEffects: 0
+    ColorEffects: 0
+    AlphaEffects: 0
     Amount: 0
     Scale: 1
     Threshold: 0
@@ -1385,11 +1393,11 @@ Transform:
   m_GameObject: {fileID: 317742967}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 4.45}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1591138852}
+  m_Father: {fileID: 1034376984}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &317742969
 MonoBehaviour:
@@ -2209,6 +2217,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1591138852}
+  - {fileID: 1034376984}
   - {fileID: 291929305}
   m_Father: {fileID: 181277145}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -2412,6 +2421,10 @@ MonoBehaviour:
     SamplingEffect: 0
     ColorEffect: 0
     AlphaEffect: 0
+    UvEffects: 0
+    SamplingEffects: 0
+    ColorEffects: 0
+    AlphaEffects: 0
     Amount: 0
     Scale: 1
     Threshold: 0
@@ -3004,6 +3017,40 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 28a111d4fdce74f35b1081a884690954, type: 3}
   m_PrefabInstance: {fileID: 1004057760}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1034376983
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1034376984}
+  m_Layer: 0
+  m_Name: ModelVirtualCameras
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1034376984
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1034376983}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 317742968}
+  - {fileID: 184558106}
+  - {fileID: 1977451118}
+  m_Father: {fileID: 687144749}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1107990554
 GameObject:
   m_ObjectHideFlags: 0
@@ -3639,10 +3686,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 4.45}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 317742968}
-  - {fileID: 184558106}
-  - {fileID: 1977451118}
+  m_Children: []
   m_Father: {fileID: 687144749}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1591138853
@@ -4509,11 +4553,11 @@ Transform:
   m_GameObject: {fileID: 1977451117}
   serializedVersion: 2
   m_LocalRotation: {x: -0.21643962, y: -0, z: -0, w: 0.976296}
-  m_LocalPosition: {x: 0, y: -0.2, z: -0.049999714}
+  m_LocalPosition: {x: 0, y: -0.2, z: 4.4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1591138852}
+  m_Father: {fileID: 1034376984}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1977451119
 MonoBehaviour:
@@ -4618,6 +4662,10 @@ MonoBehaviour:
     SamplingEffect: 0
     ColorEffect: 0
     AlphaEffect: 0
+    UvEffects: 0
+    SamplingEffects: 0
+    ColorEffects: 0
+    AlphaEffects: 0
     Amount: 0
     Scale: 0
     Threshold: 0
