@@ -105,7 +105,7 @@ namespace qoooo.Midi.Apc
                 if(Matches(binding?.Button,key) && _registry.TryGet(binding.ParameterId,out var parameter) && parameter is BoolParameter toggle)return toggle.Value?ToggleBright:ToggleDim;
             foreach(var binding in mapping.Radios)
                 if(binding?.OptionButtons != null && _registry.TryGet(binding.ParameterId,out var parameter) && parameter is RadioParameter radio)
-                    for(var index=0;index<binding.OptionButtons.Count;index++)if(Matches(binding.OptionButtons[index],key))return radio.Value==index?RadioBright:RadioDim;
+                    for(var index=0;index<Mathf.Min(binding.OptionButtons.Count,radio.Options.Count);index++)if(Matches(binding.OptionButtons[index],key))return radio.Value==index?RadioBright:RadioDim;
             foreach(var binding in mapping.Oneshots)
                 if(Matches(binding?.Button,key) && _registry.TryGet(binding.ParameterId,out var parameter) && parameter is OneshotParameter oneshot)return oneshot.Value?OneshotBright:OneshotDim;
             foreach(var binding in mapping.Momentaries)
@@ -114,7 +114,7 @@ namespace qoooo.Midi.Apc
                 if(Matches(binding?.Button,key) && _registry.TryGet(binding.ParameterId,out var parameter) && parameter is StateParameter state)return StateColor(state.Value);
             foreach(var binding in mapping.Sequences)
                 if(binding?.StepButtons != null && _registry.TryGet(binding.ParameterId,out var parameter) && parameter is SequenceParameter sequence)
-                    for(var index=0;index<binding.StepButtons.Count;index++)if(Matches(binding.StepButtons[index],key))
+                    for(var index=0;index<Mathf.Min(binding.StepButtons.Count,sequence.StepCount);index++)if(Matches(binding.StepButtons[index],key))
                         return sequence.ActiveStep==index ? SequenceBright : (sequence.Steps[index] ? SequenceDim : SequenceInactive);
             return Off;
         }

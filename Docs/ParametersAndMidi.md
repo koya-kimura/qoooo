@@ -25,3 +25,5 @@ Fader は pickup / soft takeover を使い、assignment または値域を切り
 ## UI Boundary
 
 Live UI は owner Parameter を直接編集する。`MIDI Bindings` は APC assignment、`MIDI Mapping` は profile と controller state を扱う。MIDI UI に Parameter value editor を重複して持たせない。
+
+`Keyboard Bindings` も同じ registry Parameter を操作する。Bool はtoggle、Floatは設定値、Radioはoption index、Stateはnext、Sequenceはstep toggle、OneshotとMomentaryはtriggerとして保存mappingからdispatchする。TextField入力中はbindingを抑止する。

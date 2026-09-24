@@ -8,6 +8,7 @@ using qoooo.Parameters.Runtime;
 using qoooo.Presentation.Contracts;
 using RosettaUI;
 using UnityEngine;
+using UnityEngine.UIElements;
 using UnitySimpleContainer;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -19,7 +20,7 @@ namespace qoooo.Midi.Runtime
     [DefaultExecutionOrder(-9000)]
     // Composition root that wires MIDI transport, typed Parameter adapters, profile, and LED output.
     // State remains with each subsystem owner rather than this orchestration boundary.
-    public sealed class MidiSystemController : MonoBehaviour, IUiTarget
+    public sealed class MidiSystemController : MonoBehaviour, IUiTarget, IPrefsSaveParticipant
     {
         private IBpmSource _bpmSource;
         [SerializeField] private MidiParameterRegistry _parameterRegistry;
@@ -30,12 +31,15 @@ namespace qoooo.Midi.Runtime
         [SerializeField] private RtMidiOutput _midiOutput;
         [SerializeField] private ApcMiniMk2LedRenderer _ledRenderer;
         private MidiBindingUi _bindingUi;
+        private KeyboardParameterController _keyboardController;
         private bool _initialized;
         private bool _outputShutdown;
         private IEnumerable<IMidiParameterContainer> _providers = Enumerable.Empty<IMidiParameterContainer>();
 
         private void Awake()
         {
+            _keyboardController = GetComponent<KeyboardParameterController>()
+                                  ?? gameObject.AddComponent<KeyboardParameterController>();
             Initialize();
         }
 
@@ -67,6 +71,7 @@ namespace qoooo.Midi.Runtime
                 CreateOverviewElement(),
                 // The hub owns navigation only; child windows own their existing MIDI views.
                 UI.WindowLauncher(UI.Window("MIDI Bindings", CreateBindingsElement())),
+                UI.WindowLauncher(UI.Window("Keyboard Bindings", CreateKeyboardBindingsElement())),
                 UI.WindowLauncher(UI.Window("MIDI Mapping", CreateMappingElement()))
             );
         }
@@ -87,6 +92,15 @@ namespace qoooo.Midi.Runtime
         {
             return _bindingUi?.CreateBindingsElement() ?? UI.Label("MIDI is not initialized.");
         }
+
+        private Element CreateKeyboardBindingsElement()
+        {
+            return _keyboardController?.CreateElement() ?? UI.Label("Keyboard bindings are not initialized.");
+        }
+
+        public void PrepareSave() => _keyboardController?.PrepareSave();
+        public void CommitSave() => _keyboardController?.CommitSave();
+        public void AbortSave() => _keyboardController?.AbortSave();
 
         private Element CreateMappingElement()
         {
@@ -141,6 +155,7 @@ namespace qoooo.Midi.Runtime
             }
 
             _parameterRegistry.Initialize(_providers);
+            _keyboardController.Configure(FindFirstObjectByType<UIDocument>(), _parameterRegistry);
             _parameterRuntime.Configure(_parameterRegistry, _bpmSource);
             _apcController.Configure(_midiInput, _parameterRegistry, _bpmSource);
             _apcController.Rebuild();

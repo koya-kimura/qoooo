@@ -38,6 +38,7 @@ namespace qoooo.Rendering.Models
         private readonly Dictionary<GameObject, Vector3> _basePositions = new();
         private readonly Dictionary<GameObject, Quaternion> _baseRotations = new();
         private readonly Dictionary<GameObject, Vector3> _baseScales = new();
+        private readonly Dictionary<GameObject, Vector3> _visualCenters = new();
         private readonly List<Renderer> _renderers = new();
         private readonly Dictionary<string, bool> _animationFoldStates = new();
         private ModelArrangementController _arrangement;
@@ -188,6 +189,37 @@ namespace qoooo.Rendering.Models
             _basePositions[model] = model.transform.localPosition;
             _baseRotations[model] = model.transform.localRotation;
             _baseScales[model] = model.transform.localScale;
+            _visualCenters[model] = CalculateVisualCenter(model);
+        }
+
+        private static Vector3 CalculateVisualCenter(GameObject model)
+        {
+            var renderers = model.GetComponentsInChildren<Renderer>(true);
+            var hasBounds = false;
+            var bounds = new Bounds();
+            foreach (var renderer in renderers)
+            {
+                if (renderer == null) continue;
+                var localBounds = renderer.localBounds;
+                var rendererToModel = model.transform.worldToLocalMatrix * renderer.localToWorldMatrix;
+                var min = localBounds.min;
+                var max = localBounds.max;
+                for (var corner = 0; corner < 8; corner++)
+                {
+                    var point = rendererToModel.MultiplyPoint3x4(new Vector3(
+                        (corner & 1) == 0 ? min.x : max.x,
+                        (corner & 2) == 0 ? min.y : max.y,
+                        (corner & 4) == 0 ? min.z : max.z));
+                    if (hasBounds) bounds.Encapsulate(point);
+                    else
+                    {
+                        bounds = new Bounds(point, Vector3.zero);
+                        hasBounds = true;
+                    }
+                }
+            }
+
+            return hasBounds ? bounds.center : Vector3.zero;
         }
 
         private void AccumulateAnimations(
@@ -320,10 +352,14 @@ namespace qoooo.Rendering.Models
         {
             if (!_basePositions.TryGetValue(slot, out var basePosition)
                 || !_baseRotations.TryGetValue(slot, out var baseRotation)
-                || !_baseScales.TryGetValue(slot, out var baseScale)) return;
-            slot.transform.localPosition = basePosition + positionOffset;
-            slot.transform.localRotation = baseRotation * Quaternion.Euler(rotationOffset);
-            slot.transform.localScale = baseScale * scaleMultiplier;
+                || !_baseScales.TryGetValue(slot, out var baseScale)
+                || !_visualCenters.TryGetValue(slot, out var visualCenter)) return;
+            var rotation = baseRotation * Quaternion.Euler(rotationOffset);
+            var scale = baseScale * scaleMultiplier;
+            slot.transform.localPosition = basePosition + positionOffset
+                                           - rotation * Vector3.Scale(visualCenter, scale);
+            slot.transform.localRotation = rotation;
+            slot.transform.localScale = scale;
         }
 
         private Element CreateAnimationList()

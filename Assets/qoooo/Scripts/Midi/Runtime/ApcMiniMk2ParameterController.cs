@@ -204,11 +204,16 @@ namespace qoooo.Midi.Runtime
         }
 
         public void Configure(MinisMidiInput input, MidiParameterRegistry parameters, IBpmSource bpmSource)
-        { _input=input; _parameters=parameters; _bpmSource=bpmSource; _configured=true; }
+        {
+            UnsubscribeRadioOptions();
+            _input=input; _parameters=parameters; _bpmSource=bpmSource; _configured=true;
+            SubscribeRadioOptions();
+        }
 
         private void OnEnable()
         {
             if (_input != null) Subscribe();
+            SubscribeRadioOptions();
         }
 
         private void Start()
@@ -221,7 +226,7 @@ namespace qoooo.Midi.Runtime
 
         private void OnDisable()
         {
-            Unsubscribe(); ReleaseOneshots(); _buttons.Clear(); _faders.Clear(); _faderBindings.Clear();
+            Unsubscribe(); UnsubscribeRadioOptions(); ReleaseOneshots(); _buttons.Clear(); _faders.Clear(); _faderBindings.Clear();
         }
 
         public void Rebuild()
@@ -236,13 +241,13 @@ namespace qoooo.Midi.Runtime
             {
                 if (!TryParameter(binding?.ParameterId, MidiParameterKind.Radio, out var raw)) continue;
                 var value=(RadioParameter)raw;
-                for(var index=0; index<(binding.OptionButtons?.Count??0); index++) { var slot=binding.OptionButtons[index]; var captured=index; AddButton(slot, () => value.TrySetValue(captured)); }
+                for(var index=0; index<Math.Min(binding.OptionButtons?.Count??0,value.Options.Count); index++) { var slot=binding.OptionButtons[index]; var captured=index; AddButton(slot, () => value.TrySetValue(captured)); }
             }
             foreach (var binding in _sequences ?? new List<SequenceMidiBinding>())
             {
                 if (!TryParameter(binding?.ParameterId, MidiParameterKind.Sequence, out var raw)) continue;
                 var value=(SequenceParameter)raw;
-                for(var index=0; index<(binding.StepButtons?.Count??0); index++) { var slot=binding.StepButtons[index]; var captured=index; AddButton(slot, () => value.ToggleStep(captured)); }
+                for(var index=0; index<Math.Min(binding.StepButtons?.Count??0,value.StepCount); index++) { var slot=binding.StepButtons[index]; var captured=index; AddButton(slot, () => value.ToggleStep(captured)); }
             }
             foreach(var binding in _floats ?? new List<FloatMidiBinding>())
             {
@@ -259,6 +264,20 @@ namespace qoooo.Midi.Runtime
 
         private void Subscribe() { _input.NoteOn -= HandleNoteOn; _input.NoteOff -= HandleNoteOff; _input.ControlChange -= HandleControlChange; _input.ConnectionChanged -= HandleInputConnectionChanged; _input.NoteOn += HandleNoteOn; _input.NoteOff += HandleNoteOff; _input.ControlChange += HandleControlChange; _input.ConnectionChanged += HandleInputConnectionChanged; }
         private void Unsubscribe() { if(_input==null)return; _input.NoteOn -= HandleNoteOn; _input.NoteOff -= HandleNoteOff; _input.ControlChange -= HandleControlChange; _input.ConnectionChanged -= HandleInputConnectionChanged; }
+        private void SubscribeRadioOptions()
+        {
+            foreach (var parameter in _parameters?.Parameters ?? Array.Empty<IMidiBindableParameter>())
+                if (parameter is RadioParameter radio)
+                {
+                    radio.OptionsChanged -= Rebuild;
+                    radio.OptionsChanged += Rebuild;
+                }
+        }
+        private void UnsubscribeRadioOptions()
+        {
+            foreach (var parameter in _parameters?.Parameters ?? Array.Empty<IMidiBindableParameter>())
+                if (parameter is RadioParameter radio) radio.OptionsChanged -= Rebuild;
+        }
         private void HandleInputConnectionChanged(bool connected)
         {
             if (connected) return;

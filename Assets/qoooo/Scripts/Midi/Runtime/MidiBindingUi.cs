@@ -18,12 +18,28 @@ namespace qoooo.Midi.Runtime
         public MidiBindingUi(ApcMiniMk2ParameterController controller, MidiParameterRegistry registry) { _controller=controller; _registry=registry; }
         public Element CreateBindingsElement()
         {
-            return UI.Column(
+            return UI.DynamicElementOnStatusChanged(BindingStatus, _ => UI.Column(
                 UI.Label(() => _controller.IsListening ? $"Listening: {_controller.ListeningParameterId}" : "Listen: idle"),
                 UI.Button("Cancel Listen", _controller.CancelListen),
                 UI.ScrollViewVertical(BindingsListMaxHeight,
                     UI.Fold("Parameter Bindings", CreateBindings()).Open())
-            );
+            ));
+        }
+
+        private int BindingStatus()
+        {
+            unchecked
+            {
+                var hash = _registry.Revision;
+                foreach (var parameter in _registry.Parameters)
+                {
+                    if (parameter is not RadioParameter radio) continue;
+                    hash = hash * 31 + radio.Options.Count;
+                    foreach (var option in radio.Options)
+                        hash = hash * 31 + (option?.GetHashCode() ?? 0);
+                }
+                return hash;
+            }
         }
 
         public Element CreateFaderButtonFunctionsElement()

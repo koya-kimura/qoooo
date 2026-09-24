@@ -23,6 +23,7 @@ namespace qoooo.Parameters.Model
         public IReadOnlyList<string> Options => _options;
         public int Value { get { EnsureInitialized(); return _value; } }
         public event Action<int> Changed;
+        public event Action OptionsChanged;
         public bool IsValid => _options != null && _options.Count > 0;
         public bool TrySetValue(int value)
         {
@@ -50,6 +51,7 @@ namespace qoooo.Parameters.Model
             var valueChanged = _value != nextValue;
             _value = nextValue;
             if (valueChanged) Changed?.Invoke(_value);
+            if (optionsChanged) OptionsChanged?.Invoke();
             return optionsChanged || valueChanged;
         }
         public void InitializeFromDefault() { EnsureOptions(); _value = Normalize(_defaultValue); _initialized = true; }
