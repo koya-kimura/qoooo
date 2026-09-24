@@ -98,7 +98,8 @@ namespace qoooo.Rendering.Sources
         Rotate = 4,
         Shake = 5,
         Blink = 6,
-        Tracking = 7
+        Tracking = 7,
+        CharacterScramble = 8
     }
 
     public enum PosterTextureSource
@@ -183,6 +184,7 @@ namespace qoooo.Rendering.Sources
         public string Format;
         public string FontId;
         public float FontSize = 0.04f;
+        public float CharacterSpacing;
         public PosterHorizontalAlign HorizontalAlign;
         public PosterVerticalAlign VerticalAlign;
         public Vector2 TextOffset;
@@ -210,6 +212,7 @@ namespace qoooo.Rendering.Sources
         public PosterShakeAnimationSettings Shake = new();
         public PosterBlinkAnimationSettings Blink = new();
         public PosterTrackingAnimationSettings Tracking = new();
+        public PosterCharacterScrambleAnimationSettings CharacterScramble = new();
     }
 
     [Serializable]
@@ -319,6 +322,13 @@ namespace qoooo.Rendering.Sources
         public float Speed = 1f;
         public PosterMoveEasing Easing = PosterMoveEasing.SmoothStep;
         public bool Loop = true;
+    }
+
+    [Serializable]
+    public sealed class PosterCharacterScrambleAnimationSettings
+    {
+        [Min(1)] public int Steps = 16;
+        public uint Seed;
     }
 
     [Serializable]

@@ -14,8 +14,8 @@ qoooo は RosettaUI と Akai APC mini mk2 で型付き Parameter を操作し、
 | Model instances   | `ModelInstanceCache`             | runtime clone の生成、再利用、破棄を管理する。                                                                |
 | Model appearance  | `ModelController`                | active slot へ scale、motion、visibility を適用する。                                                         |
 | Poster            | `PosterLibrary` / `PosterCanvas` | document とその Canvas 表現を管理する。                                                                       |
-| Texture effects   | `ProcessedTextureSource`         | source ごとの effect Parameter と処理済み texture を持つ。                                                    |
-| Composition       | `TextureCompositor`              | layer 合成用の ping-pong buffer と最終 texture を持つ。                                                       |
+| Texture effects   | `ProcessedTextureSource`         | source ごとの effect Parameter と処理済み texture を持つ。Output source が最終 texture を持つ。               |
+| Composition       | `TextureCompositor`              | layer 合成用の ping-pong buffer と合成済み texture を持つ。                                                   |
 | Palette           | `PaletteProvider`                | shared palette catalog と active palette を持つ。                                                             |
 
 UI、Keyboard、MIDI は同じ owner Parameter を操作する。consumer は入力元を参照せず、現在値だけを読む。
@@ -29,10 +29,12 @@ PosterCamera
   ↓
 TextureCompositor
   ↓
+Output ProcessedTextureSource
+  ↓
 Preview / Syphon
 ```
 
-`TextureCompositor` は PosterCamera の描画完了後に同じ frame の合成を開始する。PosterCamera より前に RenderTexture を読むと、前 frame の Poster を合成するため、この順序を崩さない。
+`TextureCompositor` は PosterCamera の描画完了後に同じ frame の合成を開始し、直後に Output source を更新する。PosterCamera より前に RenderTexture を読むと、前 frame の Poster を合成するため、この順序を崩さない。
 
 Texture effect は任意順の stack ではなく、次の固定 pipeline で処理する。各 stage 内では
 複数の enabled effect を定義順に適用できる。

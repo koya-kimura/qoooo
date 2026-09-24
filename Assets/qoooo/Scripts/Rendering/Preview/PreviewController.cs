@@ -1,13 +1,14 @@
 using qoooo.Rendering.Composition;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace qoooo.Rendering.Preview
 {
-    // Textureを所有せず、TextureCompositorの出力をGame Viewに表示する。
+    // Textureを所有せず、最終出力textureをGame Viewに表示する。
     public class PreviewController : MonoBehaviour
     {
-        [SerializeField] private TextureCompositor _compositor;
+        [SerializeField, FormerlySerializedAs("_compositor")] private MonoBehaviour _sourceComponent;
         [SerializeField] private RawImage _rawImage;
         [SerializeField] private AspectRatioFitter _aspectRatioFitter;
 
@@ -15,7 +16,7 @@ namespace qoooo.Rendering.Preview
 
         private void Update()
         {
-            var texture = _compositor != null ? _compositor.Texture : null;
+            var texture = (_sourceComponent as ITextureContainer)?.Texture;
             if (_currentTexture == texture) return;
 
             _currentTexture = texture;
@@ -29,6 +30,8 @@ namespace qoooo.Rendering.Preview
 
         private void OnValidate()
         {
+            if (_sourceComponent != null && _sourceComponent is not ITextureContainer)
+                Debug.LogError("Source Component must implement ITextureContainer.", this);
             if (_rawImage == null) _rawImage = GetComponentInChildren<RawImage>();
             if (_aspectRatioFitter == null) _aspectRatioFitter = GetComponentInChildren<AspectRatioFitter>();
         }

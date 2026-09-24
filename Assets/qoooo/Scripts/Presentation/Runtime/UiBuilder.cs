@@ -8,6 +8,7 @@ using qoooo.Rendering.Composition;
 using qoooo.Rendering.Models;
 using RosettaUI;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 using UnitySimpleContainer;
 
@@ -23,6 +24,7 @@ namespace qoooo.Presentation.Runtime
         [SerializeField] private OneshotParameter _toggleVisibility = new("ui.toggle-visibility", "Toggle UI Visibility");
         private UIDocument _uiDocument;
         private bool _isUiVisible = true;
+        private bool _saveShortcutWasPressed;
 
         public IEnumerable<IMidiBindableParameter> MidiParameters
         {
@@ -68,6 +70,19 @@ namespace qoooo.Presentation.Runtime
         {
             var root = GetComponent<RosettaUIRoot>();
             root.Build(CreateElement());
+        }
+
+        private void Update()
+        {
+            var keyboard = Keyboard.current;
+            if (keyboard == null) return;
+
+            var saveModifierPressed = Application.platform is RuntimePlatform.OSXEditor or RuntimePlatform.OSXPlayer
+                ? keyboard.leftMetaKey.isPressed || keyboard.rightMetaKey.isPressed
+                : keyboard.leftCtrlKey.isPressed || keyboard.rightCtrlKey.isPressed;
+            var saveShortcutPressed = saveModifierPressed && keyboard.sKey.isPressed;
+            if (saveShortcutPressed && !_saveShortcutWasPressed) SavePrefs();
+            _saveShortcutWasPressed = saveShortcutPressed;
         }
 
         private void OnToggleVisibilityChanged(bool triggered)

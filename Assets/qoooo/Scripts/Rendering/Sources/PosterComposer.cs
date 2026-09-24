@@ -32,7 +32,7 @@ namespace qoooo.Rendering.Sources
         private static readonly string[] ColorNames = { "Palette Main", "Palette Sub", "White", "Black", "Custom" };
         private static readonly string[] TextSourceNames = { "Literal", "Main Text", "Current Date", "Current Time" };
         private static readonly string[] AnimationTypeNames =
-            { "Move", "Typewriter", "Fade", "Scale", "Rotate", "Shake", "Blink", "Tracking" };
+            { "Move", "Typewriter", "Fade", "Scale", "Rotate", "Shake", "Blink", "Tracking", "Character Scramble" };
         private static readonly string[] MoveAxisNames = { "X", "Y" };
         private static readonly string[] ValuePatternNames = { "Ping Pong", "Traverse", "Envelope" };
         private static readonly string[] MotionTimingNames = { "Seconds", "Beat Cycle", "Beat Leap" };
@@ -431,6 +431,8 @@ namespace qoooo.Rendering.Sources
                 CreateFontInspector(element, settings),
                 UI.Field("Font Size", () => settings.FontSize,
                     value => Set(element, _ => settings.FontSize = Mathf.Max(0.001f, value))),
+                UI.Field("Character Spacing (em)", () => settings.CharacterSpacing,
+                    value => Set(element, _ => settings.CharacterSpacing = float.IsFinite(value) ? value : 0f)),
                 UI.Dropdown("Horizontal Align", () => (int)settings.HorizontalAlign,
                     value => Set(element, _ => settings.HorizontalAlign = (PosterHorizontalAlign)value), HorizontalAlignNames),
                 UI.Dropdown("Vertical Align", () => (int)settings.VerticalAlign,
@@ -509,6 +511,8 @@ namespace qoooo.Rendering.Sources
                 PosterTextAnimationType.Shake => CreateShakeAnimationInspector(element, animation),
                 PosterTextAnimationType.Blink => CreateBlinkAnimationInspector(element, animation),
                 PosterTextAnimationType.Tracking => CreateTrackingAnimationInspector(element, animation),
+                PosterTextAnimationType.CharacterScramble =>
+                    CreateCharacterScrambleAnimationInspector(element, animation),
                 _ => UI.HelpBox("Unsupported animation type.")
             };
         }
@@ -633,6 +637,23 @@ namespace qoooo.Rendering.Sources
                 CreateAnimationTimingInspector(element, animation),
                 UI.Field("Loop", () => animation.Tracking.Loop,
                     value => Set(element, _ => animation.Tracking.Loop = value)));
+        }
+
+        private Element CreateCharacterScrambleAnimationInspector(
+            PosterElement element,
+            PosterTextAnimationEntry animation)
+        {
+            var scramble = animation.CharacterScramble;
+            return UI.Column(
+                UI.Field("Interval Beats", () => animation.Timing.IntervalBeats,
+                    value => Set(element, _ => animation.Timing.IntervalBeats = Mathf.Max(0.001f, value))),
+                UI.Field("Active Beats", () => animation.Timing.ActiveBeats,
+                    value => Set(element, _ => animation.Timing.ActiveBeats = Mathf.Clamp(
+                        value, 0.001f, animation.Timing.IntervalBeats))),
+                UI.Field("Steps", () => scramble.Steps,
+                    value => Set(element, _ => scramble.Steps = Mathf.Max(1, value))),
+                UI.Field("Seed", () => scramble.Seed,
+                    value => Set(element, _ => scramble.Seed = value)));
         }
 
         private Element CreateValuePatternInspector(
@@ -818,6 +839,12 @@ namespace qoooo.Rendering.Sources
                 Id = Guid.NewGuid().ToString("N"),
                 Type = (PosterTextAnimationType)_animationTypeToAdd
             };
+            if (animation.Type == PosterTextAnimationType.CharacterScramble)
+            {
+                animation.Timing.Mode = PosterMotionTiming.BeatLeap;
+                animation.Timing.IntervalBeats = 16f;
+                animation.Timing.ActiveBeats = 2f;
+            }
             settings.Animations.Add(animation);
             _animationFoldStates[animation.Id] = true;
             DocumentChanged();
@@ -920,6 +947,8 @@ namespace qoooo.Rendering.Sources
                 PosterTextAnimationType.Shake => $"Shake — {animation.Shake.Pattern} / {timing}",
                 PosterTextAnimationType.Blink => $"Blink — {timing}",
                 PosterTextAnimationType.Tracking => $"Tracking — {animation.Tracking.Pattern} / {timing}",
+                PosterTextAnimationType.CharacterScramble =>
+                    $"Character Scramble — {animation.Timing.IntervalBeats:g}/{animation.Timing.ActiveBeats:g}",
                 _ => $"Move — {(animation.Move.Axis == PosterTextMotion.MoveY ? "Y" : "X")}"
                      + $" / {animation.Move.Pattern} / {timing}"
             };
@@ -1250,6 +1279,7 @@ namespace qoooo.Rendering.Sources
                         ? _posterCanvas.FontCatalog?.DefaultFontId
                         : text.FontId,
                     FontSize = text.FontSize,
+                    CharacterSpacing = text.CharacterSpacing,
                     HorizontalAlign = text.HorizontalAlign,
                     VerticalAlign = text.VerticalAlign
                 },

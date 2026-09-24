@@ -2,14 +2,15 @@
 using PrefsGUI;
 using qoooo.Rendering.Composition;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace qoooo.Integration.Syphon
 {
-    // TextureCompositorの出力をSyphonへ公開する。composition stateは変更も所有もしない。
+    // 最終出力textureをSyphonへ公開する。composition stateは変更も所有もしない。
     public class SyphonController : MonoBehaviour
     {
         [SerializeField] private SyphonServer _syphonServer;
-        [SerializeField] private TextureCompositor _compositor;
+        [SerializeField, FormerlySerializedAs("_compositor")] private MonoBehaviour _sourceComponent;
 
         private readonly PrefsString _syphonName = new("syphonName", "qoooo");
 
@@ -20,10 +21,16 @@ namespace qoooo.Integration.Syphon
 
         private void Update()
         {
-            if (_compositor == null) return;
+            if (_sourceComponent is not ITextureContainer source) return;
 
-            var texture = _compositor.Texture;
+            var texture = source.Texture;
             if (_syphonServer.SourceTexture != texture) _syphonServer.SourceTexture = texture;
+        }
+
+        private void OnValidate()
+        {
+            if (_sourceComponent != null && _sourceComponent is not ITextureContainer)
+                Debug.LogError("Source Component must implement ITextureContainer.", this);
         }
 
         private void ApplySyphonName() 

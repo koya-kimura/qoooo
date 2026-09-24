@@ -9,10 +9,11 @@ namespace qoooo.Rendering.Composition
     // Effect values remain on their source; Edit opens an independent inspector window for that source and effect.
     public sealed class TextureProcessingUi : MonoBehaviour, IUiTarget
     {
-        private static readonly string[] TargetNames = { "Model", "Background" };
+        private static readonly string[] TargetNames = { "Model", "Background", "Output" };
 
         [SerializeField] private ProcessedTextureSource _modelSource;
         [SerializeField] private ProcessedTextureSource _backgroundSource;
+        [SerializeField] private ProcessedTextureSource _outputSource;
 
         // TargetはTexture処理の値ではなく、このWindow内だけのnavigation state。
         private int _selectedTarget;
@@ -147,7 +148,12 @@ namespace qoooo.Rendering.Composition
             };
         }
 
-        private ProcessedTextureSource SelectedSource => _selectedTarget == 0 ? _modelSource : _backgroundSource;
+        private ProcessedTextureSource SelectedSource => _selectedTarget switch
+        {
+            0 => _modelSource,
+            1 => _backgroundSource,
+            _ => _outputSource
+        };
 
         private void SetSelectedTarget(int target)
         {

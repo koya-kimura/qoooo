@@ -16,6 +16,7 @@ namespace qoooo.Rendering.Composition
         [SerializeField] private MonoBehaviour _sourceComponent;
         [SerializeField] private TextureEffect _effect;
         [SerializeField] private TextureEffectParams _effectParams;
+        [SerializeField] private string _parameterTargetName;
         [NonSerialized] private TextureEffectParameters _effectParameters;
         private IPaletteProvider _palette;
 
@@ -82,6 +83,12 @@ namespace qoooo.Rendering.Composition
             return _processedTexture;
         }
 
+        public Texture Refresh()
+        {
+            _renderedFrame = -1;
+            return Render();
+        }
+
         public void SetEffectParams(TextureEffectParams effectParams)
         {
             effectParams.MosaicSize = Mathf.Max(1f, effectParams.MosaicSize);
@@ -98,7 +105,10 @@ namespace qoooo.Rendering.Composition
             EnsureEffectParameters();
             var effectParams = _effectParams;
             _effectParameters.ApplyTo(ref effectParams);
-            if (_palette != null && effectParams.ColorEffect == TextureColorEffect.Palette4)
+            var palette4Mask = 1 << ((int)TextureColorEffect.Palette4 - 1);
+            if (_palette != null
+                && (effectParams.ColorEffect == TextureColorEffect.Palette4
+                    || (effectParams.ColorEffects & palette4Mask) != 0))
             {
                 effectParams.Main = _palette.Main;
                 effectParams.Sub = _palette.Sub;
@@ -120,6 +130,9 @@ namespace qoooo.Rendering.Composition
 
         private string DefaultParameterTargetName()
         {
+            if (!string.IsNullOrWhiteSpace(_parameterTargetName))
+                return _parameterTargetName.Trim().ToLowerInvariant();
+
             const string layerSuffix = "Layer";
             var targetName = gameObject.name;
             if (targetName.EndsWith(layerSuffix, System.StringComparison.Ordinal))

@@ -1489,7 +1489,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Scripts.Spout.SpoutController
   _syphonServer: {fileID: 330585550}
-  _compositor: {fileID: 2134837972}
+  _sourceComponent: {fileID: 2134837975}
 --- !u!114 &330585550
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1560,7 +1560,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 449bb8c5bc314153945220f6d144ce32, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Preview.PreviewController
-  _compositor: {fileID: 2134837972}
+  _sourceComponent: {fileID: 2134837975}
   _rawImage: {fileID: 1802518066}
   _aspectRatioFitter: {fileID: 1802518065}
 --- !u!114 &393050633
@@ -4981,6 +4981,8 @@ GameObject:
   - component: {fileID: 2134837973}
   - component: {fileID: 2134837972}
   - component: {fileID: 2134837974}
+  - component: {fileID: 2134837976}
+  - component: {fileID: 2134837975}
   m_Layer: 0
   m_Name: TextureCompositor
   m_TagString: Untagged
@@ -5004,6 +5006,7 @@ MonoBehaviour:
   - {fileID: 1993703950}
   _compositeMaterial: {fileID: 2100000, guid: 93372f86947814460ac6375475852c96, type: 2}
   _posterCamera: {fileID: 915433850}
+  _outputSource: {fileID: 2134837975}
 --- !u!4 &2134837973
 Transform:
   m_ObjectHideFlags: 0
@@ -5033,6 +5036,65 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Rendering.Composition.TextureProcessingUi
   _modelSource: {fileID: 734515094}
   _backgroundSource: {fileID: 78356558}
+  _outputSource: {fileID: 2134837975}
+--- !u!114 &2134837976
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2134837971}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3faf11b35496468e946e1af97a1de18c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Textures.TextureEffect
+  _material: {fileID: 2100000, guid: 30fb421f942db4f26a3979155f57ed4a, type: 2}
+--- !u!114 &2134837975
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2134837971}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d56bf423f64d4e7e8ca88e95613a8849, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Rendering.Composition.ProcessedTextureSource
+  _sourceComponent: {fileID: 2134837972}
+  _effect: {fileID: 2134837976}
+  _effectParams:
+    IsInvert: 0
+    IsMosaic: 0
+    MosaicSize: 8
+    IsTiling: 0
+    TileNum: {x: 1, y: 1}
+    Offset: {x: 0, y: 0}
+    IsPosterize: 0
+    PosterizeLevels: 4
+    UvEffect: 0
+    SamplingEffect: 0
+    ColorEffect: 0
+    AlphaEffect: 0
+    UvEffects: 0
+    SamplingEffects: 0
+    ColorEffects: 0
+    AlphaEffects: 0
+    Amount: 8
+    Scale: 8
+    Threshold: 0.5
+    Strength: 1
+    Probability: 0.5
+    Seed: 0
+    Direction: {x: 1, y: 0}
+    Grid: {x: 8, y: 8}
+    Thresholds: {x: 0.25, y: 0.5, z: 0.75}
+    Main: {r: 0, g: 0, b: 0, a: 0}
+    Sub: {r: 0, g: 0, b: 0, a: 0}
+    Base: {r: 0, g: 0, b: 0, a: 0}
+    Accent: {r: 0, g: 0, b: 0, a: 0}
+  _parameterTargetName: output
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -17,6 +17,7 @@ namespace qoooo.Rendering.Composition
         [SerializeField] private List<TextureLayer> _layers = new();
         [SerializeField] private Material _compositeMaterial;
         [SerializeField] private Camera _posterCamera;
+        [SerializeField] private ProcessedTextureSource _outputSource;
 
         private readonly List<RenderedLayer> _renderedLayers = new();
         private RenderTexture _bufferA;
@@ -46,6 +47,7 @@ namespace qoooo.Rendering.Composition
 
             _compositedFrame = Time.frameCount;
             Composite();
+            _outputSource?.Refresh();
         }
 
         private void Composite()

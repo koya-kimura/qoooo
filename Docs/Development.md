@@ -14,6 +14,8 @@ git diff --check
 git status --short
 ```
 
+Play ModeではmacOSの `Command+S`（その他のplatformでは `Ctrl+S`）が、QooooのSaveボタンと同じPrefs save transactionを実行する。
+
 ## Handoff
 
 Codex は実装、compile、diff check、変更内容の handoff までを担当する。人間は Unity 上で Play、visual、MIDI を確認してから commit する。

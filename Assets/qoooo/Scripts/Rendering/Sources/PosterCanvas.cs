@@ -420,6 +420,9 @@ namespace qoooo.Rendering.Sources
                 settings.HorizontalAlign, settings.VerticalAlign, rotation, font);
             if (textMesh != null)
             {
+                textMesh.characterSpacing = float.IsFinite(settings.CharacterSpacing)
+                    ? settings.CharacterSpacing * Mathf.Max(1f, font?.faceInfo.pointSize ?? 1f)
+                    : 0f;
                 AlignGlyphBoundsToPlacement(
                     textMesh,
                     placement,
@@ -537,6 +540,7 @@ namespace qoooo.Rendering.Sources
                 var alphaMultiplier = 1f;
                 var trackingOffset = 0f;
                 var visibleCharacters = runtime.FullText.Length;
+                var displayedText = runtime.FullText;
 
                 foreach (var animation in runtime.Settings.Animations)
                 {
@@ -572,9 +576,15 @@ namespace qoooo.Rendering.Sources
                         case PosterTextAnimationType.Tracking:
                             trackingOffset += ResolveTrackingOffset(runtime, animation, elapsed, currentBeat);
                             break;
+                        case PosterTextAnimationType.CharacterScramble:
+                            displayedText = ResolveCharacterScramble(
+                                displayedText, animation, currentBeat);
+                            break;
                     }
                 }
 
+                if (runtime.TextMesh.text != displayedText)
+                    runtime.TextMesh.text = displayedText;
                 var animatedRotation = runtime.BaseRotation * Quaternion.Euler(0f, 0f, -rotationOffset);
                 var animatedScale = runtime.BaseScale * scaleMultiplier;
                 var baseCenterOffset = runtime.BaseRotation
@@ -943,6 +953,37 @@ namespace qoooo.Rendering.Sources
                 tracking.FromSpacing, tracking.ToSpacing, 0f);
         }
 
+        private static string ResolveCharacterScramble(
+            string text,
+            PosterTextAnimationEntry animation,
+            float currentBeat)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+
+            var settings = animation.CharacterScramble;
+            if (settings == null) return text;
+
+            var interval = Mathf.Max(0.001f, animation.Timing.IntervalBeats);
+            var active = Mathf.Clamp(animation.Timing.ActiveBeats, 0.001f, interval);
+            var steps = Mathf.Max(1, settings.Steps);
+            char[] characters = null;
+
+            for (var index = 0; index < text.Length; index++)
+            {
+                var offset = Mathf.Floor(Pcg.Pcg01(new UInt2(settings.Seed, (uint)index)).x * 1000f);
+                var phase = Rhythm.GetPhase(currentBeat + offset, interval, active, Linear);
+                var step = Mathf.FloorToInt(phase * steps);
+                var random = Pcg.Hash3D(new UInt3(settings.Seed, (uint)index, unchecked((uint)step)));
+                var replacement = text[(int)(random.X % (uint)text.Length)];
+                if (replacement == text[index]) continue;
+
+                characters ??= text.ToCharArray();
+                characters[index] = replacement;
+            }
+
+            return characters == null ? text : new string(characters);
+        }
+
         internal static void NormalizeTextAnimations(PosterTextSettings settings)
         {
             settings.Animations ??= new List<PosterTextAnimationEntry>();
@@ -1012,6 +1053,7 @@ namespace qoooo.Rendering.Sources
                 animation.Blink ??= new PosterBlinkAnimationSettings();
                 animation.Tracking ??= new PosterTrackingAnimationSettings();
                 animation.Tracking.Envelope ??= new PosterEnvelopeSettings();
+                animation.CharacterScramble ??= new PosterCharacterScrambleAnimationSettings();
             }
         }
 
