@@ -67,6 +67,9 @@ option順で割り当てる。
 Model arrangement modeを切り替えた時は、Singleを1×1、Rowを4×1、Columnを1×4、Gridを
 2×2のcountで開始する。mode切替後は各axis countを個別に編集できる。
 
+Model camera poseはAPC Page 0のRow 7、Column 4–7へ、Front、Orbit、Low Sweep、Flybyの順で
+割り当てる。Frontだけを固定し、他のposeはactive model群の中心を注視しながら移動する。
+
 `PosterFontCatalog` は Poster text 用の font を stable Font ID で管理し、Poster 保存データはその ID を保持する。
 
 Legacy Text subsystem は Trip26 の最終 output には入らない。現在の text output は Poster document の Text element で扱う。
