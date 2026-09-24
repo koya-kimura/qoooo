@@ -140,8 +140,8 @@ namespace qoooo.Rendering.Sources
         {
             return UI.Column(
                 UI.Fold("Pattern", CreatePatternRadioElement()).Open(),
-                UI.Field("Main Color", () => _mainColor),
-                UI.Field("Sub Color", () => _subColor),
+                UI.Field("Main", () => _mainColor),
+                UI.Field("Sub", () => _subColor),
                 UI.Field("Tiling", () => _tiling),
                 UI.Field("Offset", () => _offset),
                 UI.Field("Speed", () => _speed),

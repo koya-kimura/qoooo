@@ -91,7 +91,7 @@ Material:
     - _BumpScale: 1
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
-    - _ColorEffect: 2
+    - _ColorEffect: 0
     - _Cull: 2
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
@@ -100,7 +100,7 @@ Material:
     - _DstBlendAlpha: 0
     - _EffectAmount: 8
     - _EffectProbability: 0.5
-    - _EffectScale: 11
+    - _EffectScale: 1
     - _EffectSeed: 0
     - _EffectStrength: 1
     - _EffectThreshold: 0.5
@@ -113,7 +113,7 @@ Material:
     - _Parallax: 0.005
     - _QueueOffset: 0
     - _ReceiveShadows: 1
-    - _SamplingEffect: 0
+    - _SamplingEffect: 11
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1

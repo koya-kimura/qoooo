@@ -435,6 +435,10 @@ namespace qoooo.Rendering.Sources
                     value => Set(element, _ => settings.HorizontalAlign = (PosterHorizontalAlign)value), HorizontalAlignNames),
                 UI.Dropdown("Vertical Align", () => (int)settings.VerticalAlign,
                     value => Set(element, _ => settings.VerticalAlign = (PosterVerticalAlign)value), VerticalAlignNames),
+                UI.Field("Text Offset X (UV)", () => settings.TextOffset.x,
+                    value => Set(element, _ => settings.TextOffset.x = float.IsFinite(value) ? value : 0f)),
+                UI.Field("Text Offset Y (UV)", () => settings.TextOffset.y,
+                    value => Set(element, _ => settings.TextOffset.y = float.IsFinite(value) ? value : 0f)),
                 UI.Fold("Animation", CreateTextAnimationInspector(element, settings)).Open());
         }
 
@@ -995,7 +999,7 @@ namespace qoooo.Rendering.Sources
                     Width = 0.35f,
                     Height = 0.2f
                 },
-                Color = type == PosterElementType.Text ? PosterColorRef.White : PosterColorRef.PaletteMain,
+                Color = type == PosterElementType.Text ? PosterColorRef.Base : PosterColorRef.Main,
                 Text = new PosterTextSettings
                 {
                     Source = PosterTextSource.Literal,
@@ -1337,6 +1341,7 @@ namespace qoooo.Rendering.Sources
         {
             element.Placement ??= new PosterPlacement();
             element.Text ??= new PosterTextSettings();
+            PosterCanvas.NormalizeTextOffset(element.Text);
             PosterCanvas.NormalizeTextAnimations(element.Text);
             element.Texture ??= new PosterTextureSettings();
             element.Line ??= new PosterLineSettings();

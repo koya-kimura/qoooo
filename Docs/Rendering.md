@@ -35,6 +35,10 @@ Grid placement は grid point に element anchor を合わせ、Width / Height �
 
 ## Shared Visual Resources
 
-`PaletteProvider` は shared palette catalog と active palette を所有し、rendering consumer へ提供する。`PosterFontCatalog` は Poster text 用の font を stable Font ID で管理し、Poster 保存データはその ID を保持する。
+`PaletteProvider` は shared palette catalog と active palette を所有し、`Main` / `Sub` / `Base` / `Accent` の4 roleを同じ名前でrendering consumerへ提供する。`Main` は主役色、`Sub` は補助色、`Base` は背景と本文の基準色、`Accent` は限定的な強調色として扱う。Posterのcolor参照も同じrole名を使い、保存値はこの順のslot positionとして扱う。
+
+`ModelController` は名前付きanimation preset listと `model.animation-preset` Radioを所有する。各presetはanimation entry listを持ち、選択中のlistだけがmodel transformへ適用される。preset option indexはlist positionと一致し、MIDI mappingはposition basedで扱う。preset内容はQoooo Saveで保存する。
+
+`PosterFontCatalog` は Poster text 用の font を stable Font ID で管理し、Poster 保存データはその ID を保持する。
 
 Legacy Text subsystem は Trip26 の最終 output には入らない。現在の text output は Poster document の Text element で扱う。

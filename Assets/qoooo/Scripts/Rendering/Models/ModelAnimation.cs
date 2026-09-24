@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace qoooo.Rendering.Models
@@ -55,6 +56,23 @@ namespace qoooo.Rendering.Models
         public ModelAnimationEnvelope Envelope = new();
         public uint Seed;
         [Range(0f, 1f)] public float RandomPhase;
+    }
+
+    [Serializable]
+    public sealed class ModelAnimationPreset
+    {
+        public string Id;
+        public string Name;
+        public List<ModelAnimationEntry> Animations = new();
+    }
+
+    [Serializable]
+    public sealed class ModelAnimationPresetRecord
+    {
+        public int SchemaVersion = 1;
+        public bool HasSavedData;
+        public string ActivePresetId;
+        public List<ModelAnimationPreset> Presets = new();
     }
 
     [Serializable]

@@ -7,6 +7,7 @@ using qoooo.Parameters.Runtime;
 using qoooo.Presentation.Contracts;
 using RosettaUI;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace qoooo.Rendering.Composition
 {
@@ -14,14 +15,33 @@ namespace qoooo.Rendering.Composition
     {
         Color Main { get; }
         Color Sub { get; }
-        Color ColorA { get; }
-        Color ColorB { get; }
-        Color ColorC { get; }
-        Color ColorD { get; }
+        Color Base { get; }
+        Color Accent { get; }
     }
 
     [Serializable]
     public sealed class PaletteDefinition
+    {
+        public string Id;
+        public string Name;
+        [FormerlySerializedAs("ColorA")] public Color Main;
+        [FormerlySerializedAs("ColorB")] public Color Sub;
+        [FormerlySerializedAs("ColorC")] public Color Base;
+        [FormerlySerializedAs("ColorD")] public Color Accent;
+        public bool BuiltIn;
+    }
+
+    [Serializable]
+    public sealed class PaletteCatalogRecord
+    {
+        public int SchemaVersion = 2;
+        public bool HasSavedData;
+        public string ActivePaletteId;
+        public List<PaletteDefinition> UserPalettes = new();
+    }
+
+    [Serializable]
+    internal sealed class LegacyPaletteDefinition
     {
         public string Id;
         public string Name;
@@ -33,12 +53,12 @@ namespace qoooo.Rendering.Composition
     }
 
     [Serializable]
-    public sealed class PaletteCatalogRecord
+    internal sealed class LegacyPaletteCatalogRecord
     {
-        public int SchemaVersion = 1;
+        public int SchemaVersion;
         public bool HasSavedData;
         public string ActivePaletteId;
-        public List<PaletteDefinition> UserPalettes = new();
+        public List<LegacyPaletteDefinition> UserPalettes = new();
     }
 
     // Owns the shared palette catalog and typed selection Parameter. Palette edits persist through Qoooo Save.
@@ -55,6 +75,7 @@ namespace qoooo.Rendering.Composition
             new[] { "Cobalt", "Acid", "Hot" });
 
         private readonly PrefsAny<PaletteCatalogRecord> _prefs = new(PrefsKey);
+        private readonly PrefsAny<LegacyPaletteCatalogRecord> _legacyPrefs = new(PrefsKey);
         private readonly List<PaletteDefinition> _palettes = new();
         private PaletteCatalogRecord _recordBeforePrepare;
         private string _savedActivePaletteId;
@@ -62,12 +83,10 @@ namespace qoooo.Rendering.Composition
         private int _revision;
         private bool _editorOpen;
 
-        public Color Main => ActivePalette.ColorA;
-        public Color Sub => ActivePalette.ColorB;
-        public Color ColorA => ActivePalette.ColorA;
-        public Color ColorB => ActivePalette.ColorB;
-        public Color ColorC => ActivePalette.ColorC;
-        public Color ColorD => ActivePalette.ColorD;
+        public Color Main => ActivePalette.Main;
+        public Color Sub => ActivePalette.Sub;
+        public Color Base => ActivePalette.Base;
+        public Color Accent => ActivePalette.Accent;
 
         public IEnumerable<IMidiBindableParameter> MidiParameters
         {
@@ -155,10 +174,10 @@ namespace qoooo.Rendering.Composition
 
             if (!palette.BuiltIn)
                 controls.Add(UI.Field("Name", () => palette.Name, RenamePalette));
-            controls.Add(UI.Field("Color A", () => palette.ColorA, value => SetColor(palette, 0, value)));
-            controls.Add(UI.Field("Color B", () => palette.ColorB, value => SetColor(palette, 1, value)));
-            controls.Add(UI.Field("Color C", () => palette.ColorC, value => SetColor(palette, 2, value)));
-            controls.Add(UI.Field("Color D", () => palette.ColorD, value => SetColor(palette, 3, value)));
+            controls.Add(UI.Field("Main", () => palette.Main, value => SetColor(palette, 0, value)));
+            controls.Add(UI.Field("Sub", () => palette.Sub, value => SetColor(palette, 1, value)));
+            controls.Add(UI.Field("Base", () => palette.Base, value => SetColor(palette, 2, value)));
+            controls.Add(UI.Field("Accent", () => palette.Accent, value => SetColor(palette, 3, value)));
 
             controls.Add(UI.Row(
                 UI.Button("Save", save ?? (() => { })),
@@ -197,10 +216,10 @@ namespace qoooo.Rendering.Composition
             {
                 Id = NewUserId(),
                 Name = UniqueName("Custom", null),
-                ColorA = source.ColorA,
-                ColorB = source.ColorB,
-                ColorC = source.ColorC,
-                ColorD = source.ColorD
+                Main = source.Main,
+                Sub = source.Sub,
+                Base = source.Base,
+                Accent = source.Accent
             };
             _palettes.Add(palette);
             SynchronizeOptions(palette.Id);
@@ -216,10 +235,10 @@ namespace qoooo.Rendering.Composition
             {
                 Id = NewUserId(),
                 Name = UniqueName($"{source.Name} Copy", null),
-                ColorA = source.ColorA,
-                ColorB = source.ColorB,
-                ColorC = source.ColorC,
-                ColorD = source.ColorD
+                Main = source.Main,
+                Sub = source.Sub,
+                Base = source.Base,
+                Accent = source.Accent
             };
             _palettes.Add(palette);
             SynchronizeOptions(palette.Id);
@@ -255,10 +274,10 @@ namespace qoooo.Rendering.Composition
             value = SanitizeColor(value, Color.white);
             switch (index)
             {
-                case 0: palette.ColorA = value; break;
-                case 1: palette.ColorB = value; break;
-                case 2: palette.ColorC = value; break;
-                case 3: palette.ColorD = value; break;
+                case 0: palette.Main = value; break;
+                case 1: palette.Sub = value; break;
+                case 2: palette.Base = value; break;
+                case 3: palette.Accent = value; break;
             }
             _revision++;
         }
@@ -270,7 +289,14 @@ namespace qoooo.Rendering.Composition
             var record = _prefs.Get();
             if (record != null && record.HasSavedData && record.SchemaVersion == 1)
             {
-                AddValidUserPalettes(record.UserPalettes);
+                var legacyRecord = _legacyPrefs.Get();
+                AddValidUserPalettes(
+                    legacyRecord?.UserPalettes?.Select(ConvertLegacyPalette), false);
+                _savedActivePaletteId = legacyRecord?.ActivePaletteId;
+            }
+            else if (record != null && record.HasSavedData && record.SchemaVersion == 2)
+            {
+                AddValidUserPalettes(record.UserPalettes, true);
                 _savedActivePaletteId = record.ActivePaletteId;
             }
             SynchronizeOptions(DefaultPaletteId);
@@ -282,7 +308,7 @@ namespace qoooo.Rendering.Composition
             LoadCatalog();
         }
 
-        private void AddValidUserPalettes(IEnumerable<PaletteDefinition> values)
+        private void AddValidUserPalettes(IEnumerable<PaletteDefinition> values, bool restoreBuiltInColors)
         {
             var ids = new HashSet<string>(_palettes.Select(value => value.Id), StringComparer.Ordinal);
             foreach (var source in values ?? Array.Empty<PaletteDefinition>())
@@ -292,10 +318,11 @@ namespace qoooo.Rendering.Composition
                 var builtIn = _palettes.Find(value => value.BuiltIn && value.Id == id);
                 if (builtIn != null)
                 {
-                    builtIn.ColorA = SanitizeColor(source.ColorA, builtIn.ColorA);
-                    builtIn.ColorB = SanitizeColor(source.ColorB, builtIn.ColorB);
-                    builtIn.ColorC = SanitizeColor(source.ColorC, builtIn.ColorC);
-                    builtIn.ColorD = SanitizeColor(source.ColorD, builtIn.ColorD);
+                    if (!restoreBuiltInColors) continue;
+                    builtIn.Main = SanitizeColor(source.Main, builtIn.Main);
+                    builtIn.Sub = SanitizeColor(source.Sub, builtIn.Sub);
+                    builtIn.Base = SanitizeColor(source.Base, builtIn.Base);
+                    builtIn.Accent = SanitizeColor(source.Accent, builtIn.Accent);
                     continue;
                 }
                 if (!ids.Add(id)) continue;
@@ -303,10 +330,10 @@ namespace qoooo.Rendering.Composition
                 {
                     Id = id,
                     Name = UniqueName(source.Name, null),
-                    ColorA = SanitizeColor(source.ColorA, Color.black),
-                    ColorB = SanitizeColor(source.ColorB, Color.white),
-                    ColorC = SanitizeColor(source.ColorC, Color.gray),
-                    ColorD = SanitizeColor(source.ColorD, Color.white)
+                    Main = SanitizeColor(source.Main, Color.white),
+                    Sub = SanitizeColor(source.Sub, Color.gray),
+                    Base = SanitizeColor(source.Base, Color.black),
+                    Accent = SanitizeColor(source.Accent, Color.white)
                 });
             }
         }
@@ -358,25 +385,40 @@ namespace qoooo.Rendering.Composition
                 float.IsFinite(value.a) ? Mathf.Clamp01(value.a) : fallback.a);
         }
 
+        private static PaletteDefinition ConvertLegacyPalette(LegacyPaletteDefinition value)
+        {
+            if (value == null) return null;
+            return new PaletteDefinition
+            {
+                Id = value.Id,
+                Name = value.Name,
+                Main = value.ColorA,
+                Sub = value.ColorB,
+                Base = value.ColorC,
+                Accent = value.ColorD,
+                BuiltIn = value.BuiltIn
+            };
+        }
+
         private static IEnumerable<PaletteDefinition> CreateBuiltIns()
         {
             yield return new PaletteDefinition
             {
                 Id = DefaultPaletteId, Name = "Cobalt", BuiltIn = true,
-                ColorA = new Color(0.05f, 0.25f, 0.95f, 1f), ColorB = Color.white,
-                ColorC = new Color(0.02f, 0.04f, 0.12f, 1f), ColorD = new Color(0.2f, 0.8f, 1f, 1f)
+                Main = new Color(0.05f, 0.25f, 0.95f, 1f), Sub = new Color(0.7f, 0.84f, 1f, 1f),
+                Base = new Color(0.015f, 0.025f, 0.07f, 1f), Accent = new Color(0f, 0.95f, 0.78f, 1f)
             };
             yield return new PaletteDefinition
             {
                 Id = "acid", Name = "Acid", BuiltIn = true,
-                ColorA = new Color(0.95f, 0.9f, 0.05f, 1f), ColorB = new Color(0.2f, 1f, 0.1f, 1f),
-                ColorC = new Color(0.04f, 0.04f, 0.02f, 1f), ColorD = new Color(0.2f, 0.55f, 1f, 1f)
+                Main = new Color(0.95f, 0.9f, 0.05f, 1f), Sub = new Color(0.2f, 1f, 0.1f, 1f),
+                Base = new Color(0.035f, 0.035f, 0.015f, 1f), Accent = new Color(1f, 0.08f, 0.55f, 1f)
             };
             yield return new PaletteDefinition
             {
                 Id = "hot", Name = "Hot", BuiltIn = true,
-                ColorA = new Color(1f, 0.08f, 0.1f, 1f), ColorB = new Color(1f, 0.2f, 0.55f, 1f),
-                ColorC = new Color(0.1f, 0.01f, 0.03f, 1f), ColorD = new Color(1f, 0.72f, 0.08f, 1f)
+                Main = new Color(1f, 0.08f, 0.1f, 1f), Sub = new Color(1f, 0.2f, 0.55f, 1f),
+                Base = new Color(0.08f, 0.005f, 0.02f, 1f), Accent = new Color(1f, 0.72f, 0.08f, 1f)
             };
         }
 

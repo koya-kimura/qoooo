@@ -110,14 +110,14 @@ namespace qoooo.Rendering.Composition
             if (visible.HasFlag(TextureEffectUiParameter.PaletteThresholds))
                 controls.Add(UI.Field("Palette Thresholds", () => source.EffectParams.Thresholds,
                     value => SetThresholds(source, value)));
-            if (visible.HasFlag(TextureEffectUiParameter.ColorA))
-                controls.Add(UI.Field("Color A", () => source.EffectParams.ColorA, value => SetColorA(source, value)));
-            if (visible.HasFlag(TextureEffectUiParameter.ColorB))
-                controls.Add(UI.Field("Color B", () => source.EffectParams.ColorB, value => SetColorB(source, value)));
-            if (visible.HasFlag(TextureEffectUiParameter.ColorC))
-                controls.Add(UI.Field("Color C", () => source.EffectParams.ColorC, value => SetColorC(source, value)));
-            if (visible.HasFlag(TextureEffectUiParameter.ColorD))
-                controls.Add(UI.Field("Color D", () => source.EffectParams.ColorD, value => SetColorD(source, value)));
+            if (visible.HasFlag(TextureEffectUiParameter.Main))
+                controls.Add(UI.Field("Main", () => source.EffectParams.Main, value => SetMain(source, value)));
+            if (visible.HasFlag(TextureEffectUiParameter.Sub))
+                controls.Add(UI.Field("Sub", () => source.EffectParams.Sub, value => SetSub(source, value)));
+            if (visible.HasFlag(TextureEffectUiParameter.Base))
+                controls.Add(UI.Field("Base", () => source.EffectParams.Base, value => SetBase(source, value)));
+            if (visible.HasFlag(TextureEffectUiParameter.Accent))
+                controls.Add(UI.Field("Accent", () => source.EffectParams.Accent, value => SetAccent(source, value)));
 
             return controls;
         }
@@ -175,10 +175,10 @@ namespace qoooo.Rendering.Composition
             source.SetEffectParams(effectParams);
         }
 
-        private static void SetColorA(ProcessedTextureSource source, Color value)
+        private static void SetMain(ProcessedTextureSource source, Color value)
         {
             var effectParams = source.EffectParams;
-            effectParams.ColorA = value;
+            effectParams.Main = value;
             source.SetEffectParams(effectParams);
         }
 
@@ -196,24 +196,24 @@ namespace qoooo.Rendering.Composition
             source.SetEffectParams(effectParams);
         }
 
-        private static void SetColorB(ProcessedTextureSource source, Color value)
+        private static void SetSub(ProcessedTextureSource source, Color value)
         {
             var effectParams = source.EffectParams;
-            effectParams.ColorB = value;
+            effectParams.Sub = value;
             source.SetEffectParams(effectParams);
         }
 
-        private static void SetColorC(ProcessedTextureSource source, Color value)
+        private static void SetBase(ProcessedTextureSource source, Color value)
         {
             var effectParams = source.EffectParams;
-            effectParams.ColorC = value;
+            effectParams.Base = value;
             source.SetEffectParams(effectParams);
         }
 
-        private static void SetColorD(ProcessedTextureSource source, Color value)
+        private static void SetAccent(ProcessedTextureSource source, Color value)
         {
             var effectParams = source.EffectParams;
-            effectParams.ColorD = value;
+            effectParams.Accent = value;
             source.SetEffectParams(effectParams);
         }
     }

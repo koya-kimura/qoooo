@@ -41,10 +41,10 @@ namespace qoooo.Rendering.Sources
 
     public enum PosterColorRef
     {
-        PaletteMain,
-        PaletteSub,
-        White,
-        Black,
+        Main,
+        Sub,
+        Base,
+        Accent,
         Custom
     }
 
@@ -185,6 +185,11 @@ namespace qoooo.Rendering.Sources
         public float FontSize = 0.04f;
         public PosterHorizontalAlign HorizontalAlign;
         public PosterVerticalAlign VerticalAlign;
+        public Vector2 TextOffset;
+        public bool TextOffsetInitialized;
+        public Vector2 OpticalOffset = new(0.5f, 0.5f);
+        public bool OpticalOffsetInitialized;
+        public bool OpticalOffsetUsesSignedRange;
         public List<PosterTextAnimationEntry> Animations = new();
         public bool AnimationsMigrated;
         public PosterTextAnimationSettings Animation = new();

@@ -26,10 +26,10 @@ namespace qoooo.Rendering.Composition
         TilingScale = 1 << 8,
         TilingOffset = 1 << 9,
         PaletteThresholds = 1 << 10,
-        ColorA = 1 << 11,
-        ColorB = 1 << 12,
-        ColorC = 1 << 13,
-        ColorD = 1 << 14
+        Main = 1 << 11,
+        Sub = 1 << 12,
+        Base = 1 << 13,
+        Accent = 1 << 14
     }
 
     internal readonly struct TextureEffectUiDefinition
@@ -65,10 +65,9 @@ namespace qoooo.Rendering.Composition
         private const TextureEffectUiParameter TilingScale = TextureEffectUiParameter.TilingScale;
         private const TextureEffectUiParameter TilingOffset = TextureEffectUiParameter.TilingOffset;
         private const TextureEffectUiParameter PaletteThresholds = TextureEffectUiParameter.PaletteThresholds;
-        private const TextureEffectUiParameter ColorA = TextureEffectUiParameter.ColorA;
-        private const TextureEffectUiParameter ColorB = TextureEffectUiParameter.ColorB;
-        private const TextureEffectUiParameter ColorC = TextureEffectUiParameter.ColorC;
-        private const TextureEffectUiParameter ColorD = TextureEffectUiParameter.ColorD;
+        private const TextureEffectUiParameter Main = TextureEffectUiParameter.Main;
+        private const TextureEffectUiParameter Sub = TextureEffectUiParameter.Sub;
+        private const TextureEffectUiParameter Base = TextureEffectUiParameter.Base;
 
         public static readonly IReadOnlyList<TextureEffectUiDefinition> Uv = new[]
         {
@@ -88,13 +87,13 @@ namespace qoooo.Rendering.Composition
         {
             Definition(TextureEffectStage.Sampling, TextureSamplingEffect.ChannelOffset, "Channel Offset", Direction | Amount),
             Definition(TextureEffectStage.Sampling, TextureSamplingEffect.ChromaticOffset, "Chromatic Offset", Direction | Amount),
-            Definition(TextureEffectStage.Sampling, TextureSamplingEffect.PrintMisregistration, "Print Misregistration", Direction | Amount | ColorA | ColorB),
+            Definition(TextureEffectStage.Sampling, TextureSamplingEffect.PrintMisregistration, "Print Misregistration", Direction | Amount | Main | Sub),
             Definition(TextureEffectStage.Sampling, TextureSamplingEffect.BoxBlur, "Box Blur"),
             Definition(TextureEffectStage.Sampling, TextureSamplingEffect.GaussianBlur, "Gaussian Blur"),
             Definition(TextureEffectStage.Sampling, TextureSamplingEffect.DirectionalBlur, "Directional Blur", Direction | Amount),
             Definition(TextureEffectStage.Sampling, TextureSamplingEffect.Bloom, "Bloom", Threshold | Strength),
             Definition(TextureEffectStage.Sampling, TextureSamplingEffect.SobelEdge, "Sobel Edge"),
-            Definition(TextureEffectStage.Sampling, TextureSamplingEffect.Outline, "Outline", Amount | ColorA),
+            Definition(TextureEffectStage.Sampling, TextureSamplingEffect.Outline, "Outline", Amount | Main),
             Definition(TextureEffectStage.Sampling, TextureSamplingEffect.Sharpen, "Sharpen", Strength),
             Definition(TextureEffectStage.Sampling, TextureSamplingEffect.Echo, "Echo", Direction | Amount | Probability),
             Definition(TextureEffectStage.Sampling, TextureSamplingEffect.LumaSmear, "Luma Smear", Direction | Amount | Threshold | Strength)
@@ -106,18 +105,18 @@ namespace qoooo.Rendering.Composition
             Definition(TextureEffectStage.Color, TextureColorEffect.Posterize, "Posterize", Scale),
             Definition(TextureEffectStage.Color, TextureColorEffect.Threshold, "Threshold", Threshold),
             Definition(TextureEffectStage.Color, TextureColorEffect.SoftThreshold, "Soft Threshold", Threshold | Strength),
-            Definition(TextureEffectStage.Color, TextureColorEffect.Duotone, "Duotone", ColorA | ColorB),
-            Definition(TextureEffectStage.Color, TextureColorEffect.Tritone, "Tritone", ColorA | ColorB | ColorC | Threshold),
+            Definition(TextureEffectStage.Color, TextureColorEffect.Duotone, "Duotone", Main | Sub),
+            Definition(TextureEffectStage.Color, TextureColorEffect.Tritone, "Tritone", Main | Sub | Base | Threshold),
             Definition(TextureEffectStage.Color, TextureColorEffect.Palette4, "Palette 4", PaletteThresholds),
             Definition(TextureEffectStage.Color, TextureColorEffect.Solarize, "Solarize", Threshold),
             Definition(TextureEffectStage.Color, TextureColorEffect.Contrast, "Contrast", Strength),
             Definition(TextureEffectStage.Color, TextureColorEffect.Saturation, "Saturation", Strength),
             Definition(TextureEffectStage.Color, TextureColorEffect.Grain, "Grain", Strength | Seed),
-            Definition(TextureEffectStage.Color, TextureColorEffect.OrderedDitherMono, "Ordered Dither Mono", Scale | ColorA | ColorB),
+            Definition(TextureEffectStage.Color, TextureColorEffect.OrderedDitherMono, "Ordered Dither Mono", Scale | Main | Sub),
             Definition(TextureEffectStage.Color, TextureColorEffect.OrderedDitherColor, "Ordered Dither Color", Scale),
-            Definition(TextureEffectStage.Color, TextureColorEffect.HalftoneDot, "Halftone Dot", Scale | Amount | ColorA | ColorB),
-            Definition(TextureEffectStage.Color, TextureColorEffect.HalftoneLine, "Halftone Line", Scale | Amount | ColorA | ColorB),
-            Definition(TextureEffectStage.Color, TextureColorEffect.HalftoneCross, "Halftone Cross", Scale | Amount | ColorA | ColorB)
+            Definition(TextureEffectStage.Color, TextureColorEffect.HalftoneDot, "Halftone Dot", Scale | Amount | Main | Sub),
+            Definition(TextureEffectStage.Color, TextureColorEffect.HalftoneLine, "Halftone Line", Scale | Amount | Main | Sub),
+            Definition(TextureEffectStage.Color, TextureColorEffect.HalftoneCross, "Halftone Cross", Scale | Amount | Main | Sub)
         };
 
         public static readonly IReadOnlyList<TextureEffectUiDefinition> Alpha = new[]

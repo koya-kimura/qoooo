@@ -3,20 +3,56 @@
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: { fileID: 0 }
-  m_PrefabInstance: { fileID: 0 }
-  m_PrefabAsset: { fileID: 0 }
-  m_GameObject: { fileID: 0 }
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: { fileID: 11500000, guid: 0ac42e0de4de4411390799e811ef4304, type: 3 }
+  m_Script: {fileID: 11500000, guid: 0ac42e0de4de4411390799e811ef4304, type: 3}
   m_Name: Poster Font Catalog
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   _defaultFontId: liberation-sans
   _fonts:
-    - Id: liberation-sans
-      Label: Liberation Sans
-      Font: { fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2 }
-    - Id: liberation-sans-fallback
-      Label: Liberation Sans Fallback
-      Font: { fileID: 11400000, guid: 2e498d1c8094910479dc3e1b768306a4, type: 2 }
+  - Id: liberation-sans
+    Label: Liberation Sans
+    Font: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  - Id: liberation-sans-fallback
+    Label: Liberation Sans Fallback
+    Font: {fileID: 11400000, guid: 2e498d1c8094910479dc3e1b768306a4, type: 2}
+  - Id: y1snaillagoon
+    Label: Y1SnailLagoon
+    Font: {fileID: 11400000, guid: 7a3c8b99d9d054988a5312fc11f0fca9, type: 2}
+  - Id: iosevkacharonmono-medium
+    Label: IosevkaCharonMono-Medium
+    Font: {fileID: 11400000, guid: a786efede22154749bd0358ed1268a3c, type: 2}
+  - Id: jost-variablefont-wght
+    Label: Jost-VariableFont_wght
+    Font: {fileID: 11400000, guid: 3e221aabc829a4a74858f8e273c949da, type: 2}
+  - Id: oswald-variablefont-wght
+    Label: Oswald-VariableFont_wght
+    Font: {fileID: 11400000, guid: 36cc0859c447d4f8287e8a3d1cb908cc, type: 2}
+  - Id: titilliumweb-light
+    Label: TitilliumWeb-Light
+    Font: {fileID: 11400000, guid: 764c8943dda3e4aef9094c639e6eef1b, type: 2}
+  - Id: y1cybassassin
+    Label: Y1Cybassassin
+    Font: {fileID: 11400000, guid: e2f585a64893d4af0892a531d6d53419, type: 2}
+  - Id: y1gaensansserif
+    Label: Y1GaenSansserif
+    Font: {fileID: 11400000, guid: f986f340fc7254a43846a23e2e539e27, type: 2}
+  - Id: y1lavaletter
+    Label: Y1LavaLetter
+    Font: {fileID: 11400000, guid: 0ba85d747e59c4419b10e99aa136b92a, type: 2}
+  - Id: y1lunachord
+    Label: Y1LunaChord
+    Font: {fileID: 11400000, guid: f2673f5502d1847279c8ccb69a2240f8, type: 2}
+  - Id: y1pixelationserif
+    Label: Y1PixelationSerif
+    Font: {fileID: 11400000, guid: b8129ab2ed4a94a15bfa1e11593beb0e, type: 2}
+  - Id: y1typeaccelerator
+    Label: Y1TypeAccelerator
+    Font: {fileID: 11400000, guid: 528518f39aadb4604a8e8ece8904a2e9, type: 2}
+  - Id: roboto-variablefont-wdth-wght
+    Label: Roboto-VariableFont_wdth,wght
+    Font: {fileID: 11400000, guid: 5180319f0b1ab4ca28c5341f2bd53ef1, type: 2}

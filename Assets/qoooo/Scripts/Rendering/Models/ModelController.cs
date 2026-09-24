@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using PrefsGUI;
 using qoooo.Foundation.Timing;
 using qoooo.Foundation.Utilities;
 using qoooo.Parameters.Model;
@@ -12,8 +14,9 @@ using UnitySimpleContainer;
 namespace qoooo.Rendering.Models
 {
     // Arrangementが公開したbase transformへ、scale・animation・Renderer visibilityをbroadcastする。
-    public class ModelController : MonoBehaviour, IMidiParameterContainer, IUiTarget
+    public class ModelController : MonoBehaviour, IMidiParameterContainer, IUiTarget, IPrefsSaveParticipant
     {
+        private const string AnimationPresetsPrefsKey = "qoooo.model.animation-presets.v1";
         [SerializeField] private FloatParameter _scale = new("model.scale", "Model Scale", 0.25f, 1.75f, 1f);
 
         [SerializeField]
@@ -29,11 +32,16 @@ namespace qoooo.Rendering.Models
             "model.animation-speed", "Animation Speed", 0f, 2f, 1f);
         [SerializeField] private FloatParameter _animationStrength = new(
             "model.animation-strength", "Animation Strength", 0f, 1f, 1f);
+        [SerializeField] private RadioParameter _animationPreset = new(
+            "model.animation-preset", "Animation Preset", new[] { "Default" });
 
         // CREATIVE AREA / 創作領域: beatからmotionへの反応をここで調整する。clockの所有者はBpmManagerだけ。
         [SerializeField] [Min(0.01f)] private float _pulseCycleBeats = 4f;
         [SerializeField] [Min(0.01f)] private float _pulseEaseBeats = 2f;
         [SerializeField] private List<ModelAnimationEntry> _animations = new();
+        [SerializeField] private List<ModelAnimationPreset> _animationPresets = new();
+        private readonly PrefsAny<ModelAnimationPresetRecord> _animationPresetPrefs = new(AnimationPresetsPrefsKey);
+        private ModelAnimationPresetRecord _animationPresetRecordBeforePrepare;
         private readonly List<GameObject> _activeSlots = new();
         private readonly Dictionary<GameObject, Vector3> _basePositions = new();
         private readonly Dictionary<GameObject, Quaternion> _baseRotations = new();
@@ -44,6 +52,8 @@ namespace qoooo.Rendering.Models
         private ModelArrangementController _arrangement;
         private IBpmSource _bpmSource;
         private int _animationTypeToAdd;
+        private int _activeAnimationPreset = -1;
+        private int _animationPresetRevision;
         private float _lastAnimationSpeed = float.NaN;
         private float _animationSecondsOffset;
         private float _animationBeatOffset;
@@ -52,6 +62,7 @@ namespace qoooo.Rendering.Models
 
         private void Awake()
         {
+            LoadAnimationPresets();
             _modelManager = GetComponent<ModelManager>();
             _arrangement = GetComponent<ModelArrangementController>();
             if (_modelManager != null)
@@ -74,6 +85,8 @@ namespace qoooo.Rendering.Models
 
         private void Update()
         {
+            if (_activeAnimationPreset != _animationPreset.Value)
+                ApplyAnimationPreset(_animationPreset.Value);
             if (_activeSlots.Count == 0) return;
             var scale = _scale.Value;
             // ここでModel timeを蓄積しない。共有beatをRhythmでvisual valueへ変換する。
@@ -134,12 +147,16 @@ namespace qoooo.Rendering.Models
                 yield return _animationEnabled;
                 yield return _animationSpeed;
                 yield return _animationStrength;
+                yield return _animationPreset;
             }
         }
 
         public Element CreateElement()
         {
             return UI.Fold("Model Animations",
+                UI.DynamicElementOnStatusChanged(
+                    AnimationPresetStatus,
+                    _ => CreateAnimationPresetControls()),
                 UI.Row(
                     UI.Dropdown("Add", () => _animationTypeToAdd,
                         value => _animationTypeToAdd = value, Enum.GetNames(typeof(ModelAnimationType))),
@@ -148,6 +165,197 @@ namespace qoooo.Rendering.Models
                     AnimationListStatus,
                     _ => CreateAnimationList()))
                 .Open();
+        }
+
+        public void PrepareSave()
+        {
+            _animationPresetRecordBeforePrepare = Copy(_animationPresetPrefs.Get());
+            _animationPresetPrefs.Set(CaptureAnimationPresetRecord());
+        }
+
+        public void CommitSave()
+        {
+            _animationPresetRecordBeforePrepare = null;
+            Debug.Log("[Model] Animation presets staged for Prefs.Save.", this);
+        }
+
+        public void AbortSave()
+        {
+            if (_animationPresetRecordBeforePrepare == null) return;
+            _animationPresetPrefs.Set(_animationPresetRecordBeforePrepare);
+            _animationPresetRecordBeforePrepare = null;
+        }
+
+        private Element CreateAnimationPresetControls()
+        {
+            return UI.Column(
+                UI.Row(
+                    UI.Dropdown("Preset", () => _animationPreset.Value,
+                        SelectAnimationPreset, _animationPreset.Options.ToArray()),
+                    UI.Field("Name", ActivePresetName, RenameActivePreset)),
+                UI.Row(
+                    UI.Button("New", CreateAnimationPreset),
+                    UI.Button("Duplicate", DuplicateAnimationPreset),
+                    UI.Button("Delete", DeleteAnimationPreset)));
+        }
+
+        private void LoadAnimationPresets()
+        {
+            _animationPreset ??= new RadioParameter(
+                "model.animation-preset", "Animation Preset", new[] { "Default" });
+            var record = _animationPresetPrefs.Get();
+            if (record != null && record.HasSavedData && record.SchemaVersion == 1)
+                _animationPresets = Copy(record.Presets) ?? new List<ModelAnimationPreset>();
+
+            if (_animationPresets.Count == 0)
+            {
+                _animationPresets.Add(new ModelAnimationPreset
+                {
+                    Id = Guid.NewGuid().ToString("N"),
+                    Name = "Default",
+                    Animations = _animations ?? new List<ModelAnimationEntry>()
+                });
+            }
+
+            EnsureAnimationPresets();
+            var selectedId = record != null && record.HasSavedData ? record.ActivePresetId : null;
+            SynchronizeAnimationPresetOptions(selectedId);
+            ApplyAnimationPreset(_animationPreset.Value);
+        }
+
+        private void EnsureAnimationPresets()
+        {
+            var names = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var preset in _animationPresets)
+            {
+                if (string.IsNullOrEmpty(preset.Id)) preset.Id = Guid.NewGuid().ToString("N");
+                preset.Name = UniqueAnimationPresetName(preset.Name, names);
+                names.Add(preset.Name);
+                preset.Animations ??= new List<ModelAnimationEntry>();
+                foreach (var animation in preset.Animations)
+                    if (animation != null)
+                        EnsureAnimation(animation);
+            }
+        }
+
+        private void SynchronizeAnimationPresetOptions(string selectedId)
+        {
+            _animationPreset.ReplaceOptions(_animationPresets.Select(preset => preset.Name));
+            var index = _animationPresets.FindIndex(preset => preset.Id == selectedId);
+            _animationPreset.TrySetValue(index >= 0 ? index : Mathf.Clamp(_animationPreset.Value, 0, _animationPresets.Count - 1));
+            _animationPresetRevision++;
+        }
+
+        private void SelectAnimationPreset(int index)
+        {
+            if (!_animationPreset.TrySetValue(index)) return;
+            ApplyAnimationPreset(_animationPreset.Value);
+            _animationPresetRevision++;
+        }
+
+        private void ApplyAnimationPreset(int index)
+        {
+            if (_animationPresets.Count == 0) return;
+            _activeAnimationPreset = Mathf.Clamp(index, 0, _animationPresets.Count - 1);
+            _animations = _animationPresets[_activeAnimationPreset].Animations;
+            _animationFoldStates.Clear();
+        }
+
+        private string ActivePresetName()
+        {
+            return _animationPresets.Count == 0 ? string.Empty : _animationPresets[_animationPreset.Value].Name;
+        }
+
+        private void RenameActivePreset(string name)
+        {
+            if (_animationPresets.Count == 0) return;
+            var preset = _animationPresets[_animationPreset.Value];
+            var selectedId = preset.Id;
+            preset.Name = UniqueAnimationPresetName(name,
+                new HashSet<string>(_animationPresets.Where(value => value != preset).Select(value => value.Name),
+                    StringComparer.Ordinal));
+            SynchronizeAnimationPresetOptions(selectedId);
+        }
+
+        private void CreateAnimationPreset()
+        {
+            var preset = new ModelAnimationPreset
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Name = UniqueAnimationPresetName("New Preset",
+                    new HashSet<string>(_animationPresets.Select(value => value.Name), StringComparer.Ordinal))
+            };
+            _animationPresets.Add(preset);
+            SynchronizeAnimationPresetOptions(preset.Id);
+            ApplyAnimationPreset(_animationPreset.Value);
+        }
+
+        private void DuplicateAnimationPreset()
+        {
+            if (_animationPresets.Count == 0) return;
+            var source = _animationPresets[_animationPreset.Value];
+            var preset = Copy(source);
+            preset.Id = Guid.NewGuid().ToString("N");
+            preset.Name = UniqueAnimationPresetName($"{source.Name} Copy",
+                new HashSet<string>(_animationPresets.Select(value => value.Name), StringComparer.Ordinal));
+            foreach (var animation in preset.Animations)
+                animation.Id = Guid.NewGuid().ToString("N");
+            _animationPresets.Insert(_animationPreset.Value + 1, preset);
+            SynchronizeAnimationPresetOptions(preset.Id);
+            ApplyAnimationPreset(_animationPreset.Value);
+        }
+
+        private void DeleteAnimationPreset()
+        {
+            if (_animationPresets.Count <= 1) return;
+            var index = _animationPreset.Value;
+            _animationPresets.RemoveAt(index);
+            var selectedId = _animationPresets[Mathf.Clamp(index, 0, _animationPresets.Count - 1)].Id;
+            SynchronizeAnimationPresetOptions(selectedId);
+            ApplyAnimationPreset(_animationPreset.Value);
+        }
+
+        private ModelAnimationPresetRecord CaptureAnimationPresetRecord()
+        {
+            return new ModelAnimationPresetRecord
+            {
+                HasSavedData = true,
+                ActivePresetId = _animationPresets[_animationPreset.Value].Id,
+                Presets = Copy(_animationPresets)
+            };
+        }
+
+        private string AnimationPresetStatus()
+        {
+            return $"{_animationPreset.Value}:{_animationPresetRevision}";
+        }
+
+        private static string UniqueAnimationPresetName(string value, ISet<string> names)
+        {
+            var baseName = string.IsNullOrWhiteSpace(value) ? "Untitled" : value.Trim();
+            var candidate = baseName;
+            for (var suffix = 2; names.Contains(candidate); suffix++)
+                candidate = $"{baseName} {suffix}";
+            return candidate;
+        }
+
+        private static ModelAnimationPreset Copy(ModelAnimationPreset value)
+        {
+            return value == null ? null : JsonUtility.FromJson<ModelAnimationPreset>(JsonUtility.ToJson(value));
+        }
+
+        private static List<ModelAnimationPreset> Copy(List<ModelAnimationPreset> value)
+        {
+            if (value == null) return null;
+            return JsonUtility.FromJson<ModelAnimationPresetRecord>(JsonUtility.ToJson(
+                new ModelAnimationPresetRecord { Presets = value })).Presets;
+        }
+
+        private static ModelAnimationPresetRecord Copy(ModelAnimationPresetRecord value)
+        {
+            return value == null
+                ? null
+                : JsonUtility.FromJson<ModelAnimationPresetRecord>(JsonUtility.ToJson(value));
         }
 
         [Inject]

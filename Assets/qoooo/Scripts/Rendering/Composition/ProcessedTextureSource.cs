@@ -100,10 +100,10 @@ namespace qoooo.Rendering.Composition
             _effectParameters.ApplyTo(ref effectParams);
             if (_palette != null && effectParams.ColorEffect == TextureColorEffect.Palette4)
             {
-                effectParams.ColorA = _palette.ColorA;
-                effectParams.ColorB = _palette.ColorB;
-                effectParams.ColorC = _palette.ColorC;
-                effectParams.ColorD = _palette.ColorD;
+                effectParams.Main = _palette.Main;
+                effectParams.Sub = _palette.Sub;
+                effectParams.Base = _palette.Base;
+                effectParams.Accent = _palette.Accent;
             }
             return effectParams;
         }

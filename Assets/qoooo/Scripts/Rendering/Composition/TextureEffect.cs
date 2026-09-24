@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using qoooo.Parameters.Model;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace qoooo.Rendering.Composition
 {
@@ -101,10 +102,10 @@ namespace qoooo.Rendering.Composition
         public Vector2 Direction;
         public Vector2 Grid;
         public Vector3 Thresholds;
-        public Color ColorA;
-        public Color ColorB;
-        public Color ColorC;
-        public Color ColorD;
+        [FormerlySerializedAs("ColorA")] public Color Main;
+        [FormerlySerializedAs("ColorB")] public Color Sub;
+        [FormerlySerializedAs("ColorC")] public Color Base;
+        [FormerlySerializedAs("ColorD")] public Color Accent;
 
         public bool HasEnabledEffect => IsInvert
                                         || IsMosaic
@@ -412,10 +413,10 @@ namespace qoooo.Rendering.Composition
             _material.SetVector("_EffectThresholds", effectParams.Thresholds == Vector3.zero
                 ? new Vector3(0.25f, 0.5f, 0.75f)
                 : effectParams.Thresholds);
-            _material.SetColor("_EffectColorA", effectParams.ColorA == default ? Color.black : effectParams.ColorA);
-            _material.SetColor("_EffectColorB", effectParams.ColorB == default ? Color.white : effectParams.ColorB);
-            _material.SetColor("_EffectColorC", effectParams.ColorC == default ? Color.gray : effectParams.ColorC);
-            _material.SetColor("_EffectColorD", effectParams.ColorD == default ? Color.white : effectParams.ColorD);
+            _material.SetColor("_EffectColorA", effectParams.Main == default ? Color.white : effectParams.Main);
+            _material.SetColor("_EffectColorB", effectParams.Sub == default ? Color.gray : effectParams.Sub);
+            _material.SetColor("_EffectColorC", effectParams.Base == default ? Color.black : effectParams.Base);
+            _material.SetColor("_EffectColorD", effectParams.Accent == default ? Color.white : effectParams.Accent);
             _material.SetVector("_TextureSize", new Vector4(
                 _effectTexture.width,
                 _effectTexture.height,

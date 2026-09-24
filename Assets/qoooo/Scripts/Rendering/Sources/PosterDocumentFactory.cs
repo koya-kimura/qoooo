@@ -24,22 +24,22 @@ namespace qoooo.Rendering.Sources
         {
             var elements = new List<PosterElement>();
             AddText(elements, "Top Left Meta", "09.26 / SATURDAY", LegacyGrid(0, 12, 1, 2, 0.02f), 0.025f,
-                PosterHorizontalAlign.Left, PosterVerticalAlign.Center, PosterColorRef.Black);
+                PosterHorizontalAlign.Left, PosterVerticalAlign.Center, PosterColorRef.Base);
             AddText(elements, "Top Right Meta", "UNITY / 2026", LegacyGrid(0, 12, 1, 2, -0.02f), 0.025f,
-                PosterHorizontalAlign.Right, PosterVerticalAlign.Center, PosterColorRef.Black);
+                PosterHorizontalAlign.Right, PosterVerticalAlign.Center, PosterColorRef.Base);
             AddMainText(elements, "Hero", LegacyGrid(1, 10, 3, 5), 0.225f,
-                PosterHorizontalAlign.Center, PosterVerticalAlign.Center, PosterColorRef.Black);
+                PosterHorizontalAlign.Center, PosterVerticalAlign.Center, PosterColorRef.Base);
             AddText(elements, "Secondary", "HAPILABO / DJ RØKI", LegacyGrid(4, 4, 8, 2), 0.042f,
-                PosterHorizontalAlign.Center, PosterVerticalAlign.Center, PosterColorRef.Black);
+                PosterHorizontalAlign.Center, PosterVerticalAlign.Center, PosterColorRef.Base);
             AddText(elements, "Bottom Left Meta", "NAEBA / NIIGATA", LegacyGrid(0, 12, 20, 2, 0.02f), 0.026f,
-                PosterHorizontalAlign.Left, PosterVerticalAlign.Center, PosterColorRef.Black);
+                PosterHorizontalAlign.Left, PosterVerticalAlign.Center, PosterColorRef.Base);
             AddText(elements, "Bottom Right Meta", "128 BPM / LIVE", LegacyGrid(0, 12, 20, 2, -0.02f), 0.026f,
-                PosterHorizontalAlign.Right, PosterVerticalAlign.Center, PosterColorRef.Black);
+                PosterHorizontalAlign.Right, PosterVerticalAlign.Center, PosterColorRef.Base);
 
-            AddRect(elements, "Top Meta Band", LegacyGrid(0, 12, 1, 2), PosterColorRef.PaletteSub);
-            AddRect(elements, "Hero Band", LegacyGrid(1, 10, 3, 5), PosterColorRef.PaletteMain);
-            AddRect(elements, "Secondary Band", LegacyGrid(4, 4, 8, 2), PosterColorRef.PaletteSub);
-            AddRect(elements, "Bottom Meta Band", LegacyGrid(0, 12, 20, 2), PosterColorRef.PaletteSub);
+            AddRect(elements, "Top Meta Band", LegacyGrid(0, 12, 1, 2), PosterColorRef.Sub);
+            AddRect(elements, "Hero Band", LegacyGrid(1, 10, 3, 5), PosterColorRef.Main);
+            AddRect(elements, "Secondary Band", LegacyGrid(4, 4, 8, 2), PosterColorRef.Sub);
+            AddRect(elements, "Bottom Meta Band", LegacyGrid(0, 12, 20, 2), PosterColorRef.Sub);
             AddTexture(elements, "Hero Model", PosterTextureSource.Model, LegacyGrid(2, 8, 7, 12), PosterFit.Cover);
             AddTexture(elements, "Background", PosterTextureSource.Background, FullCanvas(), PosterFit.Stretch);
             return Document("Editorial", elements);
@@ -49,23 +49,23 @@ namespace qoooo.Rendering.Sources
         {
             var elements = new List<PosterElement>();
             AddMainText(elements, "Hero", LegacyGrid(0, 5, 2, 6, 0.04f), 0.15f,
-                PosterHorizontalAlign.Left, PosterVerticalAlign.Top, PosterColorRef.Black);
+                PosterHorizontalAlign.Left, PosterVerticalAlign.Top, PosterColorRef.Base);
             AddText(elements, "Artist", "HAPILABO", LegacyGrid(0, 5, 10, 1, 0.04f), 0.052f,
-                PosterHorizontalAlign.Left, PosterVerticalAlign.Top, PosterColorRef.Black);
+                PosterHorizontalAlign.Left, PosterVerticalAlign.Top, PosterColorRef.Base);
             AddText(elements, "Artist", "DJ RØKI", LegacyGrid(0, 5, 11, 1, 0.04f), 0.052f,
-                PosterHorizontalAlign.Left, PosterVerticalAlign.Top, PosterColorRef.Black);
+                PosterHorizontalAlign.Left, PosterVerticalAlign.Top, PosterColorRef.Base);
             AddText(elements, "Date", "09.26 / SATURDAY", LegacyGrid(0, 5, 14, 1, 0.04f), 0.03f,
-                PosterHorizontalAlign.Left, PosterVerticalAlign.Top, PosterColorRef.Black);
+                PosterHorizontalAlign.Left, PosterVerticalAlign.Top, PosterColorRef.Base);
             AddText(elements, "Location", "NAEBA / NIIGATA", LegacyGrid(0, 5, 21, 1, 0.04f), 0.03f,
-                PosterHorizontalAlign.Left, PosterVerticalAlign.Top, PosterColorRef.Black);
+                PosterHorizontalAlign.Left, PosterVerticalAlign.Top, PosterColorRef.Base);
             AddText(elements, "Side Meta", "UNITY", LegacyGrid(11, 1, 3, 15), 0.032f,
-                PosterHorizontalAlign.Center, PosterVerticalAlign.Center, PosterColorRef.Black, PosterRotation.TwoSeventy);
+                PosterHorizontalAlign.Center, PosterVerticalAlign.Center, PosterColorRef.Base, PosterRotation.TwoSeventy);
             AddText(elements, "Bottom Meta", "128 BPM / LIVE", LegacyGrid(6, 5, 20, 2), 0.03f,
-                PosterHorizontalAlign.Center, PosterVerticalAlign.Center, PosterColorRef.Black);
+                PosterHorizontalAlign.Center, PosterVerticalAlign.Center, PosterColorRef.Base);
 
-            AddRect(elements, "Typography Block", LegacyGrid(0, 5, 2, 20), PosterColorRef.PaletteMain);
-            AddRect(elements, "Side Meta Panel", LegacyGrid(11, 1, 3, 15), PosterColorRef.PaletteSub);
-            AddRect(elements, "Bottom Meta Panel", LegacyGrid(6, 5, 20, 2), PosterColorRef.PaletteSub);
+            AddRect(elements, "Typography Block", LegacyGrid(0, 5, 2, 20), PosterColorRef.Main);
+            AddRect(elements, "Side Meta Panel", LegacyGrid(11, 1, 3, 15), PosterColorRef.Sub);
+            AddRect(elements, "Bottom Meta Panel", LegacyGrid(6, 5, 20, 2), PosterColorRef.Sub);
             AddTexture(elements, "Split Model", PosterTextureSource.Model, LegacyGrid(6, 6, 2, 20), PosterFit.Cover);
             AddTexture(elements, "Background", PosterTextureSource.Background, FullCanvas(), PosterFit.Stretch);
             return Document("Split", elements);
@@ -75,21 +75,21 @@ namespace qoooo.Rendering.Sources
         {
             var elements = new List<PosterElement>();
             AddMainText(elements, "Headline", LegacyGrid(0, 4, 1, 5, 0.04f), 0.115f,
-                PosterHorizontalAlign.Left, PosterVerticalAlign.Top, PosterColorRef.Black);
+                PosterHorizontalAlign.Left, PosterVerticalAlign.Top, PosterColorRef.Base);
             AddText(elements, "Secondary", "HAPILABO / DJ RØKI", LegacyGrid(0, 4, 5, 1, 0.04f), 0.036f,
-                PosterHorizontalAlign.Left, PosterVerticalAlign.Top, PosterColorRef.Black);
+                PosterHorizontalAlign.Left, PosterVerticalAlign.Top, PosterColorRef.Base);
             AddText(elements, "Date", "09.26", LegacyGrid(9, 3, 1, 1), 0.03f,
-                PosterHorizontalAlign.Center, PosterVerticalAlign.Top, PosterColorRef.Black);
+                PosterHorizontalAlign.Center, PosterVerticalAlign.Top, PosterColorRef.Base);
             AddText(elements, "Year", "2026", LegacyGrid(9, 3, 2, 1), 0.024f,
-                PosterHorizontalAlign.Center, PosterVerticalAlign.Top, PosterColorRef.Black);
+                PosterHorizontalAlign.Center, PosterVerticalAlign.Top, PosterColorRef.Base);
             AddText(elements, "Bottom Left Meta", "VISUALS BY QOOOO", LegacyGrid(0, 12, 20, 2, 0.02f), 0.026f,
-                PosterHorizontalAlign.Left, PosterVerticalAlign.Center, PosterColorRef.Black);
+                PosterHorizontalAlign.Left, PosterVerticalAlign.Center, PosterColorRef.Base);
             AddText(elements, "Bottom Right Meta", "128 BPM / LIVE", LegacyGrid(0, 12, 20, 2, -0.02f), 0.026f,
-                PosterHorizontalAlign.Right, PosterVerticalAlign.Center, PosterColorRef.Black);
+                PosterHorizontalAlign.Right, PosterVerticalAlign.Center, PosterColorRef.Base);
 
-            AddRect(elements, "Headline Panel", LegacyGrid(0, 4, 1, 5), PosterColorRef.PaletteMain);
-            AddRect(elements, "Date Panel", LegacyGrid(9, 3, 1, 3), PosterColorRef.PaletteSub);
-            AddRect(elements, "Bottom Meta Panel", LegacyGrid(0, 12, 20, 2), PosterColorRef.PaletteSub);
+            AddRect(elements, "Headline Panel", LegacyGrid(0, 4, 1, 5), PosterColorRef.Main);
+            AddRect(elements, "Date Panel", LegacyGrid(9, 3, 1, 3), PosterColorRef.Sub);
+            AddRect(elements, "Bottom Meta Panel", LegacyGrid(0, 12, 20, 2), PosterColorRef.Sub);
             AddTexture(elements, "Large Model", PosterTextureSource.Model, LegacyGrid(4, 6, 6, 13), PosterFit.Cover);
             AddTexture(elements, "Small Model Left", PosterTextureSource.Model, LegacyGrid(0, 3, 9, 4), PosterFit.Cover);
             AddTexture(elements, "Small Model Right", PosterTextureSource.Model, LegacyGrid(9, 3, 3, 3), PosterFit.Cover);
@@ -102,8 +102,8 @@ namespace qoooo.Rendering.Sources
         {
             var elements = new List<PosterElement>();
             AddMainText(elements, "Headline", LegacyGrid(1, 10, 2, 4), 0.16f,
-                PosterHorizontalAlign.Center, PosterVerticalAlign.Center, PosterColorRef.Black);
-            AddRect(elements, "Headline Band", LegacyGrid(1, 10, 2, 4), PosterColorRef.PaletteMain);
+                PosterHorizontalAlign.Center, PosterVerticalAlign.Center, PosterColorRef.Base);
+            AddRect(elements, "Headline Band", LegacyGrid(1, 10, 2, 4), PosterColorRef.Main);
             AddTexture(elements, "Model", PosterTextureSource.Model, LegacyGrid(3, 6, 7, 12), PosterFit.Cover);
             AddTexture(elements, "Background", PosterTextureSource.Background, FullCanvas(), PosterFit.Stretch);
             return Document("Custom", elements);

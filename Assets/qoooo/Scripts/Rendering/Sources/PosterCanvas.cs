@@ -62,8 +62,10 @@ namespace qoooo.Rendering.Sources
         private Vector2Int _builtResolution;
         private Texture _builtModelTexture;
         private Texture _builtBackgroundTexture;
-        private Color _builtPaletteMain;
-        private Color _builtPaletteSub;
+        private Color _builtMain;
+        private Color _builtSub;
+        private Color _builtBase;
+        private Color _builtAccent;
         private bool _hasBuiltPalette;
         private bool _documentDirty = true;
         private bool _mainTextLibraryMigrated;
@@ -120,8 +122,10 @@ namespace qoooo.Rendering.Sources
             var backgroundTexture = _backgroundTextureSource?.Texture;
             var document = _library?.GetDocument(_layout.Value);
             var mainText = _mainText.Value;
-            var paletteMain = PaletteMain;
-            var paletteSub = PaletteSub;
+            var main = PaletteMain;
+            var sub = PaletteSub;
+            var baseColor = PaletteBase;
+            var accent = PaletteAccent;
             var resolution = new Vector2Int(Mathf.RoundToInt(Width), Mathf.RoundToInt(Height));
             if (document == null) return;
 
@@ -132,8 +136,10 @@ namespace qoooo.Rendering.Sources
                 || _builtModelTexture != modelTexture
                 || _builtBackgroundTexture != backgroundTexture
                 || !_hasBuiltPalette
-                || _builtPaletteMain != paletteMain
-                || _builtPaletteSub != paletteSub)
+                || _builtMain != main
+                || _builtSub != sub
+                || _builtBase != baseColor
+                || _builtAccent != accent)
             {
                 RenderDocument(document, modelTexture, backgroundTexture);
             }
@@ -245,6 +251,7 @@ namespace qoooo.Rendering.Sources
                 {
                     if (element == null) continue;
                     element.Text ??= new PosterTextSettings();
+                    NormalizeTextOffset(element.Text);
                     NormalizeTextAnimations(element.Text);
                     if (string.IsNullOrWhiteSpace(element.Text.FontId))
                         element.Text.FontId = _fontCatalog?.DefaultFontId;
@@ -334,8 +341,10 @@ namespace qoooo.Rendering.Sources
             _builtResolution = new Vector2Int(Mathf.RoundToInt(Width), Mathf.RoundToInt(Height));
             _builtModelTexture = modelTexture;
             _builtBackgroundTexture = backgroundTexture;
-            _builtPaletteMain = PaletteMain;
-            _builtPaletteSub = PaletteSub;
+            _builtMain = PaletteMain;
+            _builtSub = PaletteSub;
+            _builtBase = PaletteBase;
+            _builtAccent = PaletteAccent;
             _hasBuiltPalette = true;
             _documentDirty = false;
         }
@@ -415,7 +424,9 @@ namespace qoooo.Rendering.Sources
                     textMesh,
                     placement,
                     element.Placement?.Anchor ?? PosterAnchor.TopLeft,
-                    element.Rotation);
+                    element.Rotation,
+                    settings.TextOffset,
+                    new Vector2(Width, Height));
                 _textRuntimes.Add(new PosterTextRuntime(
                     settings,
                     textMesh,
@@ -429,7 +440,9 @@ namespace qoooo.Rendering.Sources
             TextMeshProUGUI textMesh,
             PosterResolvedPlacement placement,
             PosterAnchor anchor,
-            PosterRotation rotation)
+            PosterRotation rotation,
+            Vector2 textOffset,
+            Vector2 canvasSize)
         {
             textMesh.maxVisibleCharacters = int.MaxValue;
             textMesh.ForceMeshUpdate();
@@ -455,7 +468,10 @@ namespace qoooo.Rendering.Sources
             var glyphAnchor = new Vector2(
                 Mathf.Lerp(min.x, max.x, anchorPivot.x),
                 Mathf.Lerp(min.y, max.y, anchorPivot.y));
-            textMesh.rectTransform.anchoredPosition = targetPosition - glyphAnchor;
+            var canvasOffset = new Vector2(
+                (float.IsFinite(textOffset.x) ? textOffset.x : 0f) * canvasSize.x,
+                -(float.IsFinite(textOffset.y) ? textOffset.y : 0f) * canvasSize.y);
+            textMesh.rectTransform.anchoredPosition = targetPosition - glyphAnchor + canvasOffset;
         }
 
         private static void AddRotatedBoundsCorner(
@@ -474,11 +490,12 @@ namespace qoooo.Rendering.Sources
         {
             return color switch
             {
-                PosterColorRef.PaletteMain => PaletteMain,
-                PosterColorRef.PaletteSub => PaletteSub,
-                PosterColorRef.Black => Color.black,
+                PosterColorRef.Main => PaletteMain,
+                PosterColorRef.Sub => PaletteSub,
+                PosterColorRef.Base => PaletteBase,
+                PosterColorRef.Accent => PaletteAccent,
                 PosterColorRef.Custom => customColor,
-                _ => Color.white
+                _ => PaletteMain
             };
         }
 
@@ -998,6 +1015,26 @@ namespace qoooo.Rendering.Sources
             }
         }
 
+        internal static void NormalizeTextOffset(PosterTextSettings settings)
+        {
+            if (!settings.TextOffsetInitialized)
+            {
+                var legacyOffset = settings.OpticalOffsetInitialized
+                    ? settings.OpticalOffset
+                    : new Vector2(0.5f, 0.5f);
+                settings.TextOffset = settings.OpticalOffsetUsesSignedRange
+                    ? legacyOffset
+                    : new Vector2(
+                        Mathf.Clamp01(legacyOffset.x) - 0.5f,
+                        Mathf.Clamp01(legacyOffset.y) - 0.5f);
+                settings.TextOffsetInitialized = true;
+            }
+
+            settings.TextOffset = new Vector2(
+                float.IsFinite(settings.TextOffset.x) ? settings.TextOffset.x : 0f,
+                float.IsFinite(settings.TextOffset.y) ? settings.TextOffset.y : 0f);
+        }
+
         private static bool IsDynamicText(PosterTextSource source)
         {
             return source == PosterTextSource.CurrentDate || source == PosterTextSource.CurrentTime;
@@ -1498,6 +1535,8 @@ namespace qoooo.Rendering.Sources
 
         private Color PaletteMain => _palette?.Main ?? new Color(0.9f, 0.22f, 0.16f, 1f);
         private Color PaletteSub => _palette?.Sub ?? new Color(1f, 0.78f, 0.2f, 1f);
+        private Color PaletteBase => _palette?.Base ?? Color.black;
+        private Color PaletteAccent => _palette?.Accent ?? Color.white;
 
         private void ClearLayout()
         {
