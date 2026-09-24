@@ -15,6 +15,7 @@ Shader "Custom/TextureEffect"
         [HideInInspector] _EffectStrength("Effect Strength", Float) = 1
         [HideInInspector] _EffectProbability("Effect Probability", Float) = 0.5
         [HideInInspector] _EffectSeed("Effect Seed", Int) = 0
+        [HideInInspector] _EffectMix("Effect Mix", Range(0, 1)) = 1
         [HideInInspector] _EffectDirection("Effect Direction", Vector) = (1, 0, 0, 0)
         [HideInInspector] _EffectGrid("Effect Grid", Vector) = (8, 8, 0, 0)
         [HideInInspector] _EffectThresholds("Effect Thresholds", Vector) = (0.25, 0.5, 0.75, 0)
@@ -74,6 +75,7 @@ Shader "Custom/TextureEffect"
             float _EffectStrength;
             float _EffectProbability;
             uint _EffectSeed;
+            float _EffectMix;
             float2 _EffectDirection;
             float2 _EffectGrid;
             float3 _EffectThresholds;
@@ -93,6 +95,7 @@ Shader "Custom/TextureEffect"
             half4 frag(Varyings IN) : SV_Target
             {
                 float2 uv = IN.uv;
+                float2 sourceUv = uv;
 
                 if (_IsTiling != 0) uv = Tiling(OffsetUv(uv, _Offset), _TileNum);
                 if (_IsMosaic != 0) uv = Mosaic(uv, _TextureSize.xy, _MosaicSize);
@@ -108,8 +111,10 @@ Shader "Custom/TextureEffect"
                 else if (_UvEffect == 8) uv = BlockOffsetUv(uv, _TextureSize.xy, _EffectGrid, _EffectAmount, _EffectProbability, _EffectSeed);
                 else if (_UvEffect == 9) uv = BlockRepeatUv(uv, _EffectGrid, _EffectAmount, _EffectProbability, _EffectSeed);
                 else if (_UvEffect == 10) uv = NoiseDisplacementUv(uv, _TextureSize.xy, _EffectScale, _EffectAmount, _EffectSeed);
+                uv = lerp(sourceUv, uv, _EffectMix);
 
                 // Stage 2: one sampling filter reads the transformed source texture.
+                float4 sourceColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv);
                 float4 color;
                 if (_SamplingEffect == 1)
                     color = ChannelOffset(_MainTex, sampler_MainTex, uv, _TextureSize.zw,
@@ -137,9 +142,11 @@ Shader "Custom/TextureEffect"
                 else if (_SamplingEffect == 12)
                     color = LumaSmear9(_MainTex, sampler_MainTex, uv, _TextureSize.zw,
                         _EffectDirection, _EffectAmount, _EffectThreshold, _EffectStrength - 1.0);
-                else color = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv);
+                else color = sourceColor;
+                color = lerp(sourceColor, color, _EffectMix);
 
                 // Stage 3: exactly one selected color transform, then legacy transforms.
+                float4 sourceColorTransform = color;
                 if (_ColorEffect == 1) color = Invert(color);
                 else if (_ColorEffect == 2) color = Posterize(color, _EffectScale);
                 else if (_ColorEffect == 3) color = Threshold(color, _EffectThreshold);
@@ -161,11 +168,13 @@ Shader "Custom/TextureEffect"
                     _EffectScale, radians(_EffectAmount), _EffectColorB.rgb, _EffectColorA.rgb);
                 else if (_ColorEffect == 16) color = HalftoneCross(color, uv, _TextureSize.xy,
                     _EffectScale, radians(_EffectAmount), _EffectColorB.rgb, _EffectColorA.rgb);
+                color = lerp(sourceColorTransform, color, _EffectMix);
 
                 if (_IsInvert != 0) color = Invert(color);
                 if (_IsPosterize != 0) color = Posterize(color, _PosterizeLevels);
 
                 // Stage 4: alpha is last so color/sampling filters cannot restore removed coverage.
+                float4 sourceAlphaTransform = color;
                 if (_AlphaEffect == 1) color = AlphaThreshold(color, _EffectThreshold);
                 else if (_AlphaEffect == 2) color = AlphaNoise(color, uv, _TextureSize.xy, _EffectStrength, _EffectSeed);
                 else if (_AlphaEffect == 3) color = AlphaNoiseCutout(color, uv, _TextureSize.xy, _EffectThreshold, _EffectSeed);
@@ -174,6 +183,7 @@ Shader "Custom/TextureEffect"
                 else if (_AlphaEffect == 6) color = AlphaDither(color, uv, _TextureSize.xy, _EffectScale);
                 else if (_AlphaEffect == 7) color = AlphaHalftoneDot(color, uv, _TextureSize.xy,
                     _EffectScale, radians(_EffectAmount));
+                color = lerp(sourceAlphaTransform, color, _EffectMix);
 
                 return color;
             }

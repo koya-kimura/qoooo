@@ -504,7 +504,7 @@ namespace qoooo.Rendering.Sources
 
         private string ResolveText(PosterTextSettings settings)
         {
-            return settings.Source switch
+            var text = settings.Source switch
             {
                 PosterTextSource.MainText => GetMainText(),
                 PosterTextSource.CurrentDate => System.DateTime.Now.ToString(
@@ -513,6 +513,15 @@ namespace qoooo.Rendering.Sources
                     string.IsNullOrWhiteSpace(settings.Format) ? "HH:mm" : settings.Format),
                 _ => settings.Literal ?? string.Empty
             };
+            return NormalizeLineBreaks(text);
+        }
+
+        private static string NormalizeLineBreaks(string text)
+        {
+            return (text ?? string.Empty)
+                .Replace("\r\n", "\n")
+                .Replace('\r', '\n')
+                .Replace("\\n", "\n");
         }
 
         private void UpdateTextRuntimes()
@@ -970,11 +979,13 @@ namespace qoooo.Rendering.Sources
 
             for (var index = 0; index < text.Length; index++)
             {
+                if (char.IsWhiteSpace(text[index])) continue;
+
                 var offset = Mathf.Floor(Pcg.Pcg01(new UInt2(settings.Seed, (uint)index)).x * 1000f);
                 var phase = Rhythm.GetPhase(currentBeat + offset, interval, active, Linear);
                 var step = Mathf.FloorToInt(phase * steps);
                 var random = Pcg.Hash3D(new UInt3(settings.Seed, (uint)index, unchecked((uint)step)));
-                var replacement = text[(int)(random.X % (uint)text.Length)];
+                var replacement = FindScrambleCharacter(text, random.X);
                 if (replacement == text[index]) continue;
 
                 characters ??= text.ToCharArray();
@@ -982,6 +993,18 @@ namespace qoooo.Rendering.Sources
             }
 
             return characters == null ? text : new string(characters);
+        }
+
+        private static char FindScrambleCharacter(string text, uint random)
+        {
+            var start = (int)(random % (uint)text.Length);
+            for (var offset = 0; offset < text.Length; offset++)
+            {
+                var character = text[(start + offset) % text.Length];
+                if (!char.IsWhiteSpace(character)) return character;
+            }
+
+            return text[start];
         }
 
         internal static void NormalizeTextAnimations(PosterTextSettings settings)
@@ -1175,9 +1198,15 @@ namespace qoooo.Rendering.Sources
             var index = selectedIndex >= 0 ? selectedIndex : _mainText.Value;
             var labels = new List<string>(_library.MainTexts.Count);
             foreach (var entry in _library.MainTexts)
-                labels.Add(string.IsNullOrWhiteSpace(entry.Text) ? "(Empty)" : entry.Text);
+                labels.Add(MainTextLabel(entry.Text));
             _mainText.ReplaceOptions(labels);
             _mainText.TrySetValue(Mathf.Clamp(index, 0, labels.Count - 1));
+        }
+
+        private static string MainTextLabel(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return "(Empty)";
+            return NormalizeLineBreaks(text).Replace("\n", " / ");
         }
 
         public void Image(Texture texture, float x, float y, float width, float height)

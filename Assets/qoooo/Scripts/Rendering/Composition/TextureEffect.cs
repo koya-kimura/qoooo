@@ -102,6 +102,9 @@ namespace qoooo.Rendering.Composition
         public Vector2 Direction;
         public Vector2 Grid;
         public Vector3 Thresholds;
+        public Vector4 OutputEffectMixA;
+        public Vector4 OutputEffectMixB;
+        public float OutputEffectMixC;
         [FormerlySerializedAs("ColorA")] public Color Main;
         [FormerlySerializedAs("ColorB")] public Color Sub;
         [FormerlySerializedAs("ColorC")] public Color Base;
@@ -118,7 +121,10 @@ namespace qoooo.Rendering.Composition
                                         || UvEffects != 0
                                         || SamplingEffects != 0
                                         || ColorEffects != 0
-                                        || AlphaEffects != 0;
+                                        || AlphaEffects != 0
+                                        || OutputEffectMixA != Vector4.zero
+                                        || OutputEffectMixB != Vector4.zero
+                                        || OutputEffectMixC > 0f;
     }
 
     [Serializable]
@@ -144,6 +150,7 @@ namespace qoooo.Rendering.Composition
         private BoolParameter[] _samplingEffects;
         private BoolParameter[] _colorEffects;
         private BoolParameter[] _alphaEffects;
+        private FloatParameter[] _outputEffectIntensities = Array.Empty<FloatParameter>();
 
         public RadioParameter UvMode => _uvMode;
         public RadioParameter SamplingMode => _samplingMode;
@@ -155,6 +162,7 @@ namespace qoooo.Rendering.Composition
         public FloatParameter Strength => _strength;
         public FloatParameter Probability => _probability;
         public FloatParameter Seed => _seed;
+        public IReadOnlyList<FloatParameter> OutputEffectIntensities => _outputEffectIntensities;
 
         public IEnumerable<IMidiBindableParameter> All
         {
@@ -174,12 +182,13 @@ namespace qoooo.Rendering.Composition
                 foreach (var parameter in _samplingEffects) yield return parameter;
                 foreach (var parameter in _colorEffects) yield return parameter;
                 foreach (var parameter in _alphaEffects) yield return parameter;
+                foreach (var parameter in _outputEffectIntensities) yield return parameter;
             }
         }
 
         public static TextureEffectParameters Create(string idPrefix, TextureEffectParams defaults)
         {
-            return new TextureEffectParameters
+            var parameters = new TextureEffectParameters
             {
                 _uvMode = new RadioParameter($"{idPrefix}.uv", "UV Effect", UvOptions, (int)defaults.UvEffect),
                 _samplingMode = new RadioParameter($"{idPrefix}.sampling", "Sampling Effect", SamplingOptions, (int)defaults.SamplingEffect),
@@ -196,6 +205,9 @@ namespace qoooo.Rendering.Composition
                 _colorEffects = CreateEffectParameters(idPrefix, "color", ColorOptions),
                 _alphaEffects = CreateEffectParameters(idPrefix, "alpha", AlphaOptions)
             };
+            if (idPrefix == "effect.output")
+                parameters._outputEffectIntensities = CreateOutputEffectIntensities(idPrefix);
+            return parameters;
         }
 
         public void ApplyTo(ref TextureEffectParams effectParams)
@@ -214,6 +226,11 @@ namespace qoooo.Rendering.Composition
             effectParams.SamplingEffects = EnabledMask(_samplingEffects);
             effectParams.ColorEffects = EnabledMask(_colorEffects);
             effectParams.AlphaEffects = EnabledMask(_alphaEffects);
+            effectParams.OutputEffectMixA = OutputMix(0);
+            effectParams.OutputEffectMixB = OutputMix(4);
+            effectParams.OutputEffectMixC = _outputEffectIntensities.Length > 8
+                ? _outputEffectIntensities[8].Value
+                : 0f;
         }
 
         internal bool IsEffectEnabled(TextureEffectStage stage, int value)
@@ -237,6 +254,36 @@ namespace qoooo.Rendering.Composition
                 parameters[index] = new BoolParameter($"{idPrefix}.{stage}.{options[index].ToLowerInvariant()}",
                     $"{stage} {options[index]}");
             return parameters;
+        }
+
+        private static FloatParameter[] CreateOutputEffectIntensities(string idPrefix)
+        {
+            var names = new[]
+            {
+                "Tiling", "Mosaic", "Block Offset", "Chromatic Offset",
+                "Bloom", "Invert", "Posterize", "Grain", "Echo"
+            };
+            var ids = new[]
+            {
+                "tiling", "mosaic", "block-offset", "chromatic-offset",
+                "bloom", "invert", "posterize", "grain", "echo"
+            };
+            var parameters = new FloatParameter[names.Length];
+            for (var index = 0; index < parameters.Length; index++)
+                parameters[index] = new FloatParameter(
+                    $"{idPrefix}.intensity.{ids[index]}",
+                    $"Output {names[index]}", 0f, 1f);
+            return parameters;
+        }
+
+        private Vector4 OutputMix(int start)
+        {
+            if (_outputEffectIntensities.Length < start + 4) return Vector4.zero;
+            return new Vector4(
+                _outputEffectIntensities[start].Value,
+                _outputEffectIntensities[start + 1].Value,
+                _outputEffectIntensities[start + 2].Value,
+                _outputEffectIntensities[start + 3].Value);
         }
 
         private static int EnabledMask(IReadOnlyList<BoolParameter> parameters)
@@ -330,14 +377,36 @@ namespace qoooo.Rendering.Composition
 
             for (var value = 1; value < effectCount; value++)
             {
-                if (!IsEffectEnabled(effectParams, stage, value)) continue;
+                var mix = EffectMix(effectParams, stage, value);
+                if (mix <= 0f) continue;
                 Apply(ref read, ref write, effectParams,
                     stage == TextureEffectStage.Uv ? (TextureUvEffect)value : TextureUvEffect.None,
                     stage == TextureEffectStage.Sampling ? (TextureSamplingEffect)value : TextureSamplingEffect.None,
                     stage == TextureEffectStage.Color ? (TextureColorEffect)value : TextureColorEffect.None,
                     stage == TextureEffectStage.Alpha ? (TextureAlphaEffect)value : TextureAlphaEffect.None,
-                    false);
+                    false, mix);
             }
+        }
+
+        private static float EffectMix(TextureEffectParams effectParams, TextureEffectStage stage, int value)
+        {
+            var outputMix = OutputEffectMix(effectParams, stage, value);
+            if (outputMix >= 0f) return outputMix;
+            return IsEffectEnabled(effectParams, stage, value) ? 1f : 0f;
+        }
+
+        private static float OutputEffectMix(TextureEffectParams effectParams, TextureEffectStage stage, int value)
+        {
+            if (stage == TextureEffectStage.Uv && value == (int)TextureUvEffect.Tiling) return effectParams.OutputEffectMixA.x;
+            if (stage == TextureEffectStage.Uv && value == (int)TextureUvEffect.Mosaic) return effectParams.OutputEffectMixA.y;
+            if (stage == TextureEffectStage.Uv && value == (int)TextureUvEffect.BlockOffset) return effectParams.OutputEffectMixA.z;
+            if (stage == TextureEffectStage.Sampling && value == (int)TextureSamplingEffect.ChromaticOffset) return effectParams.OutputEffectMixA.w;
+            if (stage == TextureEffectStage.Sampling && value == (int)TextureSamplingEffect.Bloom) return effectParams.OutputEffectMixB.x;
+            if (stage == TextureEffectStage.Sampling && value == (int)TextureSamplingEffect.Echo) return effectParams.OutputEffectMixC;
+            if (stage == TextureEffectStage.Color && value == (int)TextureColorEffect.Invert) return effectParams.OutputEffectMixB.y;
+            if (stage == TextureEffectStage.Color && value == (int)TextureColorEffect.Posterize) return effectParams.OutputEffectMixB.z;
+            if (stage == TextureEffectStage.Color && value == (int)TextureColorEffect.Grain) return effectParams.OutputEffectMixB.w;
+            return -1f;
         }
 
         private static bool IsEffectEnabled(TextureEffectParams effectParams, TextureEffectStage stage, int value)
@@ -367,9 +436,10 @@ namespace qoooo.Rendering.Composition
             TextureSamplingEffect samplingEffect,
             TextureColorEffect colorEffect,
             TextureAlphaEffect alphaEffect,
-            bool includeLegacyEffects)
+            bool includeLegacyEffects,
+            float mix = 1f)
         {
-            SetUniforms(effectParams, uvEffect, samplingEffect, colorEffect, alphaEffect, includeLegacyEffects);
+            SetUniforms(effectParams, uvEffect, samplingEffect, colorEffect, alphaEffect, includeLegacyEffects, mix);
             Graphics.Blit(read, write, _material);
             read = write;
             write = write == _effectTexture ? _scratchTexture : _effectTexture;
@@ -381,16 +451,21 @@ namespace qoooo.Rendering.Composition
             TextureSamplingEffect samplingEffect,
             TextureColorEffect colorEffect,
             TextureAlphaEffect alphaEffect,
-            bool includeLegacyEffects)
+            bool includeLegacyEffects,
+            float mix)
         {
+            mix = Mathf.Clamp01(mix);
             _material.SetInt("_IsInvert", includeLegacyEffects && effectParams.IsInvert ? 1 : 0);
             _material.SetInt("_IsMosaic", includeLegacyEffects && effectParams.IsMosaic ? 1 : 0);
             _material.SetFloat("_MosaicSize", Mathf.Max(1f, effectParams.MosaicSize));
             _material.SetInt("_IsTiling", includeLegacyEffects && effectParams.IsTiling ? 1 : 0);
             // TileNumはserialized互換の名前で保持し、UIではTiling Scaleとして扱う。
-            _material.SetVector("_TileNum", new Vector2(
-                Mathf.Max(1f, effectParams.TileNum.x),
-                Mathf.Max(1f, effectParams.TileNum.y)));
+            var tileCount = uvEffect == TextureUvEffect.Tiling
+                ? Mathf.Lerp(1f, 12f, mix)
+                : Mathf.Max(1f, effectParams.TileNum.x);
+            _material.SetVector("_TileNum", uvEffect == TextureUvEffect.Tiling
+                ? new Vector2(tileCount, tileCount)
+                : new Vector2(Mathf.Max(1f, effectParams.TileNum.x), Mathf.Max(1f, effectParams.TileNum.y)));
             _material.SetVector("_Offset", effectParams.Offset);
             _material.SetInt("_IsPosterize", includeLegacyEffects && effectParams.IsPosterize ? 1 : 0);
             _material.SetFloat("_PosterizeLevels", Mathf.Max(2f, effectParams.PosterizeLevels));
@@ -398,11 +473,35 @@ namespace qoooo.Rendering.Composition
             _material.SetInt("_SamplingEffect", (int)samplingEffect);
             _material.SetInt("_ColorEffect", (int)colorEffect);
             _material.SetInt("_AlphaEffect", (int)alphaEffect);
-            _material.SetFloat("_EffectAmount", Mathf.Max(0f, effectParams.Amount));
-            _material.SetFloat("_EffectScale", Mathf.Max(1f, effectParams.Scale));
-            _material.SetFloat("_EffectThreshold", Mathf.Clamp01(effectParams.Threshold));
-            _material.SetFloat("_EffectStrength", Mathf.Max(0f, effectParams.Strength));
-            _material.SetFloat("_EffectProbability", Mathf.Clamp01(effectParams.Probability));
+                        var amount = samplingEffect == TextureSamplingEffect.Echo
+                                ? Mathf.Lerp(0f, 128f, mix)
+                                : uvEffect == TextureUvEffect.BlockOffset
+                                    || samplingEffect == TextureSamplingEffect.ChromaticOffset
+                                        ? Mathf.Lerp(0f, 96f, mix)
+                                        : Mathf.Max(0f, effectParams.Amount);
+            var scale = uvEffect == TextureUvEffect.Mosaic
+                ? Mathf.Lerp(1f, 160f, mix)
+                : colorEffect == TextureColorEffect.Posterize
+                    ? Mathf.Lerp(32f, 2f, mix)
+                    : Mathf.Max(1f, effectParams.Scale);
+            var strength = samplingEffect == TextureSamplingEffect.Bloom
+                ? Mathf.Lerp(0f, 12f, mix)
+                : colorEffect == TextureColorEffect.Grain
+                    ? Mathf.Lerp(0f, 2f, mix)
+                : Mathf.Max(0f, effectParams.Strength);
+            _material.SetFloat("_EffectAmount", amount);
+            _material.SetFloat("_EffectScale", scale);
+            _material.SetFloat("_EffectThreshold", samplingEffect == TextureSamplingEffect.Bloom
+                ? Mathf.Lerp(0.8f, 0.05f, mix)
+                : Mathf.Clamp01(effectParams.Threshold));
+            _material.SetFloat("_EffectStrength", strength);
+            var probability = uvEffect == TextureUvEffect.BlockOffset
+                ? mix
+                : samplingEffect == TextureSamplingEffect.Echo
+                    ? Mathf.Lerp(0.1f, 0.9f, mix)
+                    : Mathf.Clamp01(effectParams.Probability);
+            _material.SetFloat("_EffectProbability", probability);
+            _material.SetFloat("_EffectMix", mix);
             _material.SetInt("_EffectSeed", unchecked((int)effectParams.Seed));
             _material.SetVector("_EffectDirection", effectParams.Direction.sqrMagnitude > 0f
                 ? effectParams.Direction

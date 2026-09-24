@@ -27,6 +27,11 @@ effect は次の固定順で処理する。stage は並べ替えず、同一 sta
 UV → Sampling → Color → Alpha
 ```
 
+最終 Output はAPC Fader用に、Tiling、Mosaic、Block Offset、Chromatic Offset、Bloom、Invert、
+Posterize、Grain、Echoの9つの独立したintensity Parameterを持つ。値域は`0..1`で、`0`ではeffect passを
+実行しない。値を上げるとeffect固有の量と原画からのmixが増えるため、複数Faderを同時に上げて
+effectを重ねられる。
+
 ## Poster
 
 `PosterLibrary.Documents` が Poster document の source of truth である。`PosterCanvas` は active document を Canvas primitive として描画し、font catalog と palette を参照する。
@@ -36,6 +41,8 @@ UV → Sampling → Color → Alpha
 Poster Text の `Character Scramble` animation は、各文字に決定的なbeat offsetを与え、`Interval Beats`ごとの`Active Beats`区間で`Steps`回、元文字列内の文字へ切り替える。`Seed`が同じなら同じbeatで同じ表示になり、文字列長は変えない。
 
 Poster Text の `Character Spacing` はfont size基準のem値で保存する。`0`はfont既定、正値は文字間を広げ、負値は詰める。描画時にfont内部単位へ変換するため出力解像度には依存しない。
+
+Poster Text のLiteralとMain Textは複数行入力に対応する。TextArea内のEnterによる改行に加え、文字列中の `\n` も描画時に改行へ変換する。Character Scrambleは空白と改行の位置を変更せず、Typewriterは改行を含むTMP文字列の順序で表示する。
 
 Grid placement は grid point に element anchor を合わせ、Width / Height を grid unit として解釈する。Free placement は normalized coordinate、anchor は 9-point anchor を使う。element list の先頭は前面である。
 

@@ -192,9 +192,10 @@ namespace qoooo.Rendering.Sources
             return UI.Fold("Main Text Library",
                 UI.Dropdown("Selected", () => _posterCanvas.ActiveMainTextIndex,
                     _posterCanvas.SelectMainText, options),
-                UI.Field("Text",
-                    () => _posterCanvas.MainTextAt(_posterCanvas.ActiveMainTextIndex),
-                    value => _posterCanvas.SetMainText(_posterCanvas.ActiveMainTextIndex, value)),
+                UI.TextArea("Text",
+                        () => _posterCanvas.MainTextAt(_posterCanvas.ActiveMainTextIndex),
+                        value => _posterCanvas.SetMainText(_posterCanvas.ActiveMainTextIndex, value))
+                    .SetMinHeight(80f),
                 UI.Row(
                     UI.Button("New", _posterCanvas.CreateMainText),
                     UI.Button("Duplicate", _posterCanvas.DuplicateMainText),
@@ -211,7 +212,7 @@ namespace qoooo.Rendering.Sources
             return UI.DynamicElementOnStatusChanged(
                 () => _posterCanvas.Library.MainTexts.IndexOf(Entry()) == _posterCanvas.ActiveMainTextIndex,
                 isSelected => UI.Button(
-                        UI.Label(() => string.IsNullOrWhiteSpace(Entry()?.Text) ? "(Empty)" : Entry().Text),
+                        UI.Label(() => MainTextLabel(Entry()?.Text)),
                         () => _posterCanvas.SelectMainText(_posterCanvas.Library.MainTexts.IndexOf(Entry())))
                     .SetBackgroundColor(isSelected ? SelectedColor : null));
         }
@@ -422,8 +423,9 @@ namespace qoooo.Rendering.Sources
                     () => settings.Source,
                     source => source switch
                     {
-                        PosterTextSource.Literal => UI.Field("Text", () => settings.Literal,
-                            value => Set(element, _ => settings.Literal = value ?? string.Empty)),
+                        PosterTextSource.Literal => UI.TextArea("Text", () => settings.Literal,
+                                value => Set(element, _ => settings.Literal = value ?? string.Empty))
+                            .SetMinHeight(80f),
                         PosterTextSource.CurrentDate or PosterTextSource.CurrentTime => UI.Field("Format", () => settings.Format,
                             value => Set(element, _ => settings.Format = value ?? string.Empty)),
                         _ => UI.HelpBox("Uses poster.main-text.")
@@ -442,6 +444,13 @@ namespace qoooo.Rendering.Sources
                 UI.Field("Text Offset Y (UV)", () => settings.TextOffset.y,
                     value => Set(element, _ => settings.TextOffset.y = float.IsFinite(value) ? value : 0f)),
                 UI.Fold("Animation", CreateTextAnimationInspector(element, settings)).Open());
+        }
+
+        private static string MainTextLabel(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return "(Empty)";
+            return text.Replace("\r\n", "\n").Replace('\r', '\n').Replace("\\n", "\n")
+                .Replace("\n", " / ");
         }
 
         private Element CreateTextAnimationInspector(PosterElement element, PosterTextSettings settings)
