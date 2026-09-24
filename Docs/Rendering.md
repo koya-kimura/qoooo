@@ -32,6 +32,11 @@ Posterize、Grain、Echoの9つの独立したintensity Parameterを持つ。値
 実行しない。値を上げるとeffect固有の量と原画からのmixが増えるため、複数Faderを同時に上げて
 effectを重ねられる。
 
+Model textureのAPC ToggleはOutput intensityとは独立する。Sliceは16分割・適用率0.45、Posterizeは
+5階調、Bloomはthreshold 0.55・strength 2、Echoは24px・decay 0.55、Kaleidoscopeは8分割、
+Mosaicは20px、Waveは18px・3周期を既定値として使う。全ToggleがOFFならeffect passを実行せず、
+raw Model textureをそのまま返す。
+
 ## Poster
 
 `PosterLibrary.Documents` が Poster document の source of truth である。`PosterCanvas` は active document を Canvas primitive として描画し、font catalog と palette を参照する。
@@ -50,7 +55,17 @@ Grid placement は grid point に element anchor を合わせ、Width / Height �
 
 `PaletteProvider` は shared palette catalog と active palette を所有し、`Main` / `Sub` / `Base` / `Accent` の4 roleを同じ名前でrendering consumerへ提供する。`Main` は主役色、`Sub` は補助色、`Base` は背景と本文の基準色、`Accent` は限定的な強調色として扱う。Posterのcolor参照も同じrole名を使い、保存値はこの順のslot positionとして扱う。
 
+組み込みpaletteはCobalt、Acid、Hot、Mono、Aqua、Violet、Forest、Signalの8件。APC Page 0の
+Row 2–3、Column 4–7へoption順で割り当てる。
+
 `ModelController` は名前付きanimation preset listと `model.animation-preset` Radioを所有する。各presetはanimation entry listを持ち、選択中のlistだけがmodel transformへ適用される。preset option indexはlist positionと一致し、MIDI mappingはposition basedで扱う。preset内容はQoooo Saveで保存する。
+
+Animation presetが8件未満の場合は既存presetを保持したまま、Orbit、Bounce、Pulse、Drift、Twist、
+Float、Impactのstarter catalogから不足分を補う。APC Page 0のRow 4–5、Column 0–3へ
+option順で割り当てる。
+
+Model arrangement modeを切り替えた時は、Singleを1×1、Rowを4×1、Columnを1×4、Gridを
+2×2のcountで開始する。mode切替後は各axis countを個別に編集できる。
 
 `PosterFontCatalog` は Poster text 用の font を stable Font ID で管理し、Poster 保存データはその ID を保持する。
 

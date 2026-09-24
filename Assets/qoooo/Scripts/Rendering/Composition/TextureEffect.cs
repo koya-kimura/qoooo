@@ -102,6 +102,7 @@ namespace qoooo.Rendering.Composition
         public Vector2 Direction;
         public Vector2 Grid;
         public Vector3 Thresholds;
+        public bool UsesOutputEffectIntensities;
         public Vector4 OutputEffectMixA;
         public Vector4 OutputEffectMixB;
         public float OutputEffectMixC;
@@ -226,6 +227,7 @@ namespace qoooo.Rendering.Composition
             effectParams.SamplingEffects = EnabledMask(_samplingEffects);
             effectParams.ColorEffects = EnabledMask(_colorEffects);
             effectParams.AlphaEffects = EnabledMask(_alphaEffects);
+            effectParams.UsesOutputEffectIntensities = _outputEffectIntensities.Length > 0;
             effectParams.OutputEffectMixA = OutputMix(0);
             effectParams.OutputEffectMixB = OutputMix(4);
             effectParams.OutputEffectMixC = _outputEffectIntensities.Length > 8
@@ -397,6 +399,7 @@ namespace qoooo.Rendering.Composition
 
         private static float OutputEffectMix(TextureEffectParams effectParams, TextureEffectStage stage, int value)
         {
+            if (!effectParams.UsesOutputEffectIntensities) return -1f;
             if (stage == TextureEffectStage.Uv && value == (int)TextureUvEffect.Tiling) return effectParams.OutputEffectMixA.x;
             if (stage == TextureEffectStage.Uv && value == (int)TextureUvEffect.Mosaic) return effectParams.OutputEffectMixA.y;
             if (stage == TextureEffectStage.Uv && value == (int)TextureUvEffect.BlockOffset) return effectParams.OutputEffectMixA.z;
@@ -473,32 +476,42 @@ namespace qoooo.Rendering.Composition
             _material.SetInt("_SamplingEffect", (int)samplingEffect);
             _material.SetInt("_ColorEffect", (int)colorEffect);
             _material.SetInt("_AlphaEffect", (int)alphaEffect);
-                        var amount = samplingEffect == TextureSamplingEffect.Echo
-                                ? Mathf.Lerp(0f, 128f, mix)
-                                : uvEffect == TextureUvEffect.BlockOffset
-                                    || samplingEffect == TextureSamplingEffect.ChromaticOffset
-                                        ? Mathf.Lerp(0f, 96f, mix)
-                                        : Mathf.Max(0f, effectParams.Amount);
+            var amount = samplingEffect == TextureSamplingEffect.Echo
+                ? effectParams.UsesOutputEffectIntensities ? Mathf.Lerp(0f, 128f, mix) : 24f
+                : uvEffect == TextureUvEffect.Wave
+                    ? 18f
+                    : uvEffect == TextureUvEffect.BlockOffset
+                        || samplingEffect == TextureSamplingEffect.ChromaticOffset
+                            ? Mathf.Lerp(0f, 96f, mix)
+                            : Mathf.Max(0f, effectParams.Amount);
             var scale = uvEffect == TextureUvEffect.Mosaic
-                ? Mathf.Lerp(1f, 160f, mix)
-                : colorEffect == TextureColorEffect.Posterize
-                    ? Mathf.Lerp(32f, 2f, mix)
-                    : Mathf.Max(1f, effectParams.Scale);
+                ? effectParams.UsesOutputEffectIntensities ? Mathf.Lerp(1f, 160f, mix) : 20f
+                : uvEffect == TextureUvEffect.Kaleidoscope
+                    ? 8f
+                    : uvEffect == TextureUvEffect.Wave
+                        ? 3f
+                        : alphaEffect == TextureAlphaEffect.Slice
+                            ? 16f
+                            : colorEffect == TextureColorEffect.Posterize
+                                ? effectParams.UsesOutputEffectIntensities ? Mathf.Lerp(32f, 2f, mix) : 5f
+                                : Mathf.Max(1f, effectParams.Scale);
             var strength = samplingEffect == TextureSamplingEffect.Bloom
-                ? Mathf.Lerp(0f, 12f, mix)
+                ? effectParams.UsesOutputEffectIntensities ? Mathf.Lerp(0f, 12f, mix) : 2f
                 : colorEffect == TextureColorEffect.Grain
                     ? Mathf.Lerp(0f, 2f, mix)
                 : Mathf.Max(0f, effectParams.Strength);
             _material.SetFloat("_EffectAmount", amount);
             _material.SetFloat("_EffectScale", scale);
             _material.SetFloat("_EffectThreshold", samplingEffect == TextureSamplingEffect.Bloom
-                ? Mathf.Lerp(0.8f, 0.05f, mix)
+                ? effectParams.UsesOutputEffectIntensities ? Mathf.Lerp(0.8f, 0.05f, mix) : 0.55f
                 : Mathf.Clamp01(effectParams.Threshold));
             _material.SetFloat("_EffectStrength", strength);
             var probability = uvEffect == TextureUvEffect.BlockOffset
                 ? mix
                 : samplingEffect == TextureSamplingEffect.Echo
-                    ? Mathf.Lerp(0.1f, 0.9f, mix)
+                    ? effectParams.UsesOutputEffectIntensities ? Mathf.Lerp(0.1f, 0.9f, mix) : 0.55f
+                    : alphaEffect == TextureAlphaEffect.Slice
+                        ? 0.45f
                     : Mathf.Clamp01(effectParams.Probability);
             _material.SetFloat("_EffectProbability", probability);
             _material.SetFloat("_EffectMix", mix);

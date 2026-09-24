@@ -72,7 +72,7 @@ namespace qoooo.Rendering.Composition
         private RadioParameter _palette = new(
             "visual.palette",
             "Visual Palette",
-            new[] { "Cobalt", "Acid", "Hot" });
+            new[] { "Cobalt", "Acid", "Hot", "Mono", "Aqua", "Violet", "Forest", "Signal" });
 
         private readonly PrefsAny<PaletteCatalogRecord> _prefs = new(PrefsKey);
         private readonly PrefsAny<LegacyPaletteCatalogRecord> _legacyPrefs = new(PrefsKey);
@@ -111,7 +111,7 @@ namespace qoooo.Rendering.Composition
             _palette ??= new RadioParameter(
                 "visual.palette",
                 "Visual Palette",
-                new[] { "Cobalt", "Acid", "Hot" });
+                new[] { "Cobalt", "Acid", "Hot", "Mono", "Aqua", "Violet", "Forest", "Signal" });
             LoadCatalog();
         }
 
@@ -419,6 +419,36 @@ namespace qoooo.Rendering.Composition
                 Id = "hot", Name = "Hot", BuiltIn = true,
                 Main = new Color(1f, 0.08f, 0.1f, 1f), Sub = new Color(1f, 0.2f, 0.55f, 1f),
                 Base = new Color(0.08f, 0.005f, 0.02f, 1f), Accent = new Color(1f, 0.72f, 0.08f, 1f)
+            };
+            yield return new PaletteDefinition
+            {
+                Id = "mono", Name = "Mono", BuiltIn = true,
+                Main = new Color(0.94f, 0.94f, 0.91f, 1f), Sub = new Color(0.55f, 0.57f, 0.58f, 1f),
+                Base = new Color(0.015f, 0.018f, 0.02f, 1f), Accent = Color.white
+            };
+            yield return new PaletteDefinition
+            {
+                Id = "aqua", Name = "Aqua", BuiltIn = true,
+                Main = new Color(0f, 0.78f, 0.9f, 1f), Sub = new Color(0.15f, 1f, 0.65f, 1f),
+                Base = new Color(0.005f, 0.045f, 0.07f, 1f), Accent = new Color(1f, 0.9f, 0.15f, 1f)
+            };
+            yield return new PaletteDefinition
+            {
+                Id = "violet", Name = "Violet", BuiltIn = true,
+                Main = new Color(0.58f, 0.18f, 1f, 1f), Sub = new Color(1f, 0.3f, 0.72f, 1f),
+                Base = new Color(0.035f, 0.008f, 0.08f, 1f), Accent = new Color(0.35f, 0.95f, 1f, 1f)
+            };
+            yield return new PaletteDefinition
+            {
+                Id = "forest", Name = "Forest", BuiltIn = true,
+                Main = new Color(0.08f, 0.72f, 0.34f, 1f), Sub = new Color(0.72f, 0.9f, 0.12f, 1f),
+                Base = new Color(0.01f, 0.055f, 0.025f, 1f), Accent = new Color(1f, 0.45f, 0.12f, 1f)
+            };
+            yield return new PaletteDefinition
+            {
+                Id = "signal", Name = "Signal", BuiltIn = true,
+                Main = new Color(1f, 0.45f, 0f, 1f), Sub = new Color(0.1f, 0.45f, 1f, 1f),
+                Base = new Color(0.025f, 0.025f, 0.025f, 1f), Accent = new Color(1f, 0.95f, 0f, 1f)
             };
         }
 

@@ -191,10 +191,12 @@ namespace qoooo.Rendering.Models
         private void ApplyParameters()
         {
             var nextMode = (ModelArrangementMode)Mathf.Clamp(_arrangementMode.Value, 0, ArrangementModeNames.Length - 1);
-            var nextCounts = ClampCounts(new Vector3Int(
-                _countX.Value + 1,
-                _countY.Value + 1,
-                _countZ.Value + 1));
+            var nextCounts = nextMode != _mode
+                ? DefaultCounts(nextMode)
+                : ClampCounts(new Vector3Int(
+                    _countX.Value + 1,
+                    _countY.Value + 1,
+                    _countZ.Value + 1));
 
             // MIDI入力の組合せが16 slotsを超えた場合は、actual stateとParameter表示を同じ安全値へ戻す。
             _countX.TrySetValue(nextCounts.x - 1);
@@ -205,6 +207,17 @@ namespace qoooo.Rendering.Models
             _mode = nextMode;
             _counts = nextCounts;
             RefreshSlots();
+        }
+
+        private static Vector3Int DefaultCounts(ModelArrangementMode mode)
+        {
+            return mode switch
+            {
+                ModelArrangementMode.Row => new Vector3Int(4, 1, 1),
+                ModelArrangementMode.Column => new Vector3Int(1, 4, 1),
+                ModelArrangementMode.Grid => new Vector3Int(2, 2, 1),
+                _ => Vector3Int.one
+            };
         }
 
         private void SetMode(int value)

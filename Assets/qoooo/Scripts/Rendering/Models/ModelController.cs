@@ -217,10 +217,105 @@ namespace qoooo.Rendering.Models
                 });
             }
 
+            AddStarterAnimationPresets();
             EnsureAnimationPresets();
             var selectedId = record != null && record.HasSavedData ? record.ActivePresetId : null;
             SynchronizeAnimationPresetOptions(selectedId);
             ApplyAnimationPreset(_animationPreset.Value);
+        }
+
+        private void AddStarterAnimationPresets()
+        {
+            foreach (var preset in CreateStarterAnimationPresets())
+            {
+                if (_animationPresets.Count >= 8) break;
+                if (_animationPresets.Any(value => value.Id == preset.Id)) continue;
+                _animationPresets.Add(preset);
+            }
+        }
+
+        private static IEnumerable<ModelAnimationPreset> CreateStarterAnimationPresets()
+        {
+            yield return Preset("starter-orbit-v1", "Orbit",
+                Animation(ModelAnimationType.Rotate, ModelAnimationTiming.ContinuousBeats,
+                    ModelAnimationPattern.Traverse, new Vector3(0f, 360f, 0f), 8f));
+            yield return Preset("starter-bounce-v1", "Bounce",
+                Animation(ModelAnimationType.Translate, ModelAnimationTiming.BeatCycle,
+                    ModelAnimationPattern.Envelope, new Vector3(0f, 1.2f, 0f), 2f,
+                    ModelAnimationEasing.EaseOutQuad, 0.25f,
+                    new ModelAnimationEnvelope { Rise = 0.12f, HighHold = 0.08f, Fall = 0.3f, LowHold = 0.5f }));
+            yield return Preset("starter-pulse-v1", "Pulse",
+                ScaleAnimation(1f, 1.35f, 1f,
+                    new ModelAnimationEnvelope { Rise = 0.08f, HighHold = 0.12f, Fall = 0.2f, LowHold = 0.6f }));
+            yield return Preset("starter-drift-v1", "Drift",
+                Animation(ModelAnimationType.Translate, ModelAnimationTiming.SecondsCycle,
+                    ModelAnimationPattern.PingPong, new Vector3(1.2f, 0.35f, 0f), 6f,
+                    ModelAnimationEasing.EaseInOutSine, 0.6f));
+            yield return Preset("starter-twist-v1", "Twist",
+                Animation(ModelAnimationType.Rotate, ModelAnimationTiming.BeatCycle,
+                    ModelAnimationPattern.PingPong, new Vector3(20f, 180f, 10f), 4f,
+                    ModelAnimationEasing.EaseInOutSine, 0.35f));
+            yield return Preset("starter-float-v1", "Float",
+                Animation(ModelAnimationType.Translate, ModelAnimationTiming.SecondsCycle,
+                    ModelAnimationPattern.PingPong, new Vector3(0f, 0.75f, 0f), 4f,
+                    ModelAnimationEasing.SmoothStep, 1f));
+            yield return Preset("starter-impact-v1", "Impact",
+                ScaleAnimation(0.9f, 1.45f, 2f,
+                    new ModelAnimationEnvelope { Rise = 0.05f, HighHold = 0.1f, Fall = 0.2f, LowHold = 0.65f }),
+                Animation(ModelAnimationType.Rotate, ModelAnimationTiming.BeatCycle,
+                    ModelAnimationPattern.Envelope, new Vector3(0f, 45f, 0f), 2f,
+                    ModelAnimationEasing.EaseOutQuad, 0.5f,
+                    new ModelAnimationEnvelope { Rise = 0.05f, HighHold = 0.1f, Fall = 0.25f, LowHold = 0.6f }));
+        }
+
+        private static ModelAnimationPreset Preset(string id, string name, params ModelAnimationEntry[] animations)
+        {
+            return new ModelAnimationPreset
+            {
+                Id = id,
+                Name = name,
+                Animations = animations.ToList()
+            };
+        }
+
+        private static ModelAnimationEntry Animation(
+            ModelAnimationType type,
+            ModelAnimationTiming timing,
+            ModelAnimationPattern pattern,
+            Vector3 amount,
+            float cycle,
+            ModelAnimationEasing easing = ModelAnimationEasing.SmoothStep,
+            float randomPhase = 0f,
+            ModelAnimationEnvelope envelope = null)
+        {
+            return new ModelAnimationEntry
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Type = type,
+                Timing = timing,
+                Pattern = pattern,
+                Easing = easing,
+                SecondsPerCycle = cycle,
+                BeatsPerCycle = cycle,
+                Amount = amount,
+                Envelope = envelope ?? new ModelAnimationEnvelope(),
+                Seed = 23,
+                RandomPhase = randomPhase
+            };
+        }
+
+        private static ModelAnimationEntry ScaleAnimation(
+            float from,
+            float to,
+            float beats,
+            ModelAnimationEnvelope envelope)
+        {
+            var animation = Animation(ModelAnimationType.Scale, ModelAnimationTiming.BeatCycle,
+                ModelAnimationPattern.Envelope, Vector3.zero, beats, ModelAnimationEasing.EaseOutQuad,
+                0.2f, envelope);
+            animation.FromScale = from;
+            animation.ToScale = to;
+            return animation;
         }
 
         private void EnsureAnimationPresets()

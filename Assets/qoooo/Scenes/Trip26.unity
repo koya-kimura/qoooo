@@ -244,6 +244,10 @@ MonoBehaviour:
     Direction: {x: 0, y: 0}
     Grid: {x: 0, y: 0}
     Thresholds: {x: 0, y: 0, z: 0}
+    UsesOutputEffectIntensities: 0
+    OutputEffectMixA: {x: 0, y: 0, z: 0, w: 0}
+    OutputEffectMixB: {x: 0, y: 0, z: 0, w: 0}
+    OutputEffectMixC: 0
     Main: {r: 0, g: 0, b: 0, a: 0}
     Sub: {r: 0, g: 0, b: 0, a: 0}
     Base: {r: 0, g: 0, b: 0, a: 0}
@@ -3238,6 +3242,10 @@ MonoBehaviour:
     Direction: {x: 0, y: 0}
     Grid: {x: 0, y: 0}
     Thresholds: {x: 0, y: 0, z: 0}
+    UsesOutputEffectIntensities: 0
+    OutputEffectMixA: {x: 0, y: 0, z: 0, w: 0}
+    OutputEffectMixB: {x: 0, y: 0, z: 0, w: 0}
+    OutputEffectMixC: 0
     Main: {r: 0, g: 0, b: 0, a: 0}
     Sub: {r: 0, g: 0, b: 0, a: 0}
     Base: {r: 0, g: 0, b: 0, a: 0}
@@ -4857,6 +4865,10 @@ MonoBehaviour:
     Direction: {x: 0, y: 0}
     Grid: {x: 0, y: 0}
     Thresholds: {x: 0, y: 0, z: 0}
+    UsesOutputEffectIntensities: 0
+    OutputEffectMixA: {x: 0, y: 0, z: 0, w: 0}
+    OutputEffectMixB: {x: 0, y: 0, z: 0, w: 0}
+    OutputEffectMixC: 0
     Main: {r: 0, g: 0, b: 0, a: 0}
     Sub: {r: 0, g: 0, b: 0, a: 0}
     Base: {r: 0, g: 0, b: 0, a: 0}
@@ -6593,7 +6605,55 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Midi.ApcMiniMk2ParameterController
   _input: {fileID: 1862739137}
   _parameters: {fileID: 1862739139}
-  _toggles: []
+  _toggles:
+  - ParameterId: effect.model.alpha.slice
+    Button:
+      Assigned: 1
+      Page: 0
+      Row: 6
+      Column: 0
+  - ParameterId: effect.model.color.invert
+    Button:
+      Assigned: 1
+      Page: 0
+      Row: 6
+      Column: 1
+  - ParameterId: effect.model.color.posterize
+    Button:
+      Assigned: 1
+      Page: 0
+      Row: 6
+      Column: 2
+  - ParameterId: effect.model.sampling.bloom
+    Button:
+      Assigned: 1
+      Page: 0
+      Row: 6
+      Column: 3
+  - ParameterId: effect.model.sampling.echo
+    Button:
+      Assigned: 1
+      Page: 0
+      Row: 7
+      Column: 0
+  - ParameterId: effect.model.uv.kaleidoscope
+    Button:
+      Assigned: 1
+      Page: 0
+      Row: 7
+      Column: 1
+  - ParameterId: effect.model.uv.mosaic
+    Button:
+      Assigned: 1
+      Page: 0
+      Row: 7
+      Column: 2
+  - ParameterId: effect.model.uv.wave
+    Button:
+      Assigned: 1
+      Page: 0
+      Row: 7
+      Column: 3
   _radios:
   - ParameterId: model.source
     OptionButtons:
@@ -6709,6 +6769,26 @@ MonoBehaviour:
       Page: 0
       Row: 2
       Column: 6
+    - Assigned: 1
+      Page: 0
+      Row: 2
+      Column: 7
+    - Assigned: 1
+      Page: 0
+      Row: 3
+      Column: 4
+    - Assigned: 1
+      Page: 0
+      Row: 3
+      Column: 5
+    - Assigned: 1
+      Page: 0
+      Row: 3
+      Column: 6
+    - Assigned: 1
+      Page: 0
+      Row: 3
+      Column: 7
   - ParameterId: model.animation-preset
     OptionButtons:
     - Assigned: 1
@@ -6723,6 +6803,26 @@ MonoBehaviour:
       Page: 0
       Row: 4
       Column: 2
+    - Assigned: 1
+      Page: 0
+      Row: 4
+      Column: 3
+    - Assigned: 1
+      Page: 0
+      Row: 5
+      Column: 0
+    - Assigned: 1
+      Page: 0
+      Row: 5
+      Column: 1
+    - Assigned: 1
+      Page: 0
+      Row: 5
+      Column: 2
+    - Assigned: 1
+      Page: 0
+      Row: 5
+      Column: 3
   - ParameterId: poster.layout
     OptionButtons:
     - Assigned: 1
@@ -7254,6 +7354,10 @@ MonoBehaviour:
     Direction: {x: 0, y: 0}
     Grid: {x: 0, y: 0}
     Thresholds: {x: 0, y: 0, z: 0}
+    UsesOutputEffectIntensities: 0
+    OutputEffectMixA: {x: 0, y: 0, z: 0, w: 0}
+    OutputEffectMixB: {x: 0, y: 0, z: 0, w: 0}
+    OutputEffectMixC: 0
     Main: {r: 0, g: 0, b: 0, a: 0}
     Sub: {r: 0, g: 0, b: 0, a: 0}
     Base: {r: 0, g: 0, b: 0, a: 0}
@@ -7551,6 +7655,10 @@ MonoBehaviour:
     Direction: {x: 1, y: 0}
     Grid: {x: 8, y: 8}
     Thresholds: {x: 0.25, y: 0.5, z: 0.75}
+    UsesOutputEffectIntensities: 0
+    OutputEffectMixA: {x: 0, y: 0, z: 0, w: 0}
+    OutputEffectMixB: {x: 0, y: 0, z: 0, w: 0}
+    OutputEffectMixC: 0
     Main: {r: 0, g: 0, b: 0, a: 0}
     Sub: {r: 0, g: 0, b: 0, a: 0}
     Base: {r: 0, g: 0, b: 0, a: 0}
