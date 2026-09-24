@@ -112,12 +112,20 @@ namespace qoooo.Rendering.Sources
     public sealed class PosterLibrary
     {
         public List<PosterDocument> Documents = new();
+        public List<PosterMainTextEntry> MainTexts = new();
 
         public PosterDocument GetDocument(int index)
         {
             if (Documents == null || Documents.Count == 0) return null;
             return Documents[Mathf.Clamp(index, 0, Documents.Count - 1)];
         }
+    }
+
+    [Serializable]
+    public sealed class PosterMainTextEntry
+    {
+        public string Id;
+        public string Text;
     }
 
     [Serializable]

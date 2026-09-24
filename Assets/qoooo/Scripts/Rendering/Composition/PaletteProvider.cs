@@ -41,7 +41,7 @@ namespace qoooo.Rendering.Composition
         public List<PaletteDefinition> UserPalettes = new();
     }
 
-    // Owns the shared palette catalog and typed selection Parameter. User palettes persist through Qoooo Save.
+    // Owns the shared palette catalog and typed selection Parameter. Palette edits persist through Qoooo Save.
     public class PaletteProvider : MonoBehaviour, IPaletteProvider, IMidiParameterContainer,
         IUiTarget, IPrefsSaveParticipant
     {
@@ -153,18 +153,12 @@ namespace qoooo.Rendering.Composition
                     UI.Button("Delete", DeletePalette))
             };
 
-            if (palette.BuiltIn)
-            {
-                controls.Add(UI.HelpBox("Built-in palettes are read-only. Duplicate one to edit it."));
-            }
-            else
-            {
+            if (!palette.BuiltIn)
                 controls.Add(UI.Field("Name", () => palette.Name, RenamePalette));
-                controls.Add(UI.Field("Color A", () => palette.ColorA, value => SetColor(palette, 0, value)));
-                controls.Add(UI.Field("Color B", () => palette.ColorB, value => SetColor(palette, 1, value)));
-                controls.Add(UI.Field("Color C", () => palette.ColorC, value => SetColor(palette, 2, value)));
-                controls.Add(UI.Field("Color D", () => palette.ColorD, value => SetColor(palette, 3, value)));
-            }
+            controls.Add(UI.Field("Color A", () => palette.ColorA, value => SetColor(palette, 0, value)));
+            controls.Add(UI.Field("Color B", () => palette.ColorB, value => SetColor(palette, 1, value)));
+            controls.Add(UI.Field("Color C", () => palette.ColorC, value => SetColor(palette, 2, value)));
+            controls.Add(UI.Field("Color D", () => palette.ColorD, value => SetColor(palette, 3, value)));
 
             controls.Add(UI.Row(
                 UI.Button("Save", save ?? (() => { })),
@@ -257,7 +251,7 @@ namespace qoooo.Rendering.Composition
 
         private void SetColor(PaletteDefinition palette, int index, Color value)
         {
-            if (palette == null || palette.BuiltIn) return;
+            if (palette == null) return;
             value = SanitizeColor(value, Color.white);
             switch (index)
             {
@@ -295,6 +289,15 @@ namespace qoooo.Rendering.Composition
             {
                 if (source == null || string.IsNullOrWhiteSpace(source.Id)) continue;
                 var id = source.Id.Trim();
+                var builtIn = _palettes.Find(value => value.BuiltIn && value.Id == id);
+                if (builtIn != null)
+                {
+                    builtIn.ColorA = SanitizeColor(source.ColorA, builtIn.ColorA);
+                    builtIn.ColorB = SanitizeColor(source.ColorB, builtIn.ColorB);
+                    builtIn.ColorC = SanitizeColor(source.ColorC, builtIn.ColorC);
+                    builtIn.ColorD = SanitizeColor(source.ColorD, builtIn.ColorD);
+                    continue;
+                }
                 if (!ids.Add(id)) continue;
                 _palettes.Add(new PaletteDefinition
                 {
@@ -326,7 +329,7 @@ namespace qoooo.Rendering.Composition
             {
                 HasSavedData = true,
                 ActivePaletteId = ActivePalette.Id,
-                UserPalettes = _palettes.Where(value => !value.BuiltIn).Select(Copy).ToList()
+                UserPalettes = _palettes.Select(Copy).ToList()
             };
         }
 

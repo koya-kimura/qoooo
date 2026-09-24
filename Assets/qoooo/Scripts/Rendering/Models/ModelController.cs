@@ -23,6 +23,12 @@ namespace qoooo.Rendering.Models
         private OneshotParameter _resetTransform = new("model.reset-transform", "Reset Model Transform");
 
         [SerializeField] private BoolParameter _active = new("model.active", "Model Active", true);
+        [SerializeField] private BoolParameter _animationEnabled = new(
+            "model.animation-enabled", "Animation Enabled", true);
+        [SerializeField] private FloatParameter _animationSpeed = new(
+            "model.animation-speed", "Animation Speed", 0f, 2f, 1f);
+        [SerializeField] private FloatParameter _animationStrength = new(
+            "model.animation-strength", "Animation Strength", 0f, 1f, 1f);
 
         // CREATIVE AREA / 創作領域: beatからmotionへの反応をここで調整する。clockの所有者はBpmManagerだけ。
         [SerializeField] [Min(0.01f)] private float _pulseCycleBeats = 4f;
@@ -37,6 +43,9 @@ namespace qoooo.Rendering.Models
         private ModelArrangementController _arrangement;
         private IBpmSource _bpmSource;
         private int _animationTypeToAdd;
+        private float _lastAnimationSpeed = float.NaN;
+        private float _animationSecondsOffset;
+        private float _animationBeatOffset;
 
         private ModelManager _modelManager;
 
@@ -70,6 +79,8 @@ namespace qoooo.Rendering.Models
             var beat = (float)(_bpmSource?.Beat ?? 0d);
             var rhythmIndex = Rhythm.GetIndex(beat, _pulseCycleBeats);
             var rhythmPhase = Rhythm.GetPhase(beat, _pulseCycleBeats, _pulseEaseBeats);
+            var animationSeconds = GetScaledAnimationTime(Time.time, beat, false);
+            var animationBeats = GetScaledAnimationTime(Time.time, beat, true);
             for (var slotIndex = 0; slotIndex < _activeSlots.Count; slotIndex++)
             {
                 var slot = _activeSlots[slotIndex];
@@ -92,7 +103,9 @@ namespace qoooo.Rendering.Models
                             break;
                     }
 
-                    AccumulateAnimations(slotIndex, beat, ref positionOffset, ref rotationOffset, ref slotScale);
+                    if (_animationEnabled.Value)
+                        AccumulateAnimations(slotIndex, animationSeconds, animationBeats, _animationStrength.Value,
+                            ref positionOffset, ref rotationOffset, ref slotScale);
                 }
 
                 ApplyTransform(slot, positionOffset, rotationOffset, slotScale);
@@ -117,6 +130,9 @@ namespace qoooo.Rendering.Models
                 yield return _motion;
                 yield return _resetTransform;
                 yield return _active;
+                yield return _animationEnabled;
+                yield return _animationSpeed;
+                yield return _animationStrength;
             }
         }
 
@@ -176,7 +192,9 @@ namespace qoooo.Rendering.Models
 
         private void AccumulateAnimations(
             int slotIndex,
-            float beat,
+            float animationSeconds,
+            float animationBeats,
+            float strength,
             ref Vector3 positionOffset,
             ref Vector3 rotationOffset,
             ref float scaleMultiplier)
@@ -184,31 +202,54 @@ namespace qoooo.Rendering.Models
             foreach (var animation in _animations)
             {
                 if (animation == null || !animation.Enabled) continue;
-                var value = EvaluateAnimation(animation, slotIndex, beat);
+                var value = EvaluateAnimation(animation, slotIndex, animationSeconds, animationBeats);
                 switch (animation.Type)
                 {
                     case ModelAnimationType.Translate:
-                        positionOffset += animation.Amount * value;
+                        positionOffset += animation.Amount * value * strength;
                         break;
                     case ModelAnimationType.Rotate:
-                        rotationOffset += animation.Amount * value;
+                        rotationOffset += animation.Amount * value * strength;
                         break;
                     case ModelAnimationType.Scale:
-                        scaleMultiplier *= Mathf.LerpUnclamped(animation.FromScale, animation.ToScale, value);
+                        var evaluatedMultiplier = Mathf.LerpUnclamped(animation.FromScale, animation.ToScale, value);
+                        scaleMultiplier *= Mathf.Lerp(1f, evaluatedMultiplier, strength);
                         break;
                 }
             }
         }
 
-        private static float EvaluateAnimation(ModelAnimationEntry animation, int slotIndex, float beat)
+        private float GetScaledAnimationTime(float seconds, float beats, bool beatTiming)
         {
-            var seconds = Time.time;
+            var speed = _animationSpeed.Value;
+            if (!Mathf.Approximately(speed, _lastAnimationSpeed))
+            {
+                if (!float.IsNaN(_lastAnimationSpeed))
+                {
+                    _animationSecondsOffset += seconds * (_lastAnimationSpeed - speed);
+                    _animationBeatOffset += beats * (_lastAnimationSpeed - speed);
+                }
+
+                _lastAnimationSpeed = speed;
+            }
+
+            return beatTiming
+                ? beats * speed + _animationBeatOffset
+                : seconds * speed + _animationSecondsOffset;
+        }
+
+        private static float EvaluateAnimation(
+            ModelAnimationEntry animation,
+            int slotIndex,
+            float animationSeconds,
+            float animationBeats)
+        {
             var duration = animation.Timing is ModelAnimationTiming.ContinuousBeats or ModelAnimationTiming.BeatCycle
                 ? Mathf.Max(0.01f, animation.BeatsPerCycle)
                 : Mathf.Max(0.01f, animation.SecondsPerCycle);
             var time = animation.Timing is ModelAnimationTiming.ContinuousBeats or ModelAnimationTiming.BeatCycle
-                ? beat
-                : seconds;
+                ? animationBeats
+                : animationSeconds;
             var progress = time / duration;
             progress += Pcg.Pcg01(new UInt2(animation.Seed, (uint)slotIndex)).x
                         * Mathf.Clamp01(animation.RandomPhase);

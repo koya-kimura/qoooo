@@ -66,6 +66,7 @@ namespace qoooo.Rendering.Sources
         private Color _builtPaletteSub;
         private bool _hasBuiltPalette;
         private bool _documentDirty = true;
+        private bool _mainTextLibraryMigrated;
         private TextMeshProUGUI _textMeasurer;
         private readonly List<PosterTextRuntime> _textRuntimes = new();
 
@@ -84,6 +85,8 @@ namespace qoooo.Rendering.Sources
         }
 
         public PosterDocument ActiveDocument => Library.GetDocument(ActiveDocumentIndex);
+        public int ActiveMainTextIndex => _mainText.Value;
+        public IReadOnlyList<string> MainTextOptions => _mainText.Options;
 
         public IEnumerable<IMidiBindableParameter> MidiParameters
         {
@@ -148,11 +151,70 @@ namespace qoooo.Rendering.Sources
             _layout.TrySetValue(index);
         }
 
+        public void SelectMainText(int index)
+        {
+            _mainText.TrySetValue(index);
+        }
+
+        public string MainTextAt(int index)
+        {
+            EnsureMainTextLibrary();
+            return index >= 0 && index < _library.MainTexts.Count
+                ? _library.MainTexts[index].Text ?? string.Empty
+                : string.Empty;
+        }
+
+        public void SetMainText(int index, string text)
+        {
+            EnsureMainTextLibrary();
+            if (index < 0 || index >= _library.MainTexts.Count) return;
+            var next = text ?? string.Empty;
+            if (_library.MainTexts[index].Text == next) return;
+            _library.MainTexts[index].Text = next;
+            SynchronizeMainTextOptions(index);
+            MarkDirty();
+        }
+
+        public void CreateMainText()
+        {
+            EnsureMainTextLibrary();
+            _library.MainTexts.Add(CreateMainTextEntry("New Text"));
+            SynchronizeMainTextOptions(_library.MainTexts.Count - 1);
+            MarkDirty();
+        }
+
+        public void DuplicateMainText()
+        {
+            EnsureMainTextLibrary();
+            var index = Mathf.Clamp(_mainText.Value, 0, _library.MainTexts.Count - 1);
+            _library.MainTexts.Insert(index + 1, CreateMainTextEntry(_library.MainTexts[index].Text));
+            SynchronizeMainTextOptions(index + 1);
+            MarkDirty();
+        }
+
+        public void DeleteMainText()
+        {
+            EnsureMainTextLibrary();
+            if (_library.MainTexts.Count <= 1) return;
+            var index = Mathf.Clamp(_mainText.Value, 0, _library.MainTexts.Count - 1);
+            _library.MainTexts.RemoveAt(index);
+            SynchronizeMainTextOptions(Mathf.Min(index, _library.MainTexts.Count - 1));
+            MarkDirty();
+        }
+
+        public void SynchronizeMainTextLibrary()
+        {
+            EnsureMainTextLibrary();
+            SynchronizeMainTextOptions(_mainText.Value);
+            MarkDirty();
+        }
+
         public void ReplaceLibrary(PosterLibrary library)
         {
             _library = library;
+            _mainTextLibraryMigrated = false;
             EnsureLibrary();
-            SynchronizeLayoutOptions();
+            SynchronizeParameterOptions();
             MarkDirty();
         }
 
@@ -169,6 +231,7 @@ namespace qoooo.Rendering.Sources
             if (_library?.Documents == null || _library.Documents.Count == 0)
                 _library = PosterDocumentFactory.CreateDefaultLibrary();
 
+            EnsureMainTextLibrary();
             _library.Documents.RemoveAll(document => document == null);
             if (_library.Documents.Count == 0)
                 _library.Documents.Add(new PosterDocument { Name = "Untitled" });
@@ -189,6 +252,57 @@ namespace qoooo.Rendering.Sources
                 document.Name = UniqueDocumentName(document.Name, usedNames);
                 usedNames.Add(document.Name);
             }
+        }
+
+        private void EnsureMainTextLibrary()
+        {
+            _library ??= new PosterLibrary();
+            _library.MainTexts ??= new List<PosterMainTextEntry>();
+
+            if (!_mainTextLibraryMigrated)
+            {
+                _mainTextLibraryMigrated = true;
+                if (IsFixedSlotLibrary(_library.MainTexts))
+                    _library.MainTexts.RemoveAll(entry => string.IsNullOrEmpty(entry?.Text));
+            }
+
+            _library.MainTexts.RemoveAll(entry => entry == null);
+            if (_library.MainTexts.Count == 0)
+            {
+                _library.MainTexts.Add(CreateMainTextEntry("QOOOO"));
+                _library.MainTexts.Add(CreateMainTextEntry("TRIP26"));
+                _library.MainTexts.Add(CreateMainTextEntry("LIVE VISUAL"));
+            }
+
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            for (var index = 0; index < _library.MainTexts.Count; index++)
+            {
+                var id = _library.MainTexts[index].Id?.Trim();
+                if (string.IsNullOrEmpty(id) || !ids.Add(id))
+                {
+                    do id = Guid.NewGuid().ToString("N");
+                    while (!ids.Add(id));
+                }
+                _library.MainTexts[index].Id = id;
+                _library.MainTexts[index].Text ??= string.Empty;
+            }
+        }
+
+        private static PosterMainTextEntry CreateMainTextEntry(string text)
+        {
+            return new PosterMainTextEntry
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Text = text ?? string.Empty
+            };
+        }
+
+        private static bool IsFixedSlotLibrary(IReadOnlyList<PosterMainTextEntry> entries)
+        {
+            if (entries == null || entries.Count != 8) return false;
+            for (var index = 0; index < entries.Count; index++)
+                if (entries[index]?.Id != $"main-text-{index + 1:00}") return false;
+            return true;
         }
 
         private static string UniqueDocumentName(string name, HashSet<string> usedNames)
@@ -296,12 +410,64 @@ namespace qoooo.Rendering.Sources
             var textMesh = Text(text, placement, settings.FontSize * SizeUnit, color,
                 settings.HorizontalAlign, settings.VerticalAlign, rotation, font);
             if (textMesh != null)
+            {
+                AlignGlyphBoundsToPlacement(
+                    textMesh,
+                    placement,
+                    element.Placement?.Anchor ?? PosterAnchor.TopLeft,
+                    element.Rotation);
                 _textRuntimes.Add(new PosterTextRuntime(
                     settings,
                     textMesh,
                     text,
                     Time.time,
                     (float)(_bpmSource?.Beat ?? 0d)));
+            }
+        }
+
+        private static void AlignGlyphBoundsToPlacement(
+            TextMeshProUGUI textMesh,
+            PosterResolvedPlacement placement,
+            PosterAnchor anchor,
+            PosterRotation rotation)
+        {
+            textMesh.maxVisibleCharacters = int.MaxValue;
+            textMesh.ForceMeshUpdate();
+
+            var anchorPivot = PosterPlacementResolver.ResolvePivot(anchor);
+            var visualSize = rotation is PosterRotation.Ninety or PosterRotation.TwoSeventy
+                ? new Vector2(placement.Size.y, placement.Size.x)
+                : placement.Size;
+            var placementPoint = placement.Position - new Vector2(
+                (0.5f - anchorPivot.x) * visualSize.x,
+                (anchorPivot.y - 0.5f) * visualSize.y);
+            var targetPosition = new Vector2(placementPoint.x, -placementPoint.y);
+
+            var bounds = textMesh.textBounds;
+            var rotationTransform = textMesh.rectTransform.localRotation;
+            var min = new Vector2(float.PositiveInfinity, float.PositiveInfinity);
+            var max = new Vector2(float.NegativeInfinity, float.NegativeInfinity);
+            AddRotatedBoundsCorner(bounds.min.x, bounds.min.y, rotationTransform, ref min, ref max);
+            AddRotatedBoundsCorner(bounds.min.x, bounds.max.y, rotationTransform, ref min, ref max);
+            AddRotatedBoundsCorner(bounds.max.x, bounds.min.y, rotationTransform, ref min, ref max);
+            AddRotatedBoundsCorner(bounds.max.x, bounds.max.y, rotationTransform, ref min, ref max);
+
+            var glyphAnchor = new Vector2(
+                Mathf.Lerp(min.x, max.x, anchorPivot.x),
+                Mathf.Lerp(min.y, max.y, anchorPivot.y));
+            textMesh.rectTransform.anchoredPosition = targetPosition - glyphAnchor;
+        }
+
+        private static void AddRotatedBoundsCorner(
+            float x,
+            float y,
+            Quaternion rotation,
+            ref Vector2 min,
+            ref Vector2 max)
+        {
+            var corner = (Vector2)(rotation * new Vector3(x, y));
+            min = Vector2.Min(min, corner);
+            max = Vector2.Max(max, corner);
         }
 
         private Color ResolveColor(PosterColorRef color, Color customColor)
@@ -914,7 +1080,7 @@ namespace qoooo.Rendering.Sources
                 new[] { "QOOOO", "TRIP26", "LIVE VISUAL" });
 
             SynchronizeLayoutOptions();
-            _mainText.ReplaceOptions(new[] { "QOOOO", "TRIP26", "LIVE VISUAL" });
+            SynchronizeMainTextOptions();
         }
 
         private void SynchronizeLayoutOptions()
@@ -922,6 +1088,17 @@ namespace qoooo.Rendering.Sources
             var names = new List<string>(_library.Documents.Count);
             foreach (var document in _library.Documents) names.Add(document.Name);
             _layout.ReplaceOptions(names);
+        }
+
+        private void SynchronizeMainTextOptions(int selectedIndex = -1)
+        {
+            EnsureMainTextLibrary();
+            var index = selectedIndex >= 0 ? selectedIndex : _mainText.Value;
+            var labels = new List<string>(_library.MainTexts.Count);
+            foreach (var entry in _library.MainTexts)
+                labels.Add(string.IsNullOrWhiteSpace(entry.Text) ? "(Empty)" : entry.Text);
+            _mainText.ReplaceOptions(labels);
+            _mainText.TrySetValue(Mathf.Clamp(index, 0, labels.Count - 1));
         }
 
         public void Image(Texture texture, float x, float y, float width, float height)
@@ -1316,12 +1493,7 @@ namespace qoooo.Rendering.Sources
 
         private string GetMainText()
         {
-            return _mainText.Value switch
-            {
-                1 => "TRIP26",
-                2 => "LIVE VISUAL",
-                _ => "QOOOO"
-            };
+            return MainTextAt(_mainText.Value);
         }
 
         private Color PaletteMain => _palette?.Main ?? new Color(0.9f, 0.22f, 0.16f, 1f);

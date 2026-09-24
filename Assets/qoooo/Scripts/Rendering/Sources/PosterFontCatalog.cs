@@ -63,6 +63,36 @@ namespace qoooo.Rendering.Sources
             return _fonts[index]?.Id ?? _defaultFontId;
         }
 
+        public bool Contains(TMP_FontAsset font)
+        {
+            if (font == null) return false;
+            _fonts ??= new List<PosterFontDefinition>();
+            return _fonts.Exists(definition => definition?.Font == font);
+        }
+
+        public bool ContainsId(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id)) return false;
+            _fonts ??= new List<PosterFontDefinition>();
+            return _fonts.Exists(definition => definition?.Id == id);
+        }
+
+        public bool TryAdd(string id, string label, TMP_FontAsset font)
+        {
+            if (font == null || string.IsNullOrWhiteSpace(id)) return false;
+            id = id.Trim();
+            if (Contains(font) || ContainsId(id)) return false;
+
+            _fonts.Add(new PosterFontDefinition
+            {
+                Id = id,
+                Label = string.IsNullOrWhiteSpace(label) ? font.name : label.Trim(),
+                Font = font
+            });
+            if (string.IsNullOrWhiteSpace(_defaultFontId)) _defaultFontId = id;
+            return true;
+        }
+
         private TMP_FontAsset Find(string fontId)
         {
             _fonts ??= new List<PosterFontDefinition>();

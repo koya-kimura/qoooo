@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using qoooo.Parameters.Model;
+using qoooo.Parameters.Runtime;
 using qoooo.Presentation.Contracts;
 using RosettaUI;
 using UnityEngine;
@@ -22,10 +24,13 @@ namespace qoooo.Rendering.Models
 
     // OWNER / Arrangement state: 選択中sourceを起点にslot群の配置とsource割当を管理する。
     // WHY / Poster上のTexture repeatではなく、Model Cameraに映る3D object配置を扱う。
-    public sealed class ModelArrangementController : MonoBehaviour, IUiTarget
+    [DefaultExecutionOrder(-9100)]
+    public sealed class ModelArrangementController : MonoBehaviour, IUiTarget, IMidiParameterContainer
     {
         private const int MaximumAxisCount = 4;
         private const int MaximumSlotCount = 16;
+        private static readonly string[] ArrangementModeNames = { "Single", "Row", "Column", "Grid" };
+        private static readonly string[] CountNames = { "1", "2", "3", "4" };
 
         [SerializeField] private ModelArrangementMode _mode;
         [SerializeField] private Vector3Int _counts = Vector3Int.one;
@@ -34,6 +39,11 @@ namespace qoooo.Rendering.Models
         [SerializeField, HideInInspector, Range(1, MaximumAxisCount)] private int _sideCount = 1;
         [SerializeField, HideInInspector, Min(0f)] private float _spacing = 0.25f;
         [SerializeField, HideInInspector] private bool _xyzArrangementMigrated;
+        [SerializeField] private RadioParameter _arrangementMode = new(
+            "model.arrangement-mode", "Arrangement Mode", ArrangementModeNames);
+        [SerializeField] private RadioParameter _countX = new("model.count-x", "Count X", CountNames);
+        [SerializeField] private RadioParameter _countY = new("model.count-y", "Count Y", CountNames);
+        [SerializeField] private RadioParameter _countZ = new("model.count-z", "Count Z", CountNames);
 
         private readonly List<GameObject> _activeSlots = new();
         private readonly Dictionary<GameObject, Vector3> _sourcePositions = new();
@@ -52,6 +62,7 @@ namespace qoooo.Rendering.Models
         private void Awake()
         {
             MigrateArrangementSettings();
+            InitializeParameters();
             _instanceCache = new ModelInstanceCache(transform, SourceScale, SourceRotation);
             _modelManager = GetComponent<ModelManager>();
             if (_modelManager != null)
@@ -75,6 +86,11 @@ namespace qoooo.Rendering.Models
             PrewarmCurrentSource();
         }
 
+        private void Update()
+        {
+            ApplyParameters();
+        }
+
         private void OnDestroy()
         {
             if (_modelManager != null)
@@ -87,13 +103,25 @@ namespace qoooo.Rendering.Models
         public Element CreateElement()
         {
             return UI.Fold("Arrangement",
-                UI.Dropdown("Mode", () => (int)_mode, SetMode, Enum.GetNames(typeof(ModelArrangementMode))),
+                UI.Dropdown("Mode", () => _arrangementMode.Value,
+                    value => _arrangementMode.TrySetValue(value), ArrangementModeNames),
                 UI.DynamicElementOnStatusChanged(
-                    () => _mode,
+                    () => (ModelArrangementMode)_arrangementMode.Value,
                     CreateArrangementFields),
                 UI.Dropdown("Source Mode", () => (int)_sourceMode, SetSourceMode,
                     Enum.GetNames(typeof(ModelSourceMode))))
                 .Open();
+        }
+
+        public IEnumerable<IMidiBindableParameter> MidiParameters
+        {
+            get
+            {
+                yield return _arrangementMode;
+                yield return _countX;
+                yield return _countY;
+                yield return _countZ;
+            }
         }
 
         private Element CreateArrangementFields(ModelArrangementMode mode)
@@ -101,15 +129,15 @@ namespace qoooo.Rendering.Models
             return mode switch
             {
                 ModelArrangementMode.Row => UI.Column(
-                    CreateCountField("Count X", 0),
+                    CreateCountDropdown("Count X", _countX),
                     CreateSpacingField("Spacing X", 0)),
                 ModelArrangementMode.Column => UI.Column(
-                    CreateCountField("Count Y", 1),
+                    CreateCountDropdown("Count Y", _countY),
                     CreateSpacingField("Spacing Y", 1)),
                 ModelArrangementMode.Grid => UI.Column(
-                    CreateCountField("Count X", 0),
-                    CreateCountField("Count Y", 1),
-                    CreateCountField("Count Z", 2),
+                    CreateCountDropdown("Count X", _countX),
+                    CreateCountDropdown("Count Y", _countY),
+                    CreateCountDropdown("Count Z", _countZ),
                     CreateSpacingField("Spacing X", 0),
                     CreateSpacingField("Spacing Y", 1),
                     CreateSpacingField("Spacing Z", 2)),
@@ -117,9 +145,9 @@ namespace qoooo.Rendering.Models
             };
         }
 
-        private Element CreateCountField(string label, int axis)
+        private static Element CreateCountDropdown(string label, RadioParameter parameter)
         {
-            return UI.Field(label, () => GetAxis(_counts, axis), value => SetCount(axis, value));
+            return UI.Dropdown(label, () => parameter.Value, value => parameter.TrySetValue(value), CountNames);
         }
 
         private Element CreateSpacingField(string label, int axis)
@@ -140,6 +168,42 @@ namespace qoooo.Rendering.Models
             _prototypePosition = SourcePosition(source);
             _prototypeScale = SourceScale(source);
             _prototypeRotation = SourceRotation(source);
+            RefreshSlots();
+        }
+
+        private void InitializeParameters()
+        {
+            _arrangementMode ??= new RadioParameter("model.arrangement-mode", "Arrangement Mode", ArrangementModeNames);
+            _countX ??= new RadioParameter("model.count-x", "Count X", CountNames);
+            _countY ??= new RadioParameter("model.count-y", "Count Y", CountNames);
+            _countZ ??= new RadioParameter("model.count-z", "Count Z", CountNames);
+
+            _arrangementMode.ReplaceOptions(ArrangementModeNames, (int)_mode);
+            _countX.ReplaceOptions(CountNames, _counts.x - 1);
+            _countY.ReplaceOptions(CountNames, _counts.y - 1);
+            _countZ.ReplaceOptions(CountNames, _counts.z - 1);
+            _arrangementMode.ResetToDefault();
+            _countX.ResetToDefault();
+            _countY.ResetToDefault();
+            _countZ.ResetToDefault();
+        }
+
+        private void ApplyParameters()
+        {
+            var nextMode = (ModelArrangementMode)Mathf.Clamp(_arrangementMode.Value, 0, ArrangementModeNames.Length - 1);
+            var nextCounts = ClampCounts(new Vector3Int(
+                _countX.Value + 1,
+                _countY.Value + 1,
+                _countZ.Value + 1));
+
+            // MIDI入力の組合せが16 slotsを超えた場合は、actual stateとParameter表示を同じ安全値へ戻す。
+            _countX.TrySetValue(nextCounts.x - 1);
+            _countY.TrySetValue(nextCounts.y - 1);
+            _countZ.TrySetValue(nextCounts.z - 1);
+            if (_mode == nextMode && _counts == nextCounts) return;
+
+            _mode = nextMode;
+            _counts = nextCounts;
             RefreshSlots();
         }
 

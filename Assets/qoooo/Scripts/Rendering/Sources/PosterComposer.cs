@@ -164,6 +164,7 @@ namespace qoooo.Rendering.Sources
                     UI.Button("New", CreateDocument),
                     UI.Button("Duplicate", DuplicateDocument),
                     UI.Button("Delete", DeleteDocument)),
+                CreateMainTextLibrary(),
                 UI.Row(
                     UI.Field("Grid Columns", () => ActiveDocument.Grid.Columns,
                         value => SetDocumentGrid(columns: Mathf.Max(1, value))),
@@ -171,6 +172,48 @@ namespace qoooo.Rendering.Sources
                         value => SetDocumentGrid(rows: Mathf.Max(1, value))),
                     UI.Space(),
                     UI.HelpBox("Use Qoooo > Save to persist poster changes.")));
+        }
+
+        private Element CreateMainTextLibrary()
+        {
+            var options = new string[_posterCanvas.MainTextOptions.Count];
+            for (var index = 0; index < options.Length; index++)
+                options[index] = _posterCanvas.MainTextOptions[index];
+
+            var listOption = new ListViewOption(
+                reorderable: true,
+                fixedSize: true,
+                header: false,
+                suppressAutoIndent: true)
+            {
+                createItemElementFunc = CreateMainTextRow
+            };
+
+            return UI.Fold("Main Text Library",
+                UI.Dropdown("Selected", () => _posterCanvas.ActiveMainTextIndex,
+                    _posterCanvas.SelectMainText, options),
+                UI.Field("Text",
+                    () => _posterCanvas.MainTextAt(_posterCanvas.ActiveMainTextIndex),
+                    value => _posterCanvas.SetMainText(_posterCanvas.ActiveMainTextIndex, value)),
+                UI.Row(
+                    UI.Button("New", _posterCanvas.CreateMainText),
+                    UI.Button("Duplicate", _posterCanvas.DuplicateMainText),
+                    UI.Button("Delete", _posterCanvas.DeleteMainText)),
+                UI.List(null, () => _posterCanvas.Library.MainTexts, listOption)
+                    .RegisterValueChangeCallback(_posterCanvas.SynchronizeMainTextLibrary))
+                .Open();
+        }
+
+        private Element CreateMainTextRow(IBinder binder, int _)
+        {
+            PosterMainTextEntry Entry() => binder.GetObject() as PosterMainTextEntry;
+
+            return UI.DynamicElementOnStatusChanged(
+                () => _posterCanvas.Library.MainTexts.IndexOf(Entry()) == _posterCanvas.ActiveMainTextIndex,
+                isSelected => UI.Button(
+                        UI.Label(() => string.IsNullOrWhiteSpace(Entry()?.Text) ? "(Empty)" : Entry().Text),
+                        () => _posterCanvas.SelectMainText(_posterCanvas.Library.MainTexts.IndexOf(Entry())))
+                    .SetBackgroundColor(isSelected ? SelectedColor : null));
         }
 
         private void CreateDocument()
@@ -1048,6 +1091,14 @@ namespace qoooo.Rendering.Sources
                 hash = hash * 31 + documents.Count;
                 foreach (var document in documents)
                     hash = hash * 31 + (document?.Name?.GetHashCode() ?? 0);
+                var mainTexts = _posterCanvas.Library.MainTexts;
+                hash = hash * 31 + _posterCanvas.ActiveMainTextIndex;
+                hash = hash * 31 + mainTexts.Count;
+                foreach (var entry in mainTexts)
+                {
+                    hash = hash * 31 + (entry?.Id?.GetHashCode() ?? 0);
+                    hash = hash * 31 + (entry?.Text?.GetHashCode() ?? 0);
+                }
                 return hash;
             }
         }

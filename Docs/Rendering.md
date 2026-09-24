@@ -29,6 +29,8 @@ UV → Sampling → Color → Alpha
 
 `PosterLibrary.Documents` が Poster document の source of truth である。`PosterCanvas` は active document を Canvas primitive として描画し、font catalog と palette を参照する。
 
+`PosterLibrary.MainTexts` は空でない可変長listとしてmain text本文を所有する。`poster.main-text` のoption indexは現在のlist positionと一致し、追加、削除、並べ替え後もMIDI mappingはposition basedで扱う。
+
 Grid placement は grid point に element anchor を合わせ、Width / Height を grid unit として解釈する。Free placement は normalized coordinate、anchor は 9-point anchor を使う。element list の先頭は前面である。
 
 ## Shared Visual Resources

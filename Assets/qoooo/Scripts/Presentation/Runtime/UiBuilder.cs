@@ -137,10 +137,24 @@ namespace qoooo.Presentation.Runtime
             };
             controls.RemoveAll(control => control == null);
 
-            var model = (_targets ?? new List<IUiTarget>()).OfType<ModelController>().FirstOrDefault();
-            if (model != null) controls.Add(model.CreateElement());
             var arrangement = (_targets ?? new List<IUiTarget>()).OfType<ModelArrangementController>().FirstOrDefault();
             if (arrangement != null) controls.Add(arrangement.CreateElement());
+
+            var animationMaster = new[]
+                {
+                    "model.animation-enabled",
+                    "model.animation-speed",
+                    "model.animation-strength"
+                }
+                .Select(FindParameter)
+                .Where(parameter => parameter != null)
+                .Select(CreateParameterControl)
+                .ToArray();
+            if (animationMaster.Length > 0)
+                controls.Add(UI.Fold("Animation Master", UI.Column(animationMaster)).Open());
+
+            var model = (_targets ?? new List<IUiTarget>()).OfType<ModelController>().FirstOrDefault();
+            if (model != null) controls.Add(model.CreateElement());
             return UI.WindowLauncher(UI.Window("Model", UI.Column(controls)));
         }
 
