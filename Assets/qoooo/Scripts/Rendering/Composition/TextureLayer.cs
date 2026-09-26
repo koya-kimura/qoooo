@@ -10,11 +10,13 @@ namespace qoooo.Rendering.Composition
     public class TextureLayer : MonoBehaviour, IParameterContainer, IMidiParameterContainer
     {
         [SerializeField] private MonoBehaviour _sourceComponent;
+        [SerializeField] private BoolParameter _visible = new();
         [SerializeField] private TextureEffect _effect;
         [SerializeField] private TextureEffectParams _effectParams;
 
         public string DisplayName => gameObject.name;
-        public bool IsVisible => gameObject.activeSelf;
+        public bool IsVisible => HasVisibilityParameter ? _visible.Value : gameObject.activeSelf;
+        private bool HasVisibilityParameter => !string.IsNullOrWhiteSpace(_visible?.Id);
 
         public bool HasEnabledEffect => _effect != null
                                         && _effectParams.HasEnabledEffect;
@@ -36,6 +38,7 @@ namespace qoooo.Rendering.Composition
         {
             get
             {
+                if (HasVisibilityParameter) yield return _visible;
                 if (_sourceComponent is not IMidiParameterSource source) yield break;
 
                 foreach (var parameter in source.MidiParameters)
@@ -62,7 +65,10 @@ namespace qoooo.Rendering.Composition
 
         public void SetVisible(bool visible)
         {
-            gameObject.SetActive(visible);
+            if (HasVisibilityParameter)
+                _visible.TrySetValue(visible);
+            else
+                gameObject.SetActive(visible);
         }
 
         public void SetSourceComponent(MonoBehaviour sourceComponent)

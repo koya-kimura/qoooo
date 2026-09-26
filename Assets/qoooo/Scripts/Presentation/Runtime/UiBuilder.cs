@@ -104,6 +104,7 @@ namespace qoooo.Presentation.Runtime
                 CreateBackgroundWindow(),
                 CreateParameterWindow("Rhythm", "rhythm.bpm", "rhythm.tap", "rhythm.sync-beat", "rhythm.sync-bar")
             };
+            liveLaunchers.InsertRange(4, CreateTargetLaunchers("LiveCameraSource"));
             liveLaunchers.InsertRange(4, CreateTargetLaunchers("TextureProcessingUi"));
 
             var authoringLaunchers = CreateTargetLaunchers("PosterComposer");

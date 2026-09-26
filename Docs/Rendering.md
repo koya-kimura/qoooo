@@ -3,6 +3,8 @@
 ## Output Flow
 
 ```text
+Live Camera (optional bottom layer)
+  ↓
 ModelCamera
   ↓
 PosterCamera
@@ -19,6 +21,8 @@ Preview / Syphon
 ## Sources and Effects
 
 `ITextureContainer` は texture source の contract である。`ProcessedTextureSource` は raw source と source-specific effect Parameter を所有し、1 frame 内では処理済み texture を再利用する。最終 Output も同じ処理を使い、Parameter ID は `effect.output.*` とする。
+
+`LiveCameraSource`は外部cameraを`WebCamTexture`で入力し、output aspectに対するcover crop、16 framing、32 BPM motion、8 camera look、Opacityを1枚のsource textureへ適用する。通常motionは4拍loopで、preset変更時はPan、Zoom、Rollを短く補間して軽いfade-inを重ねる。中央1/3 Triptychは縦方向を切らず、入力中央の縦1/3を3列へ反復する。無効時、permission未許可時、device未検出時は透明textureを返す。camera deviceは初回enableで起動し、その後のdisableではcaptureをstandbyで維持する。device変更、component disable、破棄時だけcaptureを停止する。Live Camera layerはcompositorの最下層、Poster layerはその上に置く。各`TextureLayer`のvisibilityはTyped Bool Parameterで所有し、GameObjectを無効化せず合成対象から除外するため、MIDIから再度ONへ戻せる。全layerが非表示でもcompositorは解像度を維持した透明textureを返し、最終outputの参照を切らさない。
 
 effect は次の固定順で処理する。stage は並べ替えず、同一 stage で複数 effect が enabled の場合は
 定義順に適用する。

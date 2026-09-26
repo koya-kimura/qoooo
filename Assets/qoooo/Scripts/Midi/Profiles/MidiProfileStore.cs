@@ -46,6 +46,8 @@ namespace qoooo.Midi.Profiles
             {
                 mapping=Copy(mapping);
                 RemoveRetiredBindings(mapping);
+                MigrateLiveCameraLayout(mapping, _sceneDefaultMapping);
+                AddMissingBindings(mapping, _sceneDefaultMapping);
                 _controller.ImportMapping(mapping);
             }
             var state=_statePrefs.Get();
@@ -146,6 +148,55 @@ namespace qoooo.Midi.Profiles
             mapping.States?.RemoveAll(binding => IsRetired(binding?.ParameterId));
             mapping.Sequences?.RemoveAll(binding => IsRetired(binding?.ParameterId));
             mapping.Floats?.RemoveAll(binding => IsRetired(binding?.ParameterId));
+        }
+        private static void AddMissingBindings(ApcMidiMappingData mapping, ApcMidiMappingData sceneDefaults)
+        {
+            mapping.Toggles ??= new List<Midi.Bindings.ToggleMidiBinding>();
+            mapping.Radios ??= new List<Midi.Bindings.RadioMidiBinding>();
+            AddMissing(mapping.Toggles, sceneDefaults.Toggles, binding => binding.ParameterId);
+            AddMissing(mapping.Radios, sceneDefaults.Radios, binding => binding.ParameterId);
+        }
+        private static void MigrateLiveCameraLayout(ApcMidiMappingData mapping, ApcMidiMappingData sceneDefaults)
+        {
+            var motion = mapping.Radios?.Find(binding => binding?.ParameterId == "camera.live.motion-mode");
+            var legacy = motion?.OptionButtons?.Count is 5 or 24
+                         || HasLegacyToggle(mapping, "camera.live.enabled", 7, 0, 0)
+                         || HasLegacyToggle(mapping, "layer.live-camera.visible", 1, 0, 0);
+            if(!legacy)return;
+
+            mapping.Toggles?.RemoveAll(binding => IsLiveCameraLayoutParameter(binding?.ParameterId));
+            mapping.Radios?.RemoveAll(binding => IsLiveCameraLayoutParameter(binding?.ParameterId));
+            AddMissingBindings(mapping, sceneDefaults);
+        }
+        private static bool HasLegacyToggle(ApcMidiMappingData mapping, string parameterId,
+            int page, int row, int column)
+        {
+            var binding=mapping.Toggles?.Find(value => value?.ParameterId==parameterId);
+            return binding?.Button.Assigned==true && binding.Button.Page==page
+                   && binding.Button.Row==row && binding.Button.Column==column;
+        }
+        private static bool IsLiveCameraLayoutParameter(string parameterId)
+        {
+            return parameterId is "camera.live.enabled" or "camera.live.motion-enabled" or "camera.live.flip-x"
+                or "camera.live.motion-mode" or "camera.live.framing" or "camera.live.look"
+                or "layer.live-camera.visible" or "layer.poster.visible";
+        }
+        private static void AddMissing<T>(List<T> target, IEnumerable<T> sceneDefaults, Func<T, string> parameterId)
+            where T : class
+        {
+            foreach(var binding in sceneDefaults ?? Array.Empty<T>())
+            {
+                var id=binding==null?null:parameterId(binding);
+                if(!ShouldMergeSceneDefault(id)
+                    || target.Exists(value => value != null && parameterId(value)==id))continue;
+                target.Add(JsonUtility.FromJson<T>(JsonUtility.ToJson(binding)));
+            }
+        }
+        private static bool ShouldMergeSceneDefault(string parameterId)
+        {
+            return !string.IsNullOrEmpty(parameterId)
+                   && (parameterId.StartsWith("camera.live.",StringComparison.Ordinal)
+                       || parameterId is "layer.live-camera.visible" or "layer.poster.visible");
         }
         private static bool IsRetired(string parameterId) => RetiredParameterIds.Contains(parameterId ?? string.Empty);
         private static bool IsCompatible(ApcMidiMappingData value) => value != null && value.HasSavedData && value.SchemaVersion==1 && value.ProfileId=="trip26";

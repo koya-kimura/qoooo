@@ -54,7 +54,19 @@ namespace qoooo.Rendering.Composition
         {
             CollectLayers();
 
-            if (_renderedLayers.Count == 0 || _compositeMaterial == null)
+            if (_renderedLayers.Count == 0)
+            {
+                var emptyResolution = _resolutionContainer?.Resolution
+                                      ?? (_bufferA != null
+                                          ? new Vector2Int(_bufferA.width, _bufferA.height)
+                                          : Vector2Int.one);
+                EnsureBuffers(emptyResolution.x, emptyResolution.y);
+                Clear(_bufferA);
+                Texture = _bufferA;
+                return;
+            }
+
+            if (_compositeMaterial == null)
             {
                 Texture = null;
                 return;
@@ -165,7 +177,7 @@ namespace qoooo.Rendering.Composition
 
             foreach (var layer in _layers)
             {
-                if (layer == null || !layer.isActiveAndEnabled) continue;
+                if (layer == null || !layer.isActiveAndEnabled || !layer.IsVisible) continue;
 
                 var texture = layer.ApplyEffect(layer.SourceTexture);
                 if (texture != null)
