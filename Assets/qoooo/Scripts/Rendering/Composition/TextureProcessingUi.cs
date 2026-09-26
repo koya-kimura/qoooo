@@ -38,7 +38,8 @@ namespace qoooo.Rendering.Composition
                     UI.Label(() => $"1. UV        {ActiveEffectNames(TextureEffectStage.Uv, parameters)}"),
                     UI.Label(() => $"2. Sampling  {ActiveEffectNames(TextureEffectStage.Sampling, parameters)}"),
                     UI.Label(() => $"3. Color     {ActiveEffectNames(TextureEffectStage.Color, parameters)}"),
-                    UI.Label(() => $"4. Alpha     {ActiveEffectNames(TextureEffectStage.Alpha, parameters)}")
+                    UI.Label(() => $"4. Alpha     {ActiveEffectNames(TextureEffectStage.Alpha, parameters)}"),
+                    UI.Label(() => $"Output Faders  {ActiveOutputEffects(parameters)}")
                 ).Open(),
                 UI.Fold("Effects",
                     CreateStageRack("UV", TextureEffectStage.Uv, source),
@@ -134,6 +135,14 @@ namespace qoooo.Rendering.Composition
             var names = new List<string>();
             foreach (var definition in TextureEffectUiMetadata.ForStage(stage))
                 if (parameters.IsEffectEnabled(stage, definition.Value)) names.Add(definition.Label);
+            return names.Count == 0 ? "—" : string.Join(", ", names);
+        }
+
+        private static string ActiveOutputEffects(TextureEffectParameters parameters)
+        {
+            var names = new List<string>();
+            foreach (var parameter in parameters.OutputEffectIntensities)
+                if (parameter.Value > 0f) names.Add($"{parameter.DisplayName[7..]} {parameter.Value:0.00}");
             return names.Count == 0 ? "—" : string.Join(", ", names);
         }
 
