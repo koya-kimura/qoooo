@@ -9,6 +9,7 @@ struct PatternContext
     float time;
 
     float2 resolution;
+    float2 screenUv;
 
     float3 mainColor;
     float3 subColor;

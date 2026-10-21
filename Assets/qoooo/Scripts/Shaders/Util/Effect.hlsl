@@ -162,11 +162,14 @@ float2 Wave(float2 uv, float2 resolution, float2 amplitudePixels, float2 frequen
 // Mosaic
 // --------------------------------------------------
 
-float2 Mosaic(float2 uv, float2 resolution, float grid)
+float2 Mosaic(float2 uv, float2 targetResolution, float cellSizePixels)
 {
-    float2 cells = max(resolution / max(grid, 1.0), float2(1.0, 1.0));
+    targetResolution = max(targetResolution, float2(1.0, 1.0));
+    float cellSize = max(cellSizePixels, 1.0);
+    float2 pixelPosition = uv * targetResolution;
+    float2 cellCenter = (floor(pixelPosition / cellSize) + 0.5) * cellSize;
 
-    return (floor(uv * cells) + 0.5) / cells;
+    return cellCenter / targetResolution;
 }
 
 

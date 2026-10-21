@@ -20,9 +20,9 @@ Parameter ID は MIDI binding と保存データの stable identity である。
 
 Fader は pickup / soft takeover を使い、assignment または値域を切り替えた直後の jump を防ぐ。Float binding は明示的な output range を持てる。range が未指定の場合は owner Parameter の native range を使い、range の参照だけで保存 mapping を変更しない。
 
-APC Page 7–8をLive Camera bankとする。Page 7のRow 1はInput Enabled、Live Camera Layer、Poster Layer、Motion Enabled、Flip X。Camera映像だけにする場合はColumn 1と2をON、Column 3をOFFにする。Input Enabledの初回ONはcamera deviceを起動するため、performance開始前に一度実行する。起動後のOFFはcaptureをstandbyで維持し、再ON時にdeviceを再生成しない。Row 2–3は距離・左右寄せ・Dutchを含む16 framing、Row 4はClean、中央1/3 Triptych、Mirror Split、Soft Film、Punch、Bleach、Mono、Chromaticの8 lookをoption順で割り当てる。sourceの起動とlayer visibilityは分離され、PosterだけをOFFにして背面のLive Cameraを露出できる。
+APC Page 7–8をLive Camera bankとする。Page 7のRow 1はInput Enabled、Live Camera Layer、Poster Layer、Motion Enabled、Flip X。Camera映像だけにする場合はColumn 1と2をON、Column 3をOFFにする。Input Enabledの初回ONはcamera deviceを起動するため、performance開始前に一度実行する。起動後のOFFはcaptureをstandbyで維持し、再ON時にdeviceを再生成しない。Row 2–3は距離・左右寄せ・Dutchを含む16 framing、Row 4は既存8 lookをoption順で割り当てる。Row 5とRow 6 Column 1は、Lookとは独立したTriptych Focusとして左上から右下までの9-pointを割り当てる。Row 6 Column 2–6はCamera Shake StrengthのOff、Subtle、Normal、Strong、Wildを割り当てる。sourceの起動とlayer visibilityは分離され、PosterだけをOFFにして背面のLive Cameraを露出できる。
 
-Page 8のRow 1–4は32 motion presetをoption順で割り当てる。通常motionはBPMに同期した4拍loopを基本とし、Slowは8拍、Fastは2拍、Beat/Offbeatは1拍で動く。preset切替は直前のPan、Zoom、Rollから補間し、短いopacity fadeを重ねる。Fader 9本はpage非依存のOutput effect mappingを維持するため、Live CameraのZoom、Motion Amount、Motion Speed、Pan X、Pan Y、OpacityはLive UIまたはgeneric Keyboard/MIDI Bindingsから操作する。旧5/24-slot Live Camera layoutを検出した保存profileはPage 7–8 layoutへ移行し、それ以外のmappingは維持する。
+Page 8のRow 1–4は32 motion presetをoption順で割り当てる。通常motionはBPMに同期した4拍loopを基本とし、Slowは8拍、Fastは2拍、Beat/Offbeatは1拍で動く。preset切替は直前のPan、Zoom、Rollから補間し、短いopacity fadeを重ねる。Fader 9本はpage非依存のOutput effect mappingを維持するため、Live CameraのZoom、Motion Amount、Motion Speed、Pan X、Pan Y、OpacityはLive UIまたはgeneric Keyboard/MIDI Bindingsから操作する。
 
 `MidiProfileStore` は Scene の mapping を default とし、保存済み mapping と保存対象 Parameter state を復元する。Save は `IPrefsSaveParticipant` の transaction を通じて明示的に実行される。
 

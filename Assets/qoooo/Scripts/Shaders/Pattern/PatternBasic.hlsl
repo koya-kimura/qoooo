@@ -8,6 +8,150 @@
 #include "PatternCommon.hlsl"
 
 
+float PatternHash(float2 position, float seed)
+{
+    return Pcg01(float3(position, seed)).x;
+}
+
+
+float PatternCircleMask(float2 position, float radius)
+{
+    float distanceFromCenter = length(position);
+    float aa = max(fwidth(distanceFromCenter), 0.0005);
+
+    return 1.0 - smoothstep(radius - aa, radius + aa, distanceFromCenter);
+}
+
+
+// 0: beatごとにランダムな横線がactiveになるstripe。
+float3 StripePattern(float2 uv, PatternContext context)
+{
+    float linePosition = uv.y * 2.0;
+    float lineIndex = floor(linePosition);
+    float distanceToCenter = abs(frac(linePosition) - 0.5);
+    float lineAA = max(fwidth(linePosition), 0.001);
+    float lineMask = 1.0 - smoothstep(0.12, 0.12 + lineAA, distanceToCenter);
+    float beatIndex = floor(context.beat);
+    float active = step(0.42, PatternHash(float2(lineIndex, beatIndex), 17.0));
+    float beatAccent = 1.0 - smoothstep(0.0, 0.28, frac(context.beat));
+    float pattern = lineMask * active * lerp(0.58, 1.0, beatAccent);
+
+    return PatternColor(context, pattern);
+}
+
+
+// 1: 上方向へ流れるchecker。
+float3 CheckerPattern(float2 uv, PatternContext context)
+{
+    float2 position = uv;
+    position.y -= context.beat * 0.25;
+    float pattern = Mod(floor(position.x) + floor(position.y), 2.0);
+
+    return PatternColor(context, pattern);
+}
+
+
+// 2: 横方向へ流れるsimple sine wave。
+float3 WavePattern(float2 uv, PatternContext context)
+{
+    float movingX = uv.x - context.beat * 0.5;
+    float waveCenter = 0.5 + sin(movingX * QOOOO_PI * 2.0) * 0.28;
+    float distanceToWave = abs(frac(uv.y) - waveCenter);
+    float waveAA = max(fwidth(distanceToWave), 0.001);
+    float pattern = 1.0 - smoothstep(0.035, 0.035 + waveAA, distanceToWave);
+
+    return PatternColor(context, pattern);
+}
+
+
+// 3: 画面中央から奥行き方向へ湧き続けるoutline rings。
+float3 InfiniteRingsPattern(float2 uv, PatternContext context)
+{
+    float radius = length(context.screenUv - 0.5);
+    float ringPosition = radius * 18.0 - context.beat * 1.5;
+    float distanceToRing = abs(frac(ringPosition) - 0.5);
+    float ringAA = max(fwidth(ringPosition), 0.001);
+    float pattern = 1.0 - smoothstep(0.055, 0.055 + ringAA, distanceToRing);
+
+    return PatternColor(context, pattern);
+}
+
+
+// 4: 行ごとに半cellずらし、beatでsizeが変わるpolka dots。
+float3 BeatPolkaDotPattern(float2 uv, PatternContext context)
+{
+    float2 gridPosition = uv;
+    float row = floor(gridPosition.y);
+    gridPosition.x += Mod(row, 2.0) * 0.5;
+    float2 local = frac(gridPosition) - 0.5;
+    float beatPulse = 0.5 + 0.5 * sin(frac(context.beat) * QOOOO_PI * 2.0);
+    float radius = lerp(0.2, 0.38, beatPulse);
+    float pattern = PatternCircleMask(local, radius);
+
+    return PatternColor(context, pattern);
+}
+
+
+// 5: 下方向へ流れるgrid lines。
+float3 FlowingGridPattern(float2 uv, PatternContext context)
+{
+    float2 position = uv + float2(0.0, context.beat * 0.3);
+    float2 local = frac(position);
+    float2 distanceToLine = min(local, 1.0 - local);
+    float2 lineAA = max(fwidth(position), float2(0.001, 0.001));
+    float verticalLine = 1.0 - smoothstep(0.035, 0.035 + lineAA.x, distanceToLine.x);
+    float horizontalLine = 1.0 - smoothstep(0.035, 0.035 + lineAA.y, distanceToLine.y);
+    float pattern = max(verticalLine, horizontalLine);
+
+    return PatternColor(context, pattern);
+}
+
+
+// 6: 画面中央へ視線を集めるconverging speed lines。
+float3 SpeedLinesPattern(float2 uv, PatternContext context)
+{
+    float2 centered = context.screenUv - 0.5;
+    float radius = length(centered);
+    float angle = atan2(centered.y, centered.x) + context.beat * 0.035;
+    float rayPosition = angle / (QOOOO_PI * 2.0) * 32.0;
+    float distanceToRay = abs(frac(rayPosition) - 0.5);
+    float rayAA = max(fwidth(rayPosition), 0.001);
+    float ray = 1.0 - smoothstep(0.1, 0.1 + rayAA, distanceToRay);
+    float center = 1.0 - smoothstep(0.025, 0.13, radius);
+    float pattern = max(ray * smoothstep(0.045, 0.12, radius), center);
+
+    return PatternColor(context, pattern);
+}
+
+
+// 7: 列ごとに速度を変えたsquare pixelがbeatに沿って落ちるrain。
+float3 PixelRainPattern(float2 uv, PatternContext context)
+{
+    float column = floor(uv.x * 1.5);
+    float speed = lerp(0.35, 1.0, PatternHash(float2(column, 0.0), 53.0));
+    float verticalPosition = uv.y * 2.0 + context.beat * speed
+                             + PatternHash(float2(column, 1.0), 79.0) * 4.0;
+    float2 local = float2(frac(uv.x * 1.5), frac(verticalPosition)) - 0.5;
+    float blockDistance = max(abs(local.x), abs(local.y));
+    float blockAA = max(fwidth(blockDistance), 0.001);
+    float block = 1.0 - smoothstep(0.26, 0.26 + blockAA, blockDistance);
+    float cell = floor(verticalPosition);
+    float active = step(0.35, PatternHash(float2(column, cell), 101.0));
+    float pattern = block * active;
+
+    return PatternColor(context, pattern);
+}
+
+#endif// CREATIVE AREA / 創作領域: 各procedural Background patternはUVとPatternContextを受け取る。
+// 各functionはPatternDispatcherが選んだstraight RGB colorを返す。
+#ifndef QOOOO_PATTERN_BASIC_INCLUDED
+#define QOOOO_PATTERN_BASIC_INCLUDED
+
+#include "../Util/Pcg.hlsl"
+#include "../Util/MathUtil.hlsl"
+#include "PatternCommon.hlsl"
+
+
 // ==================================================
 // Pattern-local helpers
 // ==================================================
@@ -82,144 +226,144 @@ float PatternCircleMask(float2 position, float radius)
 
 
 // ==================================================
-// 0: Noise Texture
+// 0: Stripe
 // ==================================================
 
-float3 NoiseTexturePattern(float2 uv, PatternContext context)
+float3 StripePattern(float2 uv, PatternContext context)
 {
-    float noise = 0.0;
-
-    noise += Pcg01(float3(floor(uv * 8.0), 8.0)).x * 0.30;
-    noise += Pcg01(float3(floor(uv * 20.0), 20.0)).x * 0.25;
-    noise += Pcg01(float3(floor(uv * 50.0), 50.0)).x * 0.20;
-    noise += Pcg01(float3(floor(uv * 100.0), 100.0)).x * 0.15;
-    noise += Pcg01(float3(floor(uv * 200.0), 200.0)).x * 0.10;
-
-    float pattern = smoothstep(0.3, 0.7, noise);
+    float linePosition = uv.y * 2.0;
+    float lineIndex = floor(linePosition);
+    float distanceToCenter = abs(frac(linePosition) - 0.5);
+    float lineAA = max(fwidth(linePosition), 0.001);
+    float line = 1.0 - smoothstep(0.12, 0.12 + lineAA, distanceToCenter);
+    float beatIndex = floor(context.beat);
+    float active = step(0.42, PatternHash(float2(lineIndex, beatIndex), 17.0));
+    float beatAccent = 1.0 - smoothstep(0.0, 0.28, frac(context.beat));
+    float pattern = line * active * lerp(0.58, 1.0, beatAccent);
 
     return PatternColor(context, pattern);
 }
 
 
 // ==================================================
-// 1: Diagonal Stripes
+// 1: Checker
 // ==================================================
 
-float3 DiagonalStripePattern(float2 uv, PatternContext context)
+float3 CheckerPattern(float2 uv, PatternContext context)
 {
-    float2 rotatedUV = Rotate2D(uv, QOOOO_PI / 4.0);
-
-    float lineCount = 10.0;
-    float movement = context.beat * 0.05;
-
-    float pattern = Mod(floor((rotatedUV.y + movement) * lineCount), 2.0);
+    float2 position = uv;
+    position.y += context.beat * 0.25;
+    float pattern = Mod(floor(position.x) + floor(position.y), 2.0);
 
     return PatternColor(context, pattern);
 }
 
 
 // ==================================================
-// 2: Vertical Stripes
+// 2: Wave
 // ==================================================
 
-float3 VerticalStripePattern(float2 uv, PatternContext context)
+float3 WavePattern(float2 uv, PatternContext context)
 {
-    float lineCount = 6.67;
-    float movement = context.beat * 0.05;
-
-    float pattern = Mod(floor((uv.x + movement) * lineCount), 2.0);
+    float movingX = uv.x - context.beat * 0.5;
+    float waveCenter = 0.5 + sin(movingX * QOOOO_PI * 2.0) * 0.28;
+    float distanceToWave = abs(frac(uv.y) - waveCenter);
+    float waveAA = max(fwidth(distanceToWave), 0.001);
+    float pattern = 1.0 - smoothstep(0.035, 0.035 + waveAA, distanceToWave);
 
     return PatternColor(context, pattern);
 }
 
 
 // ==================================================
-// 3: Horizontal Stripes
+// 3: Infinite Rings
 // ==================================================
 
-float3 HorizontalStripePattern(float2 uv, PatternContext context)
+float3 InfiniteRingsPattern(float2 uv, PatternContext context)
 {
-    float lineCount = 33.33;
-    float movement = context.beat * 0.05;
-
-    float pattern = Mod(floor((uv.y + movement) * lineCount), 2.0);
+    float radius = length(context.screenUv - 0.5);
+    float ringPosition = radius * 18.0 - context.beat * 1.5;
+    float distanceToRing = abs(frac(ringPosition) - 0.5);
+    float ringAA = max(fwidth(ringPosition), 0.001);
+    float pattern = 1.0 - smoothstep(0.055, 0.055 + ringAA, distanceToRing);
 
     return PatternColor(context, pattern);
 }
 
 
 // ==================================================
-// 4: Wave Stripes
+// 4: Polka Dot
 // ==================================================
 
-float3 WaveStripePattern(float2 uv, PatternContext context)
+float3 BeatPolkaDotPattern(float2 uv, PatternContext context)
 {
-    float lineCount = 14.29;
-
-    float wave = sin(uv.y * QOOOO_PI * 4.0 + context.time * 2.0) * 0.3;
-
-    float pattern = Mod(floor((uv.x + wave) * lineCount), 2.0);
-
-    return PatternColor(context, pattern);
-}
-
-
-// ==================================================
-// 5: Checkerboard
-// ==================================================
-
-float3 CheckerboardPattern(float2 uv, PatternContext context)
-{
-    float2 gridCount = float2(8.0, 5.0);
-
-    float2 cell = floor(uv * gridCount);
-
-    float basePattern = Mod(cell.x + cell.y, 2.0);
-    float beatSwap = Mod(floor(context.beat), 2.0);
-
-    float pattern = Mod(basePattern + beatSwap, 2.0);
-
-    return PatternColor(context, pattern);
-}
-
-
-// ==================================================
-// 6: Polka Dot
-// ==================================================
-
-float3 PolkaDotPattern(float2 uv, PatternContext context)
-{
-    float2 gridCount = float2(8.0, 5.0);
-
-    float2 gridPosition = uv * gridCount;
-
+    float2 gridPosition = uv;
     float row = floor(gridPosition.y);
-
-    // 奇数行を半セルずらす
     gridPosition.x += Mod(row, 2.0) * 0.5;
-
-    float2 localUV = frac(gridPosition) - 0.5;
-
-    float pattern = PatternCircleMask(localUV, 0.3);
+    float2 local = frac(gridPosition) - 0.5;
+    float beatPulse = 0.5 + 0.5 * sin(frac(context.beat) * QOOOO_PI * 2.0);
+    float radius = lerp(0.2, 0.38, beatPulse);
+    float pattern = PatternCircleMask(local, radius);
 
     return PatternColor(context, pattern);
 }
 
 
 // ==================================================
-// 7: Sunburst
+// 5: Flowing Grid
 // ==================================================
 
-float3 SunburstPattern(float2 uv, PatternContext context)
+float3 FlowingGridPattern(float2 uv, PatternContext context)
 {
-    float2 centeredUV = uv - 0.5;
+    float2 position = uv + float2(0.0, context.beat * 0.3);
+    float2 local = frac(position);
+    float2 distanceToLine = min(local, 1.0 - local);
+    float2 lineAA = max(fwidth(position), float2(0.001, 0.001));
+    float verticalLine = 1.0 - smoothstep(0.035, 0.035 + lineAA.x, distanceToLine.x);
+    float horizontalLine = 1.0 - smoothstep(0.035, 0.035 + lineAA.y, distanceToLine.y);
+    float pattern = max(verticalLine, horizontalLine);
 
-    float angle = atan2(centeredUV.y, centeredUV.x);
+    return PatternColor(context, pattern);
+}
 
-    float rayCount = 12.0;
-    float rotation = context.beat * 0.1;
 
-    float pattern = Mod(floor((angle + rotation) / QOOOO_PI * rayCount), 2.0);
+// ==================================================
+// 6: Speed Lines
+// ==================================================
+
+float3 SpeedLinesPattern(float2 uv, PatternContext context)
+{
+    float2 centered = context.screenUv - 0.5;
+    float radius = length(centered);
+    float angle = atan2(centered.y, centered.x) + context.beat * 0.035;
+    float rayPosition = angle / (QOOOO_PI * 2.0) * 32.0;
+    float distanceToRay = abs(frac(rayPosition) - 0.5);
+    float rayAA = max(fwidth(rayPosition), 0.001);
+    float ray = 1.0 - smoothstep(0.1, 0.1 + rayAA, distanceToRay);
+    float center = 1.0 - smoothstep(0.025, 0.13, radius);
+    float pattern = max(ray * smoothstep(0.045, 0.12, radius), center);
+
+    return PatternColor(context, pattern);
+}
+
+
+// ==================================================
+// 7: Pixel Rain
+// ==================================================
+
+float3 PixelRainPattern(float2 uv, PatternContext context)
+{
+    float column = floor(uv.x * 1.5);
+    float speed = lerp(0.35, 1.0, PatternHash(float2(column, 0.0), 53.0));
+    float verticalPosition = uv.y * 2.0 + context.beat * speed
+                             + PatternHash(float2(column, 1.0), 79.0) * 4.0;
+    float2 local = float2(frac(uv.x * 1.5), frac(verticalPosition)) - 0.5;
+    float blockDistance = max(abs(local.x), abs(local.y));
+    float blockAA = max(fwidth(blockDistance), 0.001);
+    float block = 1.0 - smoothstep(0.26, 0.26 + blockAA, blockDistance);
+    float cell = floor(verticalPosition);
+    float active = step(0.35, PatternHash(float2(column, cell), 101.0));
+    float pattern = block * active;
 
     return PatternColor(context, pattern);
 }

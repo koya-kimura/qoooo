@@ -11,6 +11,8 @@ Shader "Custom/LiveCameraUv"
         _FlipY("Flip Y", Int) = 0
         _Roll("Roll", Float) = 0
         _LayoutMode("Layout Mode", Int) = 0
+        _LayoutFocus("Layout Focus", Vector) = (0.5, 0.5, 0, 0)
+        _LayoutZoom("Layout Zoom", Float) = 1
         _Contrast("Contrast", Float) = 1
         _Saturation("Saturation", Float) = 1
         _Exposure("Exposure", Float) = 0
@@ -55,6 +57,8 @@ Shader "Custom/LiveCameraUv"
             int _FlipY;
             float _Roll;
             int _LayoutMode;
+            float2 _LayoutFocus;
+            float _LayoutZoom;
             float _Contrast;
             float _Saturation;
             float _Exposure;
@@ -75,7 +79,12 @@ Shader "Custom/LiveCameraUv"
             {
                 float2 uv = input.uv;
                 if (_LayoutMode == 1)
-                    uv.x = (1.0 + frac(uv.x * 3.0)) / 3.0;
+                {
+                    float2 tileUv = float2(frac(uv.x * 3.0), uv.y);
+                    float2 halfExtent = float2(1.0 / 6.0, 0.5) / max(1.0, _LayoutZoom);
+                    float2 focus = lerp(halfExtent, 1.0 - halfExtent, saturate(_LayoutFocus));
+                    uv = focus + (tileUv - 0.5) * halfExtent * 2.0;
+                }
                 else if (_LayoutMode == 2)
                     uv.x = abs(uv.x * 2.0 - 1.0);
 

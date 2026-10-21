@@ -22,7 +22,9 @@ Preview / Syphon
 
 `ITextureContainer` は texture source の contract である。`ProcessedTextureSource` は raw source と source-specific effect Parameter を所有し、1 frame 内では処理済み texture を再利用する。最終 Output も同じ処理を使い、Parameter ID は `effect.output.*` とする。
 
-`LiveCameraSource`は外部cameraを`WebCamTexture`で入力し、output aspectに対するcover crop、16 framing、32 BPM motion、8 camera look、Opacityを1枚のsource textureへ適用する。通常motionは4拍loopで、preset変更時はPan、Zoom、Rollを短く補間して軽いfade-inを重ねる。中央1/3 Triptychは縦方向を切らず、入力中央の縦1/3を3列へ反復する。無効時、permission未許可時、device未検出時は透明textureを返す。camera deviceは初回enableで起動し、その後のdisableではcaptureをstandbyで維持する。device変更、component disable、破棄時だけcaptureを停止する。Live Camera layerはcompositorの最下層、Poster layerはその上に置く。各`TextureLayer`のvisibilityはTyped Bool Parameterで所有し、GameObjectを無効化せず合成対象から除外するため、MIDIから再度ONへ戻せる。全layerが非表示でもcompositorは解像度を維持した透明textureを返し、最終outputの参照を切らさない。
+`LiveCameraSource`は外部cameraを`WebCamTexture`で入力し、output aspectに対するcover crop、16 framing、32 BPM motion、8 camera look、独立した9-point Triptych Focus、Opacityを1枚のsource textureへ適用する。通常motionは4拍loopで、preset変更時はPan、Zoom、Rollを短く補間して軽いfade-inを重ねる。Camera Shake StrengthはOff、Subtle、Normal、Strong、Wildの5段階でmotion量を調整し、Normalは従来量、Offは0とする。Triptychは同じ画角を3列へ反復する。Triptych Focusは2倍に寄った左上・上・右上・左・中央・右・左下・下・右下をLookとは独立して選択でき、focusとscaleはBPM基準の短いtransitionで補間する。無効時、permission未許可時、device未検出時は透明textureを返す。camera deviceは初回enableで起動し、その後のdisableではcaptureをstandbyで維持する。device変更、component disable、破棄時だけcaptureを停止する。Live Camera layerはcompositorの最下層、Poster layerはその上に置く。各`TextureLayer`のvisibilityはTyped Bool Parameterで所有し、GameObjectを無効化せず合成対象から除外するため、MIDIから再度ONへ戻せる。全layerが非表示でもcompositorは解像度を維持した透明textureを返し、最終outputの参照を切らさない。
+
+`MaterialTextureSource`のBackground PatternはStripe、Checker、Wave、Infinite Rings、Polka Dot、Flowing Grid、Speed Lines、Pixel Rainの8種とする。pattern固有のanimationは`IBpmSource.Beat`に同期し、Infinite RingsとSpeed Linesはoutput中央を基準に描画する。APCの8 option buttonはこの順序に対応する。
 
 effect は次の固定順で処理する。stage は並べ替えず、同一 stage で複数 effect が enabled の場合は
 定義順に適用する。
@@ -40,6 +42,8 @@ Model textureのAPC ToggleはOutput intensityとは独立する。Sliceは16分�
 5階調、Bloomはthreshold 0.55・strength 2、Echoは24px・decay 0.55、Kaleidoscopeは8分割、
 Mosaicは20px、Waveは18px・3周期を既定値として使う。全ToggleがOFFならeffect passを実行せず、
 raw Model textureをそのまま返す。
+
+Mosaicのsizeはrender target上のpixel単位であり、UVを同じpixel幅・高さで量子化して正方形cellを作る。
 
 ## Poster
 

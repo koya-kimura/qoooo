@@ -103,6 +103,7 @@ Shader "Custom/ProceduralPattern"
                 // ----------------------------------
 
                 float2 uv = input.uv;
+                float2 screenUv = ApplyAspectCorrection(input.uv, resolution);
 
                 uv *= max(_Tiling.xy, float2(0.0001, 0.0001));
 
@@ -127,6 +128,7 @@ Shader "Custom/ProceduralPattern"
                 context.time = _Time.y;
 
                 context.resolution = resolution;
+                context.screenUv = screenUv;
 
                 context.mainColor = _MainColor.rgb;
 

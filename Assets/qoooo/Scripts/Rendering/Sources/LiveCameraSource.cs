@@ -101,10 +101,27 @@ namespace qoooo.Rendering.Sources
             "Left Medium", "Center Medium", "Right Medium", "Left Close", "Center Close", "Right Close",
             "Dutch Left", "Dutch Right"
         };
+        private static readonly string[] MotionStrengthNames =
+        {
+            "Off", "Subtle", "Normal", "Strong", "Wild"
+        };
+        private static readonly float[] MotionStrengthScales = { 0f, 0.35f, 1f, 1.6f, 2.4f };
         private static readonly string[] LookNames =
         {
             "Clean", "Center 1/3 Triptych", "Mirror Split", "Soft Film",
             "Punch", "Bleach", "Mono", "Chromatic"
+        };
+        private static readonly string[] TriptychFocusNames =
+        {
+            "Triptych Top Left", "Triptych Top", "Triptych Top Right",
+            "Triptych Left", "Triptych Center", "Triptych Right",
+            "Triptych Bottom Left", "Triptych Bottom", "Triptych Bottom Right"
+        };
+        private static readonly Vector2[] TriptychFocusPresets =
+        {
+            new(0f, 1f), new(0.5f, 1f), new(1f, 1f),
+            new(0f, 0.5f), new(0.5f, 0.5f), new(1f, 0.5f),
+            new(0f, 0f), new(0.5f, 0f), new(1f, 0f)
         };
         private static readonly FramingPreset[] FramingPresets =
         {
@@ -148,10 +165,14 @@ namespace qoooo.Rendering.Sources
             "camera.live.motion-enabled", "Live Camera Motion Enabled", true);
         [SerializeField] private RadioParameter _motionMode = new(
             "camera.live.motion-mode", "Live Camera Motion", MotionModeNames, (int)LiveCameraMotionMode.Drift);
+        [SerializeField] private RadioParameter _motionStrength = new(
+            "camera.live.motion-strength", "Camera Shake Strength", MotionStrengthNames, 2);
         [SerializeField] private RadioParameter _framing = new(
             "camera.live.framing", "Live Camera Framing", FramingNames, (int)LiveCameraFraming.Medium);
         [SerializeField] private RadioParameter _look = new(
             "camera.live.look", "Live Camera Look", LookNames);
+        [SerializeField] private RadioParameter _triptychFocus = new(
+            "camera.live.triptych-focus", "Triptych Focus", TriptychFocusNames, 4);
         [SerializeField] private FloatParameter _zoom = new(
             "camera.live.zoom", "Live Camera Zoom", 1f, 2f, 1.08f);
         [SerializeField] private FloatParameter _panX = new(
@@ -181,10 +202,15 @@ namespace qoooo.Rendering.Sources
         private bool _permissionDenied;
         private int _deviceRevision;
         private int _renderedMotionMode = -1;
+        private int _renderedMotionStrength = -1;
         private int _renderedFraming = -1;
         private int _renderedLook = -1;
+        private int _renderedTriptychFocus = -1;
         private Vector3 _smoothedTransform;
         private float _smoothedRoll;
+        private Vector2 _smoothedLayoutFocus = new(0.5f, 0.5f);
+        private float _smoothedLayoutZoom = 1f;
+        private float _lastSmoothingTime;
         private float _transitionStartedAt = float.NegativeInfinity;
         private bool _hasSmoothedTransform;
 
@@ -197,8 +223,10 @@ namespace qoooo.Rendering.Sources
                 yield return _enabled;
                 yield return _motionEnabled;
                 yield return _motionMode;
+                yield return _motionStrength;
                 yield return _framing;
                 yield return _look;
+                yield return _triptychFocus;
                 yield return _zoom;
                 yield return _panX;
                 yield return _panY;
@@ -219,8 +247,10 @@ namespace qoooo.Rendering.Sources
         private void Awake()
         {
             _motionMode.ReplaceOptions(MotionModeNames, (int)LiveCameraMotionMode.Drift);
+            _motionStrength.ReplaceOptions(MotionStrengthNames, 2);
             _framing.ReplaceOptions(FramingNames, (int)LiveCameraFraming.Medium);
             _look.ReplaceOptions(LookNames);
+            _triptychFocus.ReplaceOptions(TriptychFocusNames, 4);
         }
 
         private void OnEnable()
@@ -286,6 +316,8 @@ namespace qoooo.Rendering.Sources
                 UI.Fold("Motion",
                     UI.Field("Enabled", () => _motionEnabled.Value, value => _motionEnabled.TrySetValue(value)),
                     UI.Dropdown("Mode", () => _motionMode.Value, value => _motionMode.TrySetValue(value), MotionModeNames),
+                    UI.Dropdown("Shake Strength", () => _motionStrength.Value,
+                        value => _motionStrength.TrySetValue(value), MotionStrengthNames),
                     Slider("Zoom", _zoom),
                     Slider("Pan X", _panX),
                     Slider("Pan Y", _panY),
@@ -294,7 +326,9 @@ namespace qoooo.Rendering.Sources
                 ).Open(),
                 UI.Fold("Framing & Look",
                     UI.Dropdown("Framing", () => _framing.Value, value => _framing.TrySetValue(value), FramingNames),
-                    UI.Dropdown("Look", () => _look.Value, value => _look.TrySetValue(value), LookNames)
+                    UI.Dropdown("Look", () => _look.Value, value => _look.TrySetValue(value), LookNames),
+                    UI.Dropdown("Triptych Focus", () => _triptychFocus.Value,
+                        value => _triptychFocus.TrySetValue(value), TriptychFocusNames)
                 ).Open(),
                 Slider("Opacity", _opacity),
                 UI.Field("Flip X", () => _flipX.Value, value => _flipX.TrySetValue(value)));
@@ -425,12 +459,16 @@ namespace qoooo.Rendering.Sources
                 _panY.Value + framing.Pan.y + motion.y,
                 Mathf.Max(1f, _zoom.Value * framing.Zoom + motion.z));
             var targetRoll = framing.Roll + MotionRoll(Time.unscaledTime);
+            var look = LookPresets[Mathf.Clamp(_look.Value, 0, LookPresets.Length - 1)];
+            var triptychFocus = TriptychFocusPresets[
+                Mathf.Clamp(_triptychFocus.Value, 0, TriptychFocusPresets.Length - 1)];
+            SmoothLayout(look.LayoutMode == 1 ? triptychFocus : look.LayoutFocus,
+                look.LayoutMode == 1 ? 2f : look.LayoutZoom);
             SmoothCameraTransform(targetTransform, targetRoll);
 
             var zoom = _smoothedTransform.z;
             uvScale /= zoom;
             var normalizedPan = Vector2.ClampMagnitude((Vector2)_smoothedTransform, 1f);
-            var look = LookPresets[Mathf.Clamp(_look.Value, 0, LookPresets.Length - 1)];
             var fade = Mathf.Lerp(0.88f, 1f, TransitionProgress());
 
             _material.SetVector("_UvScale", uvScale);
@@ -441,6 +479,8 @@ namespace qoooo.Rendering.Sources
             _material.SetInt("_FlipY", _cameraTexture.videoVerticallyMirrored ? 1 : 0);
             _material.SetFloat("_Roll", _smoothedRoll * Mathf.Deg2Rad);
             _material.SetInt("_LayoutMode", look.LayoutMode);
+            _material.SetVector("_LayoutFocus", _smoothedLayoutFocus);
+            _material.SetFloat("_LayoutZoom", _smoothedLayoutZoom);
             _material.SetFloat("_Contrast", look.Contrast);
             _material.SetFloat("_Saturation", look.Saturation);
             _material.SetFloat("_Exposure", look.Exposure);
@@ -464,7 +504,7 @@ namespace qoooo.Rendering.Sources
             var eightBeatPhase = fourBeatPhase * 0.5f;
             var twoBeatPhase = fourBeatPhase * 2f;
             var beatPhase = fourBeatPhase * 4f;
-            var amount = _motionAmount.Value;
+            var amount = EffectiveMotionAmount();
             return (LiveCameraMotionMode)_motionMode.Value switch
             {
                 LiveCameraMotionMode.Drift => Drift(fourBeatPhase, amount),
@@ -531,7 +571,7 @@ namespace qoooo.Rendering.Sources
             var beat = (float)(_bpmSource?.Beat ?? time * 2d);
             var speed = Mathf.Pow(4f, _motionSpeed.Value - 0.15f);
             var phase = beat * speed * Mathf.PI * 0.5f;
-            var amount = _motionAmount.Value;
+            var amount = EffectiveMotionAmount();
             return (LiveCameraMotionMode)_motionMode.Value switch
             {
                 LiveCameraMotionMode.Orbit or LiveCameraMotionMode.BarOrbit => Mathf.Sin(phase) * amount * 2.5f,
@@ -549,6 +589,12 @@ namespace qoooo.Rendering.Sources
                 Mathf.Sin(phase) * amount * 0.55f,
                 Mathf.Sin(phase * 2f + 1.2f) * amount * 0.35f,
                 amount * 0.06f);
+        }
+
+        private float EffectiveMotionAmount()
+        {
+            var index = Mathf.Clamp(_motionStrength.Value, 0, MotionStrengthScales.Length - 1);
+            return _motionAmount.Value * MotionStrengthScales[index];
         }
 
         private static Vector3 Orbit(float phase, float amount)
@@ -589,12 +635,16 @@ namespace qoooo.Rendering.Sources
         private void UpdateTransitionState()
         {
             if (_renderedMotionMode == _motionMode.Value
+                && _renderedMotionStrength == _motionStrength.Value
                 && _renderedFraming == _framing.Value
-                && _renderedLook == _look.Value) return;
+                && _renderedLook == _look.Value
+                && _renderedTriptychFocus == _triptychFocus.Value) return;
 
             _renderedMotionMode = _motionMode.Value;
+            _renderedMotionStrength = _motionStrength.Value;
             _renderedFraming = _framing.Value;
             _renderedLook = _look.Value;
+            _renderedTriptychFocus = _triptychFocus.Value;
             _transitionStartedAt = Time.unscaledTime;
         }
 
@@ -609,9 +659,27 @@ namespace qoooo.Rendering.Sources
             }
 
             var duration = TransitionDurationSeconds();
-            var blend = 1f - Mathf.Exp(-Time.unscaledDeltaTime * 5f / Mathf.Max(0.02f, duration));
+            var now = Time.unscaledTime;
+            var deltaTime = _lastSmoothingTime > 0f ? now - _lastSmoothingTime : Time.unscaledDeltaTime;
+            _lastSmoothingTime = now;
+            var blend = 1f - Mathf.Exp(-deltaTime * 5f / Mathf.Max(0.02f, duration));
             _smoothedTransform = Vector3.Lerp(_smoothedTransform, target, blend);
             _smoothedRoll = Mathf.Lerp(_smoothedRoll, targetRoll, blend);
+        }
+
+        private void SmoothLayout(Vector2 targetFocus, float targetZoom)
+        {
+            if (!_hasSmoothedTransform)
+            {
+                _smoothedLayoutFocus = targetFocus;
+                _smoothedLayoutZoom = targetZoom;
+                return;
+            }
+
+            var blend = 1f - Mathf.Exp(-(Time.unscaledTime - _lastSmoothingTime)
+                * 5f / Mathf.Max(0.02f, TransitionDurationSeconds()));
+            _smoothedLayoutFocus = Vector2.Lerp(_smoothedLayoutFocus, targetFocus, blend);
+            _smoothedLayoutZoom = Mathf.Lerp(_smoothedLayoutZoom, targetZoom, blend);
         }
 
         private float TransitionProgress()
@@ -712,9 +780,12 @@ namespace qoooo.Rendering.Sources
             public readonly float Softness;
             public readonly Vector3 ColorBalance;
             public readonly float Chromatic;
+            public readonly Vector2 LayoutFocus;
+            public readonly float LayoutZoom;
 
             public LookPreset(int layoutMode, float contrast, float saturation, float exposure,
-                float vignette, float softness, Vector3 colorBalance, float chromatic = 0f)
+                float vignette, float softness, Vector3 colorBalance, float chromatic = 0f,
+                Vector2? layoutFocus = null, float layoutZoom = 1f)
             {
                 LayoutMode = layoutMode;
                 Contrast = contrast;
@@ -724,7 +795,10 @@ namespace qoooo.Rendering.Sources
                 Softness = softness;
                 ColorBalance = colorBalance;
                 Chromatic = chromatic;
+                LayoutFocus = layoutFocus ?? new Vector2(0.5f, 0.5f);
+                LayoutZoom = layoutZoom;
             }
         }
+
     }
 }

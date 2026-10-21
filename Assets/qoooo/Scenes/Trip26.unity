@@ -6353,16 +6353,14 @@ MonoBehaviour:
     _id: background.pattern
     _displayName: Background Pattern
     _options:
-    - Noise Texture
-    - Diagonal Stripe
-    - Vertical Stripe
-    - Horizontal Stripe
-    - Wave Stripe
-    - Checkerboard
+    - Stripe
+    - Checker
+    - Wave
+    - Infinite Rings
     - Polka Dot
-    - Sunburst
-    - Grid Line
-    - Psychedelic Ring
+    - Flowing Grid
+    - Speed Lines
+    - Pixel Rain
     _defaultValue: 0
   _mainColor: {r: 0.025, g: 0.025, b: 0.04, a: 1}
   _subColor: {r: 0.12, g: 0.12, b: 0.18, a: 1}
@@ -7146,6 +7144,66 @@ MonoBehaviour:
       Page: 6
       Row: 3
       Column: 7
+  - ParameterId: camera.live.triptych-focus
+    OptionButtons:
+    - Assigned: 1
+      Page: 6
+      Row: 4
+      Column: 0
+    - Assigned: 1
+      Page: 6
+      Row: 4
+      Column: 1
+    - Assigned: 1
+      Page: 6
+      Row: 4
+      Column: 2
+    - Assigned: 1
+      Page: 6
+      Row: 4
+      Column: 3
+    - Assigned: 1
+      Page: 6
+      Row: 4
+      Column: 4
+    - Assigned: 1
+      Page: 6
+      Row: 4
+      Column: 5
+    - Assigned: 1
+      Page: 6
+      Row: 4
+      Column: 6
+    - Assigned: 1
+      Page: 6
+      Row: 4
+      Column: 7
+    - Assigned: 1
+      Page: 6
+      Row: 5
+      Column: 0
+  - ParameterId: camera.live.motion-strength
+    OptionButtons:
+    - Assigned: 1
+      Page: 6
+      Row: 5
+      Column: 1
+    - Assigned: 1
+      Page: 6
+      Row: 5
+      Column: 2
+    - Assigned: 1
+      Page: 6
+      Row: 5
+      Column: 3
+    - Assigned: 1
+      Page: 6
+      Row: 5
+      Column: 4
+    - Assigned: 1
+      Page: 6
+      Row: 5
+      Column: 5
   _oneshots: []
   _momentaries: []
   _states: []
@@ -7851,223 +7909,6 @@ MonoBehaviour:
   _compositeMaterial: {fileID: 2100000, guid: 93372f86947814460ac6375475852c96, type: 2}
   _posterCamera: {fileID: 915433850}
   _outputSource: {fileID: 2134837975}
---- !u!1 &2146001000
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2146001001}
-  - component: {fileID: 2146001002}
-  - component: {fileID: 2146001003}
-  m_Layer: 0
-  m_Name: Live Camera
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2146001001
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2146001000}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 181277145}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2146001002
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2146001000}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c73ec6f0c12a4a3baa65c05a4e6b5f91, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Rendering.Sources.LiveCameraSource
-  _material: {fileID: 2100000, guid: a87cb7547f57436290dcc4cf607d83cc, type: 2}
-  _enabled:
-    _id: camera.live.enabled
-    _displayName: Live Camera Enabled
-    _defaultValue: 0
-  _motionEnabled:
-    _id: camera.live.motion-enabled
-    _displayName: Live Camera Motion Enabled
-    _defaultValue: 1
-  _motionMode:
-    _id: camera.live.motion-mode
-    _displayName: Live Camera Motion
-    _options:
-    - Still
-    - Drift
-    - Push In
-    - Pull Out
-    - Orbit
-    - Slow Drift
-    - Fast Drift
-    - Slow Orbit
-    - Fast Orbit
-    - Slow Push
-    - Fast Push
-    - Slow Pull
-    - Fast Pull
-    - Beat Push
-    - Beat Pull
-    - Beat Orbit
-    - Offbeat Pan
-    - Half-Time Drift
-    - Double-Time Pan
-    - Beat Zoom
-    - Bar Sweep
-    - Bar Orbit
-    - Loose Handheld
-    - Nervous Handheld
-    - Pan Sweep
-    - Figure Eight
-    - Dolly Left
-    - Dolly Right
-    - Close Breathe
-    - Arc Left
-    - Arc Right
-    - Float Close
-    _defaultValue: 1
-  _framing:
-    _id: camera.live.framing
-    _displayName: Live Camera Framing
-    _options:
-    - Full Wide
-    - Wide
-    - Medium
-    - Close
-    - Tight
-    - Extreme Close
-    - Headroom
-    - Low Angle
-    - Left Medium
-    - Center Medium
-    - Right Medium
-    - Left Close
-    - Center Close
-    - Right Close
-    - Dutch Left
-    - Dutch Right
-    _defaultValue: 2
-  _look:
-    _id: camera.live.look
-    _displayName: Live Camera Look
-    _options:
-    - Clean
-    - Center 1/3 Triptych
-    - Mirror Split
-    - Soft Film
-    - Punch
-    - Bleach
-    - Mono
-    - Chromatic
-    _defaultValue: 0
-  _zoom:
-    _id: camera.live.zoom
-    _displayName: Live Camera Zoom
-    _defaultValue: 1.08
-    _min: 1
-    _max: 2
-  _panX:
-    _id: camera.live.pan-x
-    _displayName: Live Camera Pan X
-    _defaultValue: 0
-    _min: -1
-    _max: 1
-  _panY:
-    _id: camera.live.pan-y
-    _displayName: Live Camera Pan Y
-    _defaultValue: 0
-    _min: -1
-    _max: 1
-  _motionAmount:
-    _id: camera.live.motion-amount
-    _displayName: Live Camera Motion Amount
-    _defaultValue: 0.35
-    _min: 0
-    _max: 1
-  _motionSpeed:
-    _id: camera.live.motion-speed
-    _displayName: Live Camera Motion Speed
-    _defaultValue: 0.15
-    _min: 0
-    _max: 1
-  _opacity:
-    _id: camera.live.opacity
-    _displayName: Live Camera Opacity
-    _defaultValue: 1
-    _min: 0
-    _max: 1
-  _flipX:
-    _id: camera.live.flip-x
-    _displayName: Live Camera Flip X
-    _defaultValue: 0
---- !u!114 &2146001003
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2146001000}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3c21051a2f0241e3b29a0541c03922b7, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Rendering.Composition.TextureLayer
-  _sourceComponent: {fileID: 2146001002}
-  _visible:
-    _id: layer.live-camera.visible
-    _displayName: Live Camera Layer Visible
-    _defaultValue: 1
-  _effect: {fileID: 0}
-  _effectParams:
-    IsInvert: 0
-    IsMosaic: 0
-    MosaicSize: 1
-    IsTiling: 0
-    TileNum: {x: 1, y: 1}
-    Offset: {x: 0, y: 0}
-    IsPosterize: 0
-    PosterizeLevels: 4
-    UvEffect: 0
-    SamplingEffect: 0
-    ColorEffect: 0
-    AlphaEffect: 0
-    UvEffects: 0
-    SamplingEffects: 0
-    ColorEffects: 0
-    AlphaEffects: 0
-    Amount: 8
-    Scale: 8
-    Threshold: 0.5
-    Strength: 1
-    Probability: 0.5
-    Seed: 0
-    Direction: {x: 1, y: 0}
-    Grid: {x: 8, y: 8}
-    Thresholds: {x: 0.25, y: 0.5, z: 0.75}
-    UsesOutputEffectIntensities: 0
-    OutputEffectMixA: {x: 0, y: 0, z: 0, w: 0}
-    OutputEffectMixB: {x: 0, y: 0, z: 0, w: 0}
-    OutputEffectMixC: 0
-    Main: {r: 1, g: 1, b: 1, a: 1}
-    Sub: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-    Base: {r: 0, g: 0, b: 0, a: 1}
-    Accent: {r: 1, g: 1, b: 1, a: 1}
 --- !u!4 &2134837973
 Transform:
   m_ObjectHideFlags: 0
@@ -8160,6 +8001,247 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::qoooo.Textures.TextureEffect
   _material: {fileID: 2100000, guid: 30fb421f942db4f26a3979155f57ed4a, type: 2}
+--- !u!1 &2146001000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2146001001}
+  - component: {fileID: 2146001002}
+  - component: {fileID: 2146001003}
+  m_Layer: 0
+  m_Name: Live Camera
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2146001001
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2146001000}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 181277145}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2146001002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2146001000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c73ec6f0c12a4a3baa65c05a4e6b5f91, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Rendering.Sources.LiveCameraSource
+  _material: {fileID: 2100000, guid: a87cb7547f57436290dcc4cf607d83cc, type: 2}
+  _enabled:
+    _id: camera.live.enabled
+    _displayName: Live Camera Enabled
+    _defaultValue: 0
+  _motionEnabled:
+    _id: camera.live.motion-enabled
+    _displayName: Live Camera Motion Enabled
+    _defaultValue: 1
+  _motionMode:
+    _id: camera.live.motion-mode
+    _displayName: Live Camera Motion
+    _options:
+    - Still
+    - Drift
+    - Push In
+    - Pull Out
+    - Orbit
+    - Slow Drift
+    - Fast Drift
+    - Slow Orbit
+    - Fast Orbit
+    - Slow Push
+    - Fast Push
+    - Slow Pull
+    - Fast Pull
+    - Beat Push
+    - Beat Pull
+    - Beat Orbit
+    - Offbeat Pan
+    - Half-Time Drift
+    - Double-Time Pan
+    - Beat Zoom
+    - Bar Sweep
+    - Bar Orbit
+    - Loose Handheld
+    - Nervous Handheld
+    - Pan Sweep
+    - Figure Eight
+    - Dolly Left
+    - Dolly Right
+    - Close Breathe
+    - Arc Left
+    - Arc Right
+    - Float Close
+    _defaultValue: 1
+  _motionStrength:
+    _id: camera.live.motion-strength
+    _displayName: Camera Shake Strength
+    _options:
+    - Off
+    - Subtle
+    - Normal
+    - Strong
+    - Wild
+    _defaultValue: 2
+  _framing:
+    _id: camera.live.framing
+    _displayName: Live Camera Framing
+    _options:
+    - Full Wide
+    - Wide
+    - Medium
+    - Close
+    - Tight
+    - Extreme Close
+    - Headroom
+    - Low Angle
+    - Left Medium
+    - Center Medium
+    - Right Medium
+    - Left Close
+    - Center Close
+    - Right Close
+    - Dutch Left
+    - Dutch Right
+    _defaultValue: 2
+  _look:
+    _id: camera.live.look
+    _displayName: Live Camera Look
+    _options:
+    - Clean
+    - Center 1/3 Triptych
+    - Mirror Split
+    - Soft Film
+    - Punch
+    - Bleach
+    - Mono
+    - Chromatic
+    _defaultValue: 0
+  _triptychFocus:
+    _id: camera.live.triptych-focus
+    _displayName: Triptych Focus
+    _options:
+    - Triptych Top Left
+    - Triptych Top
+    - Triptych Top Right
+    - Triptych Left
+    - Triptych Center
+    - Triptych Right
+    - Triptych Bottom Left
+    - Triptych Bottom
+    - Triptych Bottom Right
+    _defaultValue: 4
+  _zoom:
+    _id: camera.live.zoom
+    _displayName: Live Camera Zoom
+    _defaultValue: 1.08
+    _min: 1
+    _max: 2
+  _panX:
+    _id: camera.live.pan-x
+    _displayName: Live Camera Pan X
+    _defaultValue: 0
+    _min: -1
+    _max: 1
+  _panY:
+    _id: camera.live.pan-y
+    _displayName: Live Camera Pan Y
+    _defaultValue: 0
+    _min: -1
+    _max: 1
+  _motionAmount:
+    _id: camera.live.motion-amount
+    _displayName: Live Camera Motion Amount
+    _defaultValue: 0.35
+    _min: 0
+    _max: 1
+  _motionSpeed:
+    _id: camera.live.motion-speed
+    _displayName: Live Camera Motion Speed
+    _defaultValue: 0.15
+    _min: 0
+    _max: 1
+  _opacity:
+    _id: camera.live.opacity
+    _displayName: Live Camera Opacity
+    _defaultValue: 1
+    _min: 0
+    _max: 1
+  _flipX:
+    _id: camera.live.flip-x
+    _displayName: Live Camera Flip X
+    _defaultValue: 0
+--- !u!114 &2146001003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2146001000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c21051a2f0241e3b29a0541c03922b7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::qoooo.Rendering.Composition.TextureLayer
+  _sourceComponent: {fileID: 2146001002}
+  _visible:
+    _id: layer.live-camera.visible
+    _displayName: Live Camera Layer Visible
+    _defaultValue: 1
+  _effect: {fileID: 0}
+  _effectParams:
+    IsInvert: 0
+    IsMosaic: 0
+    MosaicSize: 1
+    IsTiling: 0
+    TileNum: {x: 1, y: 1}
+    Offset: {x: 0, y: 0}
+    IsPosterize: 0
+    PosterizeLevels: 4
+    UvEffect: 0
+    SamplingEffect: 0
+    ColorEffect: 0
+    AlphaEffect: 0
+    UvEffects: 0
+    SamplingEffects: 0
+    ColorEffects: 0
+    AlphaEffects: 0
+    Amount: 8
+    Scale: 8
+    Threshold: 0.5
+    Strength: 1
+    Probability: 0.5
+    Seed: 0
+    Direction: {x: 1, y: 0}
+    Grid: {x: 8, y: 8}
+    Thresholds: {x: 0.25, y: 0.5, z: 0.75}
+    UsesOutputEffectIntensities: 0
+    OutputEffectMixA: {x: 0, y: 0, z: 0, w: 0}
+    OutputEffectMixB: {x: 0, y: 0, z: 0, w: 0}
+    OutputEffectMixC: 0
+    Main: {r: 1, g: 1, b: 1, a: 1}
+    Sub: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+    Base: {r: 0, g: 0, b: 0, a: 1}
+    Accent: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

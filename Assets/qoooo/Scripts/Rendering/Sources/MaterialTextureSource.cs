@@ -12,26 +12,14 @@ namespace qoooo.Rendering.Sources
     // Numeric order is the C# side of the ProceduralPattern shader dispatcher contract.
     public enum ProceduralPatternType
     {
-        NoiseTexture = 0,
-        DiagonalStripe = 1,
-        VerticalStripe = 2,
-        HorizontalStripe = 3,
-        WaveStripe = 4,
-        Checkerboard = 5,
-        PolkaDot = 6,
-        Sunburst = 7,
-        GridLine = 8,
-        PsychedelicRing = 9,
-        HandDrawnGrid = 10,
-        OrganicDot = 11,
-        HalftoneCircle = 12,
-        PaperGrain = 13,
-        Plaster = 14,
-        InkSpeckle = 15,
-        WavyChecker = 16,
-        Linen = 17,
-        Marble = 18,
-        RoughStripe = 19
+        Stripe = 0,
+        Checker = 1,
+        Wave = 2,
+        InfiniteRings = 3,
+        PolkaDot = 4,
+        FlowingGrid = 5,
+        SpeedLines = 6,
+        PixelRain = 7
     }
 
     [DefaultExecutionOrder(-100)]
@@ -39,18 +27,18 @@ namespace qoooo.Rendering.Sources
     // CREATIVE AREA: pattern colors, UV controls, and shared beat become shader uniforms here.
     public class MaterialTextureSource : MonoBehaviour, ITextureContainer, IParameterContainer, IMidiParameterSource
     {
+        private static readonly string[] PatternNames =
+        {
+            "Stripe", "Checker", "Wave", "Infinite Rings",
+            "Polka Dot", "Flowing Grid", "Speed Lines", "Pixel Rain"
+        };
+
         [SerializeField] private Material _material;
         [SerializeField]
         private RadioParameter _pattern = new(
             "background.pattern", "Background Pattern",
-            new[]
-            {
-                "Noise Texture", "Diagonal Stripe", "Vertical Stripe", "Horizontal Stripe", "Wave Stripe",
-                "Checkerboard", "Polka Dot", "Sunburst", "Grid Line", "Psychedelic Ring",
-                "Hand Drawn Grid", "Organic Dot", "Halftone Circle", "Paper Grain", "Plaster",
-                "Ink Speckle", "Wavy Checker", "Linen", "Marble", "Rough Stripe"
-            },
-            (int)ProceduralPatternType.NoiseTexture);
+            PatternNames,
+            (int)ProceduralPatternType.Stripe);
         [SerializeField, FormerlySerializedAs("_colorA")]
         private Color _mainColor = new(0.025f, 0.025f, 0.04f, 1f);
         [SerializeField, FormerlySerializedAs("_colorB")]
@@ -80,6 +68,11 @@ namespace qoooo.Rendering.Sources
             _resolutionContainer = resolutionContainer;
             _bpmSource = bpmSource;
             _palette = palette;
+        }
+
+        private void Awake()
+        {
+            SyncPatternOptions();
         }
 
         private void Update()
@@ -173,17 +166,17 @@ namespace qoooo.Rendering.Sources
         private void OnValidate()
         {
             _opacity = Mathf.Clamp01(_opacity);
-            _pattern ??= new RadioParameter(
-                "background.pattern", "Background Pattern",
-                new[]
-                {
-                    "Noise Texture", "Diagonal Stripe", "Vertical Stripe", "Horizontal Stripe", "Wave Stripe",
-                    "Checkerboard", "Polka Dot", "Sunburst", "Grid Line", "Psychedelic Ring",
-                    "Hand Drawn Grid", "Organic Dot", "Halftone Circle", "Paper Grain", "Plaster",
-                    "Ink Speckle", "Wavy Checker", "Linen", "Marble", "Rough Stripe"
-                });
+            SyncPatternOptions();
             _materialContractValidated = false;
             if (_material != null) SetUniforms();
+        }
+
+        private void SyncPatternOptions()
+        {
+            _pattern ??= new RadioParameter(
+                "background.pattern", "Background Pattern", PatternNames,
+                (int)ProceduralPatternType.Stripe);
+            _pattern.ReplaceOptions(PatternNames, (int)ProceduralPatternType.Stripe);
         }
 
         private bool ValidateMaterialContract()

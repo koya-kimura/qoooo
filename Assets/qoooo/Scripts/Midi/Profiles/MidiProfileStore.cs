@@ -51,7 +51,12 @@ namespace qoooo.Midi.Profiles
                 _controller.ImportMapping(mapping);
             }
             var state=_statePrefs.Get();
-            if(IsCompatible(state)) ApplyState(state);
+            if(IsCompatible(state))
+            {
+                state=Copy(state);
+                MigrateLiveCameraState(state);
+                ApplyState(state);
+            }
             _lastSavedMapping=Copy(IsCompatible(mapping) ? mapping : _sceneDefaultMapping);
             _lastSavedState=Copy(IsCompatible(state) ? state : CaptureState());
             Subscribe(); _initialized=true; SetDirty(false);
@@ -162,11 +167,49 @@ namespace qoooo.Midi.Profiles
             var legacy = motion?.OptionButtons?.Count is 5 or 24
                          || HasLegacyToggle(mapping, "camera.live.enabled", 7, 0, 0)
                          || HasLegacyToggle(mapping, "layer.live-camera.visible", 1, 0, 0);
-            if(!legacy)return;
+            var combinedLookLayout = HasCombinedLiveCameraLookLayout(mapping);
+            if(!legacy && !combinedLookLayout)return;
 
-            mapping.Toggles?.RemoveAll(binding => IsLiveCameraLayoutParameter(binding?.ParameterId));
-            mapping.Radios?.RemoveAll(binding => IsLiveCameraLayoutParameter(binding?.ParameterId));
+            if(legacy)
+            {
+                mapping.Toggles?.RemoveAll(binding => IsLiveCameraLayoutParameter(binding?.ParameterId));
+                mapping.Radios?.RemoveAll(binding => IsLiveCameraLayoutParameter(binding?.ParameterId));
+            }
+            else
+            {
+                mapping.Radios?.RemoveAll(binding => binding?.ParameterId == "camera.live.look");
+            }
             AddMissingBindings(mapping, sceneDefaults);
+        }
+        private static bool HasCombinedLiveCameraLookLayout(ApcMidiMappingData mapping)
+        {
+            var look=mapping.Radios?.Find(binding => binding?.ParameterId=="camera.live.look");
+            if(look?.OptionButtons?.Count!=17)return false;
+            for(var index=0;index<look.OptionButtons.Count;index++)
+            {
+                var button=look.OptionButtons[index];
+                var row=index<8?3:index<16?4:5;
+                var column=index<8?index:index<16?index-8:0;
+                if(!button.Assigned || button.Page!=6 || button.Row!=row || button.Column!=column)return false;
+            }
+            return true;
+        }
+        private static void MigrateLiveCameraState(MidiParameterStateData state)
+        {
+            var look=state.Values?.Find(value => value?.Id=="camera.live.look");
+            if(look==null || look.IntValue<8)return;
+            var focus=state.Values.Find(value => value?.Id=="camera.live.triptych-focus");
+            if(focus==null)
+            {
+                focus=new MidiParameterValueData
+                {
+                    Id="camera.live.triptych-focus",
+                    Kind=(int)MidiParameterKind.Radio
+                };
+                state.Values.Add(focus);
+            }
+            focus.IntValue=Mathf.Clamp(look.IntValue-8,0,8);
+            look.IntValue=(int)Rendering.Sources.LiveCameraLook.CenterTriptych;
         }
         private static bool HasLegacyToggle(ApcMidiMappingData mapping, string parameterId,
             int page, int row, int column)
@@ -178,7 +221,8 @@ namespace qoooo.Midi.Profiles
         private static bool IsLiveCameraLayoutParameter(string parameterId)
         {
             return parameterId is "camera.live.enabled" or "camera.live.motion-enabled" or "camera.live.flip-x"
-                or "camera.live.motion-mode" or "camera.live.framing" or "camera.live.look"
+                or "camera.live.motion-mode" or "camera.live.motion-strength"
+                or "camera.live.framing" or "camera.live.look" or "camera.live.triptych-focus"
                 or "layer.live-camera.visible" or "layer.poster.visible";
         }
         private static void AddMissing<T>(List<T> target, IEnumerable<T> sceneDefaults, Func<T, string> parameterId)
